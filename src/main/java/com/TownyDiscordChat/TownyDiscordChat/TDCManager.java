@@ -384,6 +384,14 @@ public class TDCManager {
                     .setColor(Color.decode(Main.plugin.config.getString("town.RoleCreateColorCode"))).queue(role -> {
                 DiscordUtil.addRolesToMember(member, role);
                 createChannels(guild, town, role);
+
+                Main.plugin.getLogger().info("--------------------------------------------------");
+                Main.plugin.getLogger().info("Successfully dispatched creation of server role: " + "town-" + town.getName());
+                Main.plugin.getLogger().info("--------------------------------------------------");
+            }, failure -> {
+                Main.plugin.getLogger().info("--------------------------------------------------");
+                Main.plugin.getLogger().info("Failed to dispatch creation of server role: " + "town-" + town.getName());
+                Main.plugin.getLogger().info("--------------------------------------------------");
             });
         }
     }
@@ -405,6 +413,14 @@ public class TDCManager {
                     .setColor(Color.decode(Main.plugin.config.getString("nation.RoleCreateColorCode"))).queue(role -> {
                 giveRoleToMember(player, member, role);
                 createChannels(guild, nation, role);
+
+                Main.plugin.getLogger().info("--------------------------------------------------");
+                Main.plugin.getLogger().info("Successfully dispatched creation of server role: " + "nation-" + nation.getName());
+                Main.plugin.getLogger().info("--------------------------------------------------");
+            }, failure -> {
+                Main.plugin.getLogger().info("--------------------------------------------------");
+                Main.plugin.getLogger().info("Failed to dispatch creation of server role: " + "nation-" + nation.getName());
+                Main.plugin.getLogger().info("--------------------------------------------------");
             });
         }
     }

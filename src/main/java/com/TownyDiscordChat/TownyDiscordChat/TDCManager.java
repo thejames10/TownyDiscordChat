@@ -41,11 +41,11 @@ public class TDCManager {
 
         getRole(roleprefix + oldName).getManager().setName(roleprefix + newName).queue(success -> {
             Main.plugin.getLogger().info("--------------------------------------------------");
-            Main.plugin.getLogger().info("Successfully dispatched rename of server role: " + oldName + " to " + newName);
+            Main.plugin.getLogger().info("Successfully dispatched rename of server role: " + roleprefix + oldName + " to " + roleprefix + newName);
             Main.plugin.getLogger().info("--------------------------------------------------");
         }, failure -> {
             Main.plugin.getLogger().info("--------------------------------------------------");
-            Main.plugin.getLogger().info("Failed to dispatch rename of server role: " + oldName + " to " + newName);
+            Main.plugin.getLogger().info("Failed to dispatch rename of server role: " + roleprefix + oldName + " to " + roleprefix + newName);
             Main.plugin.getLogger().info("--------------------------------------------------");
         });
 
@@ -95,7 +95,7 @@ public class TDCManager {
      * @param townName The name of the town
      */
     public static final void deleteRoleAndChannelsFromTown(final String townName) {
-        deleteRoleAndChannels(townName, getRole("town-" + townName), getTownTextCategoryId(), getTownVoiceCategoryId());
+        deleteRoleAndChannels("town-" + townName, getRole("town-" + townName), getTownTextCategoryId(), getTownVoiceCategoryId());
     }
 
     /**
@@ -113,7 +113,7 @@ public class TDCManager {
      * @param nationName The name of the Nation
      */
     public static final void deleteRoleAndChannelsFromNation(final String nationName) {
-        deleteRoleAndChannels(nationName, getRole("nation-" + nationName), getNationTextCategoryId(),
+        deleteRoleAndChannels("nation-" + nationName, getRole("nation-" + nationName), getNationTextCategoryId(),
                 getNationVoiceCategoryId());
     }
 
@@ -130,33 +130,41 @@ public class TDCManager {
         final Guild guild = DiscordSRV.getPlugin().getMainGuild();
 
         if (role != null)
-            role.delete().queue();
+            role.delete().queue(success -> {
+                Main.plugin.getLogger().info("--------------------------------------------------");
+                Main.plugin.getLogger().info("Successfully dispatched deletion of server role: " + name);
+                Main.plugin.getLogger().info("--------------------------------------------------");
+            }, failure -> {
+                Main.plugin.getLogger().info("--------------------------------------------------");
+                Main.plugin.getLogger().info("Failed to dispatch deletion of server role: " + name);
+                Main.plugin.getLogger().info("--------------------------------------------------");
+            });
 
-        final List<TextChannel> discordTextChannels = guild.getTextChannelsByName(name, true);
+        final List<TextChannel> discordTextChannels = guild.getTextChannelsByName(name.substring(name.indexOf("-") + 1), true);
         for (final TextChannel discordTextChannel : discordTextChannels) {
             if (textChannelParentId == null || discordTextChannel.getParent().getId().equals(textChannelParentId)) {
                 discordTextChannel.delete().queue(success -> {
                     Main.plugin.getLogger().info("--------------------------------------------------");
-                    Main.plugin.getLogger().info("Successfully dispatched deletion of text channel: " + name);
+                    Main.plugin.getLogger().info("Successfully dispatched deletion of text channel: " + name.substring(name.indexOf("-") + 1));
                     Main.plugin.getLogger().info("--------------------------------------------------");
                 }, failure -> {
                     Main.plugin.getLogger().info("--------------------------------------------------");
-                    Main.plugin.getLogger().info("Failed to dispatch deletion of text channel: " + name);
+                    Main.plugin.getLogger().info("Failed to dispatch deletion of text channel: " + name.substring(name.indexOf("-") + 1));
                     Main.plugin.getLogger().info("--------------------------------------------------");
                 });
             }
         }
 
-        final List<VoiceChannel> discordVoiceChannels = guild.getVoiceChannelsByName(name, true);
+        final List<VoiceChannel> discordVoiceChannels = guild.getVoiceChannelsByName(name.substring(name.indexOf("-") + 1), true);
         for (final VoiceChannel discordVoiceChannel : discordVoiceChannels) {
             if (voiceChannelParentId == null || discordVoiceChannel.getParent().getId().equals(voiceChannelParentId)) {
                 discordVoiceChannel.delete().queue(success -> {
                     Main.plugin.getLogger().info("--------------------------------------------------");
-                    Main.plugin.getLogger().info("Successfully dispatched deletion of voice channel: " + name);
+                    Main.plugin.getLogger().info("Successfully dispatched deletion of voice channel: " + name.substring(name.indexOf("-") + 1));
                     Main.plugin.getLogger().info("--------------------------------------------------");
                 }, failure -> {
                     Main.plugin.getLogger().info("--------------------------------------------------");
-                    Main.plugin.getLogger().info("Failed to dispatch deletion of voice channel: " + name);
+                    Main.plugin.getLogger().info("Failed to dispatch deletion of voice channel: " + name.substring(name.indexOf("-") + 1));
                     Main.plugin.getLogger().info("--------------------------------------------------");
                 });
             }

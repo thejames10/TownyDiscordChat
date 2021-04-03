@@ -12,7 +12,6 @@ public class Main extends JavaPlugin {
     public static Main plugin;
 
     public FileConfiguration config = getConfig();
-    public FileConfiguration messages = YamlConfiguration.loadConfiguration(new File(plugin.getDataFolder(), "messages.yml"));
 
     public void onEnable() {
         saveDefaultConfig();

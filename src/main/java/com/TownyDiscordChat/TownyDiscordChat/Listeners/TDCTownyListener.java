@@ -1,10 +1,11 @@
-package com.TownyDiscordChat.TownyDiscordChat;
+package com.TownyDiscordChat.TownyDiscordChat.Listeners;
 
 import java.util.List;
 
+import com.TownyDiscordChat.TownyDiscordChat.Main;
+import com.TownyDiscordChat.TownyDiscordChat.TDCManager;
 import com.palmergames.bukkit.towny.event.*;
 import com.palmergames.bukkit.towny.object.Resident;
-import com.palmergames.bukkit.towny.object.Town;
 
 import github.scarsz.discordsrv.api.events.AccountLinkedEvent;
 import org.bukkit.OfflinePlayer;
@@ -14,24 +15,14 @@ import org.bukkit.event.Listener;
 
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Guild;
-import github.scarsz.discordsrv.objects.managers.AccountLinkManager;
 import github.scarsz.discordsrv.util.DiscordUtil;
 
 // see javadocs for all towny listeners
 // https://javadoc.jitpack.io/com/github/TownyAdvanced/Towny/0.96.5.0/javadoc/
 
-public class TDCListener implements Listener {
+public class TDCTownyListener implements Listener {
 
-    Resident resident;
-
-    Town town;
-
-    AccountLinkManager manager = DiscordSRV.getPlugin().getAccountLinkManager();
-
-    Main plugin;
-
-    public TDCListener(Main var) {
-        plugin = var;
+    public TDCTownyListener(Main plugin) {
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
@@ -41,24 +32,6 @@ public class TDCListener implements Listener {
 
         // Check if there are players that are linked after the fact
         // They linked after joining town or nation and haven't ran /TownyDiscordChat command
-
-    }
-
-    @EventHandler
-    public void accountLinked(AccountLinkedEvent event) {
-
-        System.out.println("AccountLinkedEvent fired!");
-
-        OfflinePlayer offlinePlayer = event.getPlayer();
-
-        if (event.getUser().isBot() && !offlinePlayer.hasPlayedBefore()) {
-            return;
-        }
-
-        Player player = offlinePlayer.getPlayer();
-
-        TDCManager.givePlayerTownRole(player);
-        TDCManager.givePlayerNationRole(player);
 
     }
 

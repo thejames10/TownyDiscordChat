@@ -2,8 +2,6 @@ package com.TownyDiscordChat.TownyDiscordChat;
 
 import java.awt.Color;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
@@ -11,7 +9,6 @@ import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -39,7 +36,7 @@ public class TDCManager {
     }
 
     public static final void rename(String oldName, String newName, String roleprefix, String townTextCategoryId,
-            String townVoiceCategoryId) {
+                                    String townVoiceCategoryId) {
         Guild guild = DiscordSRV.getPlugin().getMainGuild();
 
         getRole(roleprefix + oldName).getManager().setName(roleprefix + newName).queue();
@@ -61,7 +58,7 @@ public class TDCManager {
 
     /**
      * Deletes Discord a role and discord channels from the Town
-     * 
+     *
      * @param town
      */
     public static final void deleteRoleAndChannels(final Town town) {
@@ -70,7 +67,7 @@ public class TDCManager {
 
     /**
      * Deletes Discord a role and discord channels from the Town
-     * 
+     *
      * @param townName The name of the town
      */
     public static final void deleteRoleAndChannelsFromTown(final String townName) {
@@ -79,7 +76,7 @@ public class TDCManager {
 
     /**
      * Deletes Discord a role and discord channels from the Nation
-     * 
+     *
      * @param nation
      */
     public static final void deleteRoleAndChannels(final Nation nation) {
@@ -88,7 +85,7 @@ public class TDCManager {
 
     /**
      * Deletes Discord a role and discord channels from the Nation
-     * 
+     *
      * @param nationName The name of the Nation
      */
     public static final void deleteRoleAndChannelsFromNation(final String nationName) {
@@ -99,13 +96,13 @@ public class TDCManager {
     /**
      * Deletes Discord a role and discord channels with the name, optionally one can
      * define the parents
-     * 
+     *
      * @param name                 Name of the role and channels to delete
      * @param textChannelParentId  id of the text channels parent or null
      * @param voiceChannelParentId id of the voice channels parent or null
      */
     public static final void deleteRoleAndChannels(final String name, @Nullable final Role role,
-            final String textChannelParentId, final String voiceChannelParentId) {
+                                                   final String textChannelParentId, final String voiceChannelParentId) {
         final Guild guild = DiscordSRV.getPlugin().getMainGuild();
 
         if (role != null)
@@ -128,7 +125,7 @@ public class TDCManager {
 
     /**
      * Removes the Role of the Town the Player is in from the Player
-     * 
+     *
      * @param player the Player to remove the role from
      */
     public static final void removePlayerTownRole(@NotNull final Player player) {
@@ -146,7 +143,7 @@ public class TDCManager {
 
     /**
      * Removes the Towns Discord Role from the Player
-     * 
+     *
      * @param player The Player from which the role should be removed
      * @param town   The Town which role should be removed from the Player
      */
@@ -188,7 +185,7 @@ public class TDCManager {
 
     /**
      * Gives the Player it towns Discord Role
-     * 
+     *
      * @param player Player to give the role to
      */
     public static final void givePlayerNationRole(@NotNull final Player player) {
@@ -205,7 +202,7 @@ public class TDCManager {
 
     /**
      * Gives the Player the Nations Discord Role
-     * 
+     *
      * @param player Player to give the Role to
      * @param nation The nation which role the Player should get
      */
@@ -242,7 +239,7 @@ public class TDCManager {
 
     /**
      * Gives the Player it towns Discord Role
-     * 
+     *
      * @param player Player to give the role to
      */
     public static final void givePlayerTownRole(@NotNull final Player player) {
@@ -259,7 +256,7 @@ public class TDCManager {
 
     /**
      * Gives the Player the Towns Discord Role
-     * 
+     *
      * @param player Player to give the Role to
      * @param town   The town which role the Player should get
      */
@@ -296,13 +293,13 @@ public class TDCManager {
 
     /**
      * Gives the player the role and notifies the Player accordingly
-     * 
+     *
      * @param player   Player to notify
      * @param member   Member to give the role to
      * @param townRole The role to give to the Member
      */
     private static void giveRoleToMember(@NotNull final Player player, @NotNull final Member member,
-            @NotNull final Role townRole) {
+                                         @NotNull final Role townRole) {
         // idk debug output? was here when I got here
         Main.plugin.getLogger().info("--------------------------------------------------");
         Main.plugin.getLogger().info(member.getId());
@@ -333,49 +330,49 @@ public class TDCManager {
     /**
      * Creates Towns role, creates the corresponding channels and gives the Member
      * the role
-     * 
+     *
      * @param player The Player who initiated the creation
      * @param member The member corresponding to the Player
      * @param town   The Town to create the role for
      */
     private static void createRole(@NotNull final Player player, @NotNull final Member member,
-            @NotNull final Town town) {
+                                   @NotNull final Town town) {
         final Guild guild = member.getGuild();
         if (Main.plugin.config.getBoolean("town.CreateRoleIfNoneExists")) {
             player.sendMessage(town + " Doesn't have a Role, automatically creating one for you...!");
             guild.createRole().setName("town-" + town.getName())
                     .setColor(Color.decode(Main.plugin.config.getString("town.RoleCreateColorCode"))).queue(role -> {
-                        DiscordUtil.addRolesToMember(member, role);
-                        createChannels(guild, town, role);
-                    });
+                DiscordUtil.addRolesToMember(member, role);
+                createChannels(guild, town, role);
+            });
         }
     }
 
     /**
      * Creates Nnations role, creates the corresponding channels and gives the
      * Member the role
-     * 
+     *
      * @param player The Player who initiated the creation
      * @param member The member corresponding to the Player
      * @param nation The Nation to create the role for
      */
     private static void createRole(@NotNull final Player player, @NotNull final Member member,
-            @NotNull final Nation nation) {
+                                   @NotNull final Nation nation) {
         final Guild guild = member.getGuild();
         if (Main.plugin.config.getBoolean("nation.CreateRoleIfNoneExists")) {
             player.sendMessage(nation + " Doesn't have a Role, automatically creating one for you...!");
             guild.createRole().setName("nation-" + nation.getName())
                     .setColor(Color.decode(Main.plugin.config.getString("nation.RoleCreateColorCode"))).queue(role -> {
-                        giveRoleToMember(player, member, role);
-                        createChannels(guild, nation, role);
-                    });
+                giveRoleToMember(player, member, role);
+                createChannels(guild, nation, role);
+            });
         }
     }
 
     /**
      * Creates text and or voice channels in the guild that are only accesible by
      * the towns Role
-     * 
+     *
      * @param guild The guild to create the chanels in
      * @param town  The town to create the channels for
      * @param role  The Role that can access the channels
@@ -389,7 +386,7 @@ public class TDCManager {
     /**
      * Creates text and or voice channels in the guild that are only accesible by
      * the nation role
-     * 
+     *
      * @param guild  The guild to create the chanels in
      * @param nation The nation to create the channels for
      * @param role   The Role that can access the channels
@@ -403,7 +400,7 @@ public class TDCManager {
     /**
      * Create either text and or voice channels with a specific name in specific
      * categories that are only accessible by a specific role
-     * 
+     *
      * @param guild                  The guild to create the channels in
      * @param name                   The name of the channels
      * @param role                   The role that can access the channels
@@ -413,8 +410,8 @@ public class TDCManager {
      * @param textChannelCategoryId  Optional text channel category
      */
     private static void createChannels(@NotNull final Guild guild, @NotNull final String name, @NotNull final Role role,
-            final boolean createVoiceChannel, final boolean createTextChannel,
-            @Nullable final String voiceChannelCategoryId, @Nullable final String textChannelCategoryId) {
+                                       final boolean createVoiceChannel, final boolean createTextChannel,
+                                       @Nullable final String voiceChannelCategoryId, @Nullable final String textChannelCategoryId) {
 
         final long noPermission = 0;
         final long viewPermission = Permission.VIEW_CHANNEL.getRawValue();
@@ -447,7 +444,7 @@ public class TDCManager {
 
     /**
      * Gets the Discord ID of the Player
-     * 
+     *
      * @param player Player to get the Discord ID from
      * @return The Discord ID or null when the player did not link their Discord
      */
@@ -466,7 +463,7 @@ public class TDCManager {
 
     /**
      * Gets the Member instance of the Discord ID from the Main Guild
-     * 
+     *
      * @param id The Discord ID to get the Member of
      * @return The Member or null if the ID is not in the discord
      */
@@ -476,7 +473,7 @@ public class TDCManager {
 
     /**
      * Gets the Town of the Player
-     * 
+     *
      * @param player The Player to get the Town from
      * @return The Players Town or null if the Player is in no Town
      */
@@ -491,7 +488,7 @@ public class TDCManager {
 
     /**
      * Gets the Nation of the Player
-     * 
+     *
      * @param player The Player to get the Nation from
      * @return The Players Nation or null if the Player is in no Nation
      */
@@ -509,7 +506,7 @@ public class TDCManager {
 
     /**
      * Gets the Towns Discord Role
-     * 
+     *
      * @param town The Town to get the Role of
      * @return The Towns Discord Role or null if it does not exist
      */
@@ -519,7 +516,7 @@ public class TDCManager {
 
     /**
      * Gets the Nations Discord Role
-     * 
+     *
      * @param nation The Nation to get the Role of
      * @return The Nations Discord Role or null if it does not exist
      */
@@ -529,7 +526,7 @@ public class TDCManager {
 
     /**
      * Gets the Discord Role by Name
-     * 
+     *
      * @param name The name of the Role
      * @return The Discord Role or null if it does not exist
      */

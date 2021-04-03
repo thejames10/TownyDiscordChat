@@ -11,7 +11,7 @@ import github.scarsz.discordsrv.objects.managers.AccountLinkManager;
 
 public class TDCCommand implements CommandExecutor {
 
-    AccountLinkManager manager = DiscordSRV.getPlugin().getAccountLinkManager();
+    //AccountLinkManager manager = DiscordSRV.getPlugin().getAccountLinkManager();
 
     public boolean onCommand(@NotNull final CommandSender sender, @NotNull final Command command, @NotNull final String label,
             @NotNull final String[] args) {

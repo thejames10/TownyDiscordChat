@@ -2,17 +2,13 @@ package com.TownyDiscordChat.TownyDiscordChat;
 
 import java.util.List;
 
-import com.palmergames.bukkit.towny.event.DeleteNationEvent;
-import com.palmergames.bukkit.towny.event.DeleteTownEvent;
-import com.palmergames.bukkit.towny.event.NationAddTownEvent;
-import com.palmergames.bukkit.towny.event.NationRemoveTownEvent;
-import com.palmergames.bukkit.towny.event.RenameNationEvent;
-import com.palmergames.bukkit.towny.event.RenameTownEvent;
-import com.palmergames.bukkit.towny.event.TownAddResidentEvent;
-import com.palmergames.bukkit.towny.event.TownRemoveResidentEvent;
+import com.palmergames.bukkit.towny.event.*;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 
+import github.scarsz.discordsrv.api.events.AccountLinkedEvent;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -40,7 +36,37 @@ public class TDCListener implements Listener {
     }
 
     @EventHandler
+    public void onNewDay(NewDayEvent event) {
+        System.out.println("NewDayEvent fired!");
+
+        // Check if there are players that are linked after the fact
+        // They linked after joining town or nation and haven't ran /TownyDiscordChat command
+
+    }
+
+    @EventHandler
+    public void accountLinked(AccountLinkedEvent event) {
+
+        System.out.println("AccountLinkedEvent fired!");
+
+        OfflinePlayer offlinePlayer = event.getPlayer();
+
+        if (event.getUser().isBot() && !offlinePlayer.hasPlayedBefore()) {
+            return;
+        }
+
+        Player player = offlinePlayer.getPlayer();
+
+        TDCManager.givePlayerTownRole(player);
+        TDCManager.givePlayerNationRole(player);
+
+    }
+
+    @EventHandler
     public void onPlayerJoinTown(TownAddResidentEvent event) {
+
+        System.out.println("TownAddResidentEvent fired!");
+
         TDCManager.givePlayerRole(event.getResident().getPlayer(), event.getTown());
     }
 

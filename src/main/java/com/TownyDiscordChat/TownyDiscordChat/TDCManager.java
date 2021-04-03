@@ -1,4 +1,4 @@
-package com.nukemgaming.TownyDiscordChat;
+package com.TownyDiscordChat.TownyDiscordChat;
 
 import java.awt.Color;
 import java.util.List;

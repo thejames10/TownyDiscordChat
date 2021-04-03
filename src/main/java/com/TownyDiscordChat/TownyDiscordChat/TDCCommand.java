@@ -1,4 +1,4 @@
-package com.nukemgaming.TownyDiscordChat;
+package com.TownyDiscordChat.TownyDiscordChat;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -23,7 +23,7 @@ public class TDCCommand implements CommandExecutor {
 
         TDCManager.givePlayerTownRole(player);
         TDCManager.givePlayerNationRole(player);
-        
+
         return true;
     }
 }

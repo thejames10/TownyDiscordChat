@@ -39,7 +39,15 @@ public class TDCManager {
                                     String townVoiceCategoryId) {
         Guild guild = DiscordSRV.getPlugin().getMainGuild();
 
-        getRole(roleprefix + oldName).getManager().setName(roleprefix + newName).queue();
+        getRole(roleprefix + oldName).getManager().setName(roleprefix + newName).queue(success -> {
+            Main.plugin.getLogger().info("--------------------------------------------------");
+            Main.plugin.getLogger().info("Successfully dispatched rename of server role: " + oldName + " to " + newName);
+            Main.plugin.getLogger().info("--------------------------------------------------");
+        }, failure -> {
+            Main.plugin.getLogger().info("--------------------------------------------------");
+            Main.plugin.getLogger().info("Failed to dispatch rename of server role: " + oldName + " to " + newName);
+            Main.plugin.getLogger().info("--------------------------------------------------");
+        });
 
         List<TextChannel> discordTextChannels = guild.getTextChannelsByName(oldName, true);
         for (TextChannel discordTextChannel : discordTextChannels) {

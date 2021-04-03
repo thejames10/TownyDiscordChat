@@ -16,13 +16,11 @@ public class Main extends JavaPlugin {
         reloadConfig();
         saveConfig();
         config = getConfig();
-        
+
         Objects.requireNonNull(getCommand("TownyDiscordChat")).setExecutor(new TDCCommand());
         getLogger().info("TownyDiscordChat has been Enabled!");
         plugin = this;
         new TDCListener(plugin);
-
-        // This is a test
     }
 
     public void onDisable() {

@@ -1,0 +1,14 @@
+main: com.nukemgaming.TownyDiscordChat.Main
+name: TownyDiscordChat
+version: 1.0
+api-version: 1.16
+authors: 
+- thejames10
+- Hugo5000
+
+depend: [DiscordSRV, Towny]
+
+commands:
+  TownyDiscordChat:
+    description: Link Discord and Towny Data
+    usage: /TownyDiscordChat

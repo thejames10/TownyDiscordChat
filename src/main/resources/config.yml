@@ -1,0 +1,24 @@
+nation:
+  CreateTextChannelForRole: true
+  CreateVoiceChannelForRole: true
+
+  UseCategoryForText: true
+  UseCategoryForVoice: true
+
+  TextCategoryId: 0
+  VoiceCategoryId: 0
+
+  CreateRoleIfNoneExists: true
+  RoleCreateColorCode: "0xc9c012"
+town:
+  CreateTextChannelForRole: true
+  CreateVoiceChannelForRole: true
+  
+  UseCategoryForText: true
+  UseCategoryForVoice: true
+
+  TextCategoryId: 0
+  VoiceCategoryId: 0
+
+  CreateRoleIfNoneExists: true
+  RoleCreateColorCode: "0x006798"

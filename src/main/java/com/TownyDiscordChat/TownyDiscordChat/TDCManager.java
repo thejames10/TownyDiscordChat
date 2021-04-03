@@ -44,14 +44,30 @@ public class TDCManager {
         List<TextChannel> discordTextChannels = guild.getTextChannelsByName(oldName, true);
         for (TextChannel discordTextChannel : discordTextChannels) {
             if (townTextCategoryId == null || discordTextChannel.getParent().getId().equals(townTextCategoryId)) {
-                discordTextChannel.getManager().setName(newName).queue();
+                discordTextChannel.getManager().setName(newName).queue(success -> {
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    Main.plugin.getLogger().info("Successfully dispatched rename of text channel: " + oldName + " to " + newName);
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                }, failure -> {
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    Main.plugin.getLogger().info("Failed to dispatch rename of text channel: " + oldName + " to " + newName);
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                });
             }
         }
 
         List<VoiceChannel> discordVoiceChannels = guild.getVoiceChannelsByName(oldName, true);
         for (VoiceChannel discordVoiceChannel : discordVoiceChannels) {
             if (townVoiceCategoryId == null || discordVoiceChannel.getParent().getId().equals(townVoiceCategoryId)) {
-                discordVoiceChannel.getManager().setName(newName).queue();
+                discordVoiceChannel.getManager().setName(newName).queue(success -> {
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    Main.plugin.getLogger().info("Successfully dispatched rename of voice channel: " + oldName + " to " + newName);
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                }, failure -> {
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    Main.plugin.getLogger().info("Failed to dispatch rename of voice channel: " + oldName + " to " + newName);
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                });
             }
         }
     }
@@ -111,14 +127,30 @@ public class TDCManager {
         final List<TextChannel> discordTextChannels = guild.getTextChannelsByName(name, true);
         for (final TextChannel discordTextChannel : discordTextChannels) {
             if (textChannelParentId == null || discordTextChannel.getParent().getId().equals(textChannelParentId)) {
-                discordTextChannel.delete().queue();
+                discordTextChannel.delete().queue(success -> {
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    Main.plugin.getLogger().info("Successfully dispatched deletion of text channel: " + name);
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                }, failure -> {
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    Main.plugin.getLogger().info("Failed to dispatch deletion of text channel: " + name);
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                });
             }
         }
 
         final List<VoiceChannel> discordVoiceChannels = guild.getVoiceChannelsByName(name, true);
         for (final VoiceChannel discordVoiceChannel : discordVoiceChannels) {
             if (voiceChannelParentId == null || discordVoiceChannel.getParent().getId().equals(voiceChannelParentId)) {
-                discordVoiceChannel.delete().queue();
+                discordVoiceChannel.delete().queue(success -> {
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    Main.plugin.getLogger().info("Successfully dispatched deletion of voice channel: " + name);
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                }, failure -> {
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    Main.plugin.getLogger().info("Failed to dispatch deletion of voice channel: " + name);
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                });
             }
         }
     }
@@ -428,7 +460,15 @@ public class TDCManager {
             if (voiceChannelCategoryId != null) {
                 voiceChannelAction.setParent(guild.getCategoryById(voiceChannelCategoryId));
             }
-            voiceChannelAction.queue();
+            voiceChannelAction.queue(success -> {
+                Main.plugin.getLogger().info("--------------------------------------------------");
+                Main.plugin.getLogger().info("Successfully dispatched creation of voice channel: " + name);
+                Main.plugin.getLogger().info("--------------------------------------------------");
+            }, failure -> {
+                Main.plugin.getLogger().info("--------------------------------------------------");
+                Main.plugin.getLogger().info("Failed to dispatch creation of voice channel: " + name);
+                Main.plugin.getLogger().info("--------------------------------------------------");
+            });
         }
         if (createTextChannel) {
             final ChannelAction<TextChannel> textChannelAction = guild.createTextChannel(name)
@@ -438,7 +478,15 @@ public class TDCManager {
             if (textChannelCategoryId != null) {
                 textChannelAction.setParent(guild.getCategoryById(textChannelCategoryId));
             }
-            textChannelAction.queue();
+            textChannelAction.queue(success -> {
+                Main.plugin.getLogger().info("--------------------------------------------------");
+                Main.plugin.getLogger().info("Successfully dispatched creation of text channel: " + name);
+                Main.plugin.getLogger().info("--------------------------------------------------");
+            }, failure -> {
+                Main.plugin.getLogger().info("--------------------------------------------------");
+                Main.plugin.getLogger().info("Failed to dispatch creation of text channel: " + name);
+                Main.plugin.getLogger().info("--------------------------------------------------");
+            });
         }
     }
 

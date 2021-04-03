@@ -20,6 +20,8 @@ public class TDCDiscordSRVListener {
         }
 
         Player player = offlinePlayer.getPlayer();
+        if (player == null)
+            return;
 
         TDCManager.givePlayerTownRole(player);
         TDCManager.givePlayerNationRole(player);

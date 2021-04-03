@@ -6,12 +6,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import github.scarsz.discordsrv.DiscordSRV;
-import github.scarsz.discordsrv.objects.managers.AccountLinkManager;
-
 public class TDCCommand implements CommandExecutor {
-
-    //AccountLinkManager manager = DiscordSRV.getPlugin().getAccountLinkManager();
 
     public boolean onCommand(@NotNull final CommandSender sender, @NotNull final Command command, @NotNull final String label,
             @NotNull final String[] args) {

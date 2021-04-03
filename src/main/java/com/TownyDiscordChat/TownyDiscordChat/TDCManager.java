@@ -2,6 +2,8 @@ package com.TownyDiscordChat.TownyDiscordChat;
 
 import java.awt.Color;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
@@ -9,6 +11,7 @@ import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -450,6 +453,15 @@ public class TDCManager {
      */
     private static @Nullable String getLinkedId(@NotNull final Player player) {
         return DiscordSRV.getPlugin().getAccountLinkManager().getDiscordId(player.getUniqueId());
+    }
+
+    /**
+     * Gets the List<Member> instance of the Discord ID from the Main Guild
+     *
+     * @return The Members or null if no members in the discord
+     */
+    private static @Nullable List<Member> getMembers() {
+        return DiscordSRV.getPlugin().getMainGuild().getMembers();
     }
 
     /**

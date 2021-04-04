@@ -2,6 +2,8 @@ package com.TownyDiscordChat.TownyDiscordChat;
 
 import java.awt.Color;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
@@ -9,6 +11,8 @@ import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,6 +29,87 @@ import github.scarsz.discordsrv.util.DiscordUtil;
 
 public class TDCManager {
     private TDCManager() {
+    }
+
+    public static final void checkAllLinkedPlayers() {
+        Map<String, UUID> linkedAccounts = DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts();
+
+        linkedAccounts.forEach((discordId, UUID) -> {
+
+            // We might be able to remove this check as I believe they have to be on the server
+            // to have their accounts linked already by doing /discord link
+            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID);
+            if (!offlinePlayer.hasPlayedBefore()) {
+                return;
+            }
+
+            System.out.println("-----------------------------------------");
+            System.out.println(offlinePlayer.getName());
+
+            System.out.println(discordId);
+            System.out.println(UUID.toString());
+
+            Guild guild = DiscordSRV.getPlugin().getMainGuild();
+
+            Resident resident = TownyUniverse.getInstance().getResident(UUID);
+
+            Town town = null;
+            Nation nation = null;
+
+            final boolean hasTown = resident.hasTown();
+            final boolean hasNation = resident.hasNation();
+            System.out.println("hasTown: " + hasTown);
+            System.out.println("hasNation: " + hasNation);
+
+            boolean hasTownRole;
+            boolean hasNationRole;
+
+            if (!hasTown && !hasNation) {
+                return;
+            }
+
+            try {
+                town = resident.getTown();
+            } catch (NotRegisteredException e) {
+                // This should never run because
+                // we have already checked if player
+                // has a town hence using return then
+                // there must be something terribly wrong
+                e.printStackTrace();
+                return;
+            }
+
+            assert town != null;
+            hasTownRole = DiscordUtil.getMemberById(discordId).getRoles().contains(DiscordUtil.getRoleByName(guild, "town-" + town.getName()));
+            System.out.println("hasTownRole: " + hasTownRole);
+
+            if (!hasTownRole) {
+                TDCManager.givePlayerTownRole(resident.getPlayer());
+            }
+
+            if (hasNation) {
+                try {
+                    nation = town.getNation();
+                } catch (NotRegisteredException e) {
+                    // This should never run because
+                    // we have already checked if player
+                    // has a nation hence using return then
+                    // there must be something terribly wrong
+                    e.printStackTrace();
+                    return;
+                }
+            } else {
+                return;
+            }
+
+            assert nation != null;
+            hasNationRole = DiscordUtil.getMemberById(discordId).getRoles().contains(DiscordUtil.getRoleByName(guild, "nation-" + nation.getName()));
+            System.out.println("hasNationRole: " + hasNationRole);
+
+            if (!hasNationRole) {
+                TDCManager.givePlayerNationRole(resident.getPlayer());
+            }
+        });
     }
 
     public static final void renameNation(String oldName, String newName) {

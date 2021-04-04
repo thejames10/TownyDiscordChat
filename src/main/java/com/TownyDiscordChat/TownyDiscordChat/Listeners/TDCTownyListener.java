@@ -1,6 +1,8 @@
 package com.TownyDiscordChat.TownyDiscordChat.Listeners;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.TDCManager;
@@ -28,11 +30,10 @@ public class TDCTownyListener implements Listener {
 
     @EventHandler
     public void onNewDay(NewDayEvent event) {
+
         System.out.println("NewDayEvent fired!");
 
-        // Check if there are players that are linked after the fact
-        // They linked after joining town or nation and haven't ran /TownyDiscordChat command
-
+        TDCManager.checkAllLinkedPlayers();
     }
 
     @EventHandler

@@ -1,17 +1,13 @@
 package com.TownyDiscordChat.TownyDiscordChat.Listeners;
 
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.Timer;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.TDCManager;
 import com.palmergames.bukkit.towny.event.*;
 import com.palmergames.bukkit.towny.object.Resident;
 
-import github.scarsz.discordsrv.api.events.AccountLinkedEvent;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -33,7 +29,21 @@ public class TDCTownyListener implements Listener {
 
         System.out.println("NewDayEvent fired!");
 
-        TDCManager.checkAllLinkedPlayers();
+        TDCManager.discordRoleChannelCreationCheckAllTownsAllNations();
+
+        Timer t = new java.util.Timer();
+        t.schedule(
+                new java.util.TimerTask() {
+                    @Override
+                    public void run() {
+                        System.out.println("Running delayed task...");
+                        TDCManager.discordUserRoleCheckAllLinked();
+                        //t.cancel();
+                    }
+                },
+                300000
+
+        );
     }
 
     @EventHandler
@@ -42,6 +52,8 @@ public class TDCTownyListener implements Listener {
         System.out.println("TownAddResidentEvent fired!");
 
         TDCManager.givePlayerRole(event.getResident().getPlayer(), event.getTown());
+
+        // Need to check if town also has a nation and add the player to the nation role / channels as well
     }
 
     @EventHandler
@@ -50,6 +62,8 @@ public class TDCTownyListener implements Listener {
         System.out.println("TownRemoveResidentEvent fired!");
 
         TDCManager.removePlayerRole(event.getResident().getPlayer(), event.getTown());
+
+        // Need to check if town also has a nation and remove the player from the nation role / channels as well
     }
 
     @EventHandler
@@ -75,6 +89,7 @@ public class TDCTownyListener implements Listener {
         for (Resident townResident : townResidents) {
             TDCManager.removePlayerRole(townResident.getPlayer(), event.getTown());
         }
+        // Need to check if town also has a nation and remove the players from the nation role / channels as well
     }
 
     @EventHandler

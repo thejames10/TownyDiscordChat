@@ -1,16 +1,17 @@
 package com.TownyDiscordChat.TownyDiscordChat;
 
 import java.awt.Color;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
+import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 
+import github.scarsz.discordsrv.dependencies.jda.api.requests.restaction.RoleAction;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -18,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import github.scarsz.discordsrv.DiscordSRV;
+import github.scarsz.discordsrv.util.DiscordUtil;
 import github.scarsz.discordsrv.dependencies.jda.api.Permission;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Guild;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Member;
@@ -25,91 +27,551 @@ import github.scarsz.discordsrv.dependencies.jda.api.entities.Role;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.VoiceChannel;
 import github.scarsz.discordsrv.dependencies.jda.api.requests.restaction.ChannelAction;
-import github.scarsz.discordsrv.util.DiscordUtil;
+import github.scarsz.discordsrv.dependencies.jda.api.requests.restaction.AuditableRestAction;
 
 public class TDCManager {
+
     private TDCManager() {
     }
 
-    public static final void checkAllLinkedPlayers() {
+    public static final void discordUserRoleCheckAllLinked() {
         Map<String, UUID> linkedAccounts = DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts();
 
         linkedAccounts.forEach((discordId, UUID) -> {
+            discordUserRoleCheck(discordId, UUID);
+        });
+    }
 
-            // We might be able to remove this check as I believe they have to be on the server
-            // to have their accounts linked already by doing /discord link
-            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID);
-            if (!offlinePlayer.hasPlayedBefore()) {
-                return;
+    public static final void discordUserRoleCheck(String discordId, UUID UUID) {
+
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID);
+        if (!offlinePlayer.hasPlayedBefore()) {
+            return;
+        }
+
+        Guild guild = DiscordSRV.getPlugin().getMainGuild();
+        Resident resident = TownyUniverse.getInstance().getResident(UUID);
+        if (resident == null) {
+            return;
+        }
+
+        List<Role> memberRoles = DiscordUtil.getMemberById(discordId).getRoles();
+        List<Role> memberTownRoles = new ArrayList<Role>();
+        List<Role> memberNationRoles = new ArrayList<Role>();
+        for (Role role : memberRoles) {
+            if (role.getName().startsWith("town-")) {
+                memberTownRoles.add(role);
+            } else if (role.getName().startsWith("nation-")) {
+                memberNationRoles.add(role);
             }
+        }
 
-            System.out.println("-----------------------------------------");
-            System.out.println(offlinePlayer.getName());
-
-            System.out.println(discordId);
-            System.out.println(UUID.toString());
-
-            Guild guild = DiscordSRV.getPlugin().getMainGuild();
-
-            Resident resident = TownyUniverse.getInstance().getResident(UUID);
-
-            Town town = null;
-            Nation nation = null;
-
-            final boolean hasTown = resident.hasTown();
-            final boolean hasNation = resident.hasNation();
-            System.out.println("hasTown: " + hasTown);
-            System.out.println("hasNation: " + hasNation);
-
-            boolean hasTownRole;
-            boolean hasNationRole;
-
-            if (!hasTown && !hasNation) {
-                return;
-            }
-
+        Town town = null;
+        boolean hasTown = resident.hasTown();
+        if (hasTown) {
             try {
                 town = resident.getTown();
             } catch (NotRegisteredException e) {
-                // This should never run because
-                // we have already checked if player
-                // has a town hence using return then
-                // there must be something terribly wrong
-                e.printStackTrace();
-                return;
+                //e.printStackTrace();
             }
+        }
 
-            assert town != null;
-            hasTownRole = DiscordUtil.getMemberById(discordId).getRoles().contains(DiscordUtil.getRoleByName(guild, "town-" + town.getName()));
-            System.out.println("hasTownRole: " + hasTownRole);
-
-            if (!hasTownRole) {
-                TDCManager.givePlayerTownRole(resident.getPlayer());
+        Nation nation = null;
+        boolean hasNation = resident.hasNation();
+        if (hasNation) {
+            try {
+                nation = resident.getTown().getNation();
+            } catch (NotRegisteredException e) {
+                //e.printStackTrace();
             }
+        }
 
-            if (hasNation) {
-                try {
-                    nation = town.getNation();
-                } catch (NotRegisteredException e) {
-                    // This should never run because
-                    // we have already checked if player
-                    // has a nation hence using return then
-                    // there must be something terribly wrong
-                    e.printStackTrace();
-                    return;
+        boolean townRoleExists = false;
+        if (town != null) {
+            List<Role> roles = guild.getRolesByName("town-" + town.getName(), true);
+            if (!roles.isEmpty()) {
+                townRoleExists = guild.getRoles().contains(roles.get(0));
+            }
+        }
+
+        boolean nationRoleExists = false;
+        if (nation != null) {
+            List<Role> roles = guild.getRolesByName("nation-" + nation.getName(), true);
+            if (!roles.isEmpty()) {
+                nationRoleExists = guild.getRoles().contains(roles.get(0));
+            }
+        }
+
+        boolean hasTownDiscordRole = memberTownRoles.size() != 0 & townRoleExists;
+        boolean hasNationDiscordRole = memberNationRoles.size() != 0 & nation != null & nationRoleExists;
+
+        final String _CASE_01 = "CASE_01";
+        final String _CASE_02 = "CASE_02";
+        final String _CASE_03 = "CASE_03";
+        final String _CASE_04 = "CASE_04";
+        final String _CASE_05 = "CASE_05";
+        final String _CASE_06 = "CASE_06";
+        final String _CASE_07 = "CASE_07";
+        final String _CASE_08 = "CASE_08";
+        final String _CASE_09 = "CASE_09";
+        final String _CASE_10 = "CASE_10";
+        final String _CASE_11 = "CASE_11";
+        final String _CASE_12 = "CASE_12";
+        final String _CASE_13 = "CASE_13";
+        final String _CASE_14 = "CASE_14";
+        final String _CASE_15 = "CASE_15";
+        final String _CASE_16 = "CASE_16";
+
+        if (!hasTown & !hasNation & !hasTownDiscordRole & !hasNationDiscordRole) {
+            logger("[" + _CASE_01 + "] " + "Do nothing - player doesn't have any town/nation or town/nation roles", offlinePlayer, discordId, UUID, memberRoles);
+        } else if (!hasTown & !hasNation & !hasTownDiscordRole & hasNationDiscordRole) {
+            // remove nation role
+            int count = 0;
+            AuditableRestAction<Void> removeRoleAction = guild.removeRoleFromMember(discordId, memberNationRoles.get(0));
+            for (Role memberNationRole : memberNationRoles) {
+                if (count > 0) {
+                    removeRoleAction.and(guild.removeRoleFromMember(discordId, memberNationRole));
                 }
-            } else {
-                return;
+                count++;
+            }
+            removeRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
+                for (Role memberNationRole : memberNationRoles) {
+                    logger("[" + _CASE_02 + "] " + "Successfully dispatched removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            }, failure -> {
+                for (Role memberNationRole : memberNationRoles) {
+                    logger("[" + _CASE_02 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            });
+        } else if (!hasTown & !hasNation & hasTownDiscordRole & !hasNationDiscordRole) {
+            // remove town role
+            int count = 0;
+            AuditableRestAction<Void> removeRoleAction = guild.removeRoleFromMember(discordId, memberTownRoles.get(0));
+            for (Role memberTownRole : memberTownRoles) {
+                if (count > 0) {
+                    removeRoleAction.and(guild.removeRoleFromMember(discordId, memberTownRole));
+                }
+                count++;
+            }
+            removeRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
+                for (Role memberTownRole : memberTownRoles) {
+                    logger("[" + _CASE_03 + "] " + "Successfully dispatched removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            }, failure -> {
+                for (Role memberTownRole : memberTownRoles) {
+                    logger("[" + _CASE_03 + "] " + "Failed to dispatch removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            });
+        } else if (!hasTown & !hasNation & hasTownDiscordRole & hasNationDiscordRole) {
+            // remove town and nation role
+            int count = 0;
+            AuditableRestAction<Void> removeRoleAction = guild.removeRoleFromMember(discordId, memberTownRoles.get(0));
+            for (Role memberTownRole : memberTownRoles) {
+                if (count > 0) {
+                    removeRoleAction.and(guild.removeRoleFromMember(discordId, memberTownRole));
+                }
+                count++;
+            }
+            for (Role memberNationRole : memberNationRoles) {
+                removeRoleAction.and(guild.removeRoleFromMember(discordId, memberNationRole));
+            }
+            removeRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
+                for (Role memberTownRole : memberTownRoles) {
+                    logger("[" + _CASE_04 + "] " + "Successfully dispatched removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+                for (Role memberNationRole : memberNationRoles) {
+                    logger("[" + _CASE_04 + "] " + "Successfully dispatched removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            }, failure -> {
+                for (Role memberTownRole : memberTownRoles) {
+                    logger("[" + _CASE_04 + "] " + "Failed to dispatch removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+                for (Role memberNationRole : memberNationRoles) {
+                    logger("[" + _CASE_04 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            });
+        } else if (!hasTown & hasNation & !hasTownDiscordRole & !hasNationDiscordRole) {
+            // Do nothing - should never reach this case
+            logger("[" + _CASE_05 + "] " + "Do nothing - should never reach this case", offlinePlayer, discordId, UUID, memberRoles);
+        } else if (!hasTown & hasNation & !hasTownDiscordRole & hasNationDiscordRole) {
+            // Do nothing - should never reach this case
+            logger("[" + _CASE_06 + "] " + "Do nothing - should never reach this case", offlinePlayer, discordId, UUID, memberRoles);
+        } else if (!hasTown & hasNation & hasTownDiscordRole & !hasNationDiscordRole) {
+            // Do nothing - should never reach this case
+            logger("[" + _CASE_07 + "] " + "Do nothing - should never reach this case", offlinePlayer, discordId, UUID, memberRoles);
+        } else if (!hasTown & hasNation & hasTownDiscordRole & hasNationDiscordRole) {
+            // remove town role
+            int count = 0;
+            AuditableRestAction<Void> removeRoleAction = guild.removeRoleFromMember(discordId, memberTownRoles.get(0));
+            for (Role memberTownRole : memberTownRoles) {
+                if (count > 0) {
+                    removeRoleAction.and(guild.removeRoleFromMember(discordId, memberTownRole));
+                }
+                count++;
+            }
+            removeRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
+                for (Role memberTownRole : memberTownRoles) {
+                    logger("[" + _CASE_08 + "] " + "Successfully dispatched removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            }, failure -> {
+                for (Role memberTownRole : memberTownRoles) {
+                    logger("[" + _CASE_08 + "] " + "Failed to dispatch removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            });
+        } else if (hasTown & !hasNation & !hasTownDiscordRole & !hasNationDiscordRole) {
+            // add town role
+            memberTownRoles.add(guild.getRolesByName("town-" + town.getName(), true).get(0));
+            AuditableRestAction<Void> addRoleAction = guild.addRoleToMember(discordId, memberTownRoles.get(0));
+            addRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
+                for (Role memberTownRole : memberTownRoles) {
+                    logger("[" + _CASE_09 + "] " + "Successfully dispatched addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            }, failure -> {
+                for (Role memberTownRole : memberTownRoles) {
+                    logger("[" + _CASE_09 + "] " + "Failed to dispatch addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            });
+        } else if (hasTown & !hasNation & !hasTownDiscordRole & hasNationDiscordRole) {
+            // add town role and remove nation role
+            memberTownRoles.add(guild.getRolesByName("town-" + town.getName(), true).get(0));
+            AuditableRestAction<Void> roleAction = guild.addRoleToMember(discordId, memberTownRoles.get(0));
+            for (Role memberNationRole : memberNationRoles) {
+                roleAction.and(guild.removeRoleFromMember(discordId, memberNationRole));
+            }
+            roleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
+                for (Role memberTownRole : memberTownRoles) {
+                    logger("[" + _CASE_10 + "] " + "Successfully dispatched addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+                for (Role memberNationRole : memberNationRoles) {
+                    logger("[" + _CASE_10 + "] " + "Successfully dispatched removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            }, failure -> {
+                for (Role memberTownRole : memberTownRoles) {
+                    logger("[" + _CASE_10 + "] " + "Failed to dispatch addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+                for (Role memberNationRole : memberNationRoles) {
+                    logger("[" + _CASE_10 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            });
+        } else if (hasTown & !hasNation & hasTownDiscordRole & !hasNationDiscordRole) {
+            // Do nothing - player already has required discord roles
+            logger("[" + _CASE_11 + "] " + "Do nothing - player already has required discord roles", offlinePlayer, discordId, UUID, memberRoles);
+        } else if (hasTown & !hasNation & hasTownDiscordRole & hasNationDiscordRole) {
+            // remove nation role
+            int count = 0;
+            AuditableRestAction<Void> removeRoleAction = guild.removeRoleFromMember(discordId, memberNationRoles.get(0));
+            for (Role memberNationRole : memberNationRoles) {
+                if (count > 0) {
+                    removeRoleAction.and(guild.removeRoleFromMember(discordId, memberNationRole));
+                }
+                count++;
+            }
+            removeRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
+                for (Role memberNationRole : memberNationRoles) {
+                    logger("[" + _CASE_12 + "] " + "Successfully dispatched removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            }, failure -> {
+                for (Role memberNationRole : memberNationRoles) {
+                    logger("[" + _CASE_12 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            });
+        } else if (hasTown & hasNation & !hasTownDiscordRole & !hasNationDiscordRole) {
+            // add town role and nation role
+            memberTownRoles.add(guild.getRolesByName("town-" + town.getName(), true).get(0));
+            AuditableRestAction<Void> addRoleAction = guild.addRoleToMember(discordId, memberTownRoles.get(0));
+            addRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
+                for (Role memberTownRole : memberTownRoles) {
+                    logger("[" + _CASE_13 + "] " + "Successfully dispatched addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            }, failure -> {
+                for (Role memberTownRole : memberTownRoles) {
+                    logger("[" + _CASE_13 + "] " + "Failed to dispatch addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            });
+
+            memberNationRoles.add(guild.getRolesByName("nation-" + nation.getName(), true).get(0));
+            addRoleAction = guild.addRoleToMember(discordId, memberTownRoles.get(0));
+            addRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
+                for (Role memberNationRole : memberNationRoles) {
+                    logger("[" + _CASE_13 + "] " + "Successfully dispatched addition of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            }, failure -> {
+                for (Role memberNationRole : memberNationRoles) {
+                    logger("[" + _CASE_13 + "] " + "Failed to dispatch addition of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            });
+        } else if (hasTown & hasNation & !hasTownDiscordRole & hasNationDiscordRole) {
+            // add town role
+            memberTownRoles.add(guild.getRolesByName("town-" + town.getName(), true).get(0));
+            AuditableRestAction<Void> addRoleAction = guild.addRoleToMember(discordId, memberTownRoles.get(0));
+            addRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
+                for (Role memberTownRole : memberTownRoles) {
+                    logger("[" + _CASE_14 + "] " + "Successfully dispatched addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            }, failure -> {
+                for (Role memberTownRole : memberTownRoles) {
+                    logger("[" + _CASE_14 + "] " + "Failed to dispatch addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            });
+        } else if (hasTown & hasNation & hasTownDiscordRole & !hasNationDiscordRole) {
+            // add nation role
+            memberNationRoles.add(guild.getRolesByName("nation-" + nation.getName(), true).get(0));
+            AuditableRestAction<Void> addRoleAction = guild.addRoleToMember(discordId, memberNationRoles.get(0));
+            addRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
+                for (Role memberNationRole : memberNationRoles) {
+                    logger("[" + _CASE_15 + "] " + "Successfully dispatched addition of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            }, failure -> {
+                for (Role memberNationRole : memberNationRoles) {
+                    logger("[" + _CASE_15 + "] " + "Failed to dispatch addition of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                }
+            });
+        } else if (hasTown & hasNation & hasTownDiscordRole & hasNationDiscordRole) {
+            // Do nothing - player already has required discord roles
+            logger("[" + _CASE_16 + "] " + "Do nothing - player already has required discord roles", offlinePlayer, discordId, UUID, memberRoles);
+        }
+
+    }
+
+    public static final void discordRoleChannelCreationCheckAllTownsAllNations() {
+        Guild guild = DiscordSRV.getPlugin().getMainGuild();
+
+        List<Role> allRoles = guild.getRoles();
+        List<Town> allTowns = new ArrayList<>(TownyUniverse.getInstance().getTowns());
+        List<Nation> allNations = new ArrayList<>(TownyUniverse.getInstance().getNations());
+        List<Town> townsWithoutRole = new ArrayList<>(allTowns);
+        List<Nation> nationsWithoutRole = new ArrayList<>(allNations);
+        System.out.println(allTowns);
+        System.out.println(allNations);
+
+        for (Role role : allRoles) { // allRoles
+            for (Town town : allTowns) { // allTowns
+                if (("town-" + town.getName()).equalsIgnoreCase(role.getName())) {
+                    townsWithoutRole.remove(town); // Removing matches
+                }
             }
 
-            assert nation != null;
-            hasNationRole = DiscordUtil.getMemberById(discordId).getRoles().contains(DiscordUtil.getRoleByName(guild, "nation-" + nation.getName()));
-            System.out.println("hasNationRole: " + hasNationRole);
-
-            if (!hasNationRole) {
-                TDCManager.givePlayerNationRole(resident.getPlayer());
+            for (Nation nation : allNations) { // allTowns
+                if (("nation-" + nation.getName()).equalsIgnoreCase(role.getName())) {
+                    nationsWithoutRole.remove(nation); // Removing matches
+                }
             }
-        });
+        }
+
+        if (!townsWithoutRole.isEmpty()) { // Town left that doesn't have role
+            System.out.println("Reached townsWithoutRole.size() != 0");
+
+            for (Town town : townsWithoutRole) {
+                RoleAction role = guild.createRole().setName("town-" + town.getName()).setColor(Color.decode(Main.plugin.config.getString("town.RoleCreateColorCode")));
+                role.queue(success -> {
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    Main.plugin.getLogger().info("Successfully dispatched creation of server role: " + "town-" + town.getName());
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    List<TextChannel> allTownTextChannels = new ArrayList<TextChannel>();
+                    if (guild.getCategoryById(getTownTextCategoryId()).getTextChannels() != null) {
+                        allTownTextChannels = guild.getCategoryById(getTownTextCategoryId()).getTextChannels();
+                    }
+                    List<Town> allTownsB = new ArrayList<>(TownyUniverse.getInstance().getTowns());
+                    List<Town> townsWithoutTextChannel = new ArrayList<>(allTownsB);
+                    for (TextChannel textChannel : allTownTextChannels) { // allTextChannels
+                        for (Town townB : allTownsB) { // allTowns
+                            if (textChannel.getName().equalsIgnoreCase(townB.getName())) {
+                                townsWithoutTextChannel.remove(townB); // Removing matches
+                            }
+                        }
+                    }
+                    System.out.println(allTownsB);
+                    System.out.println(townsWithoutTextChannel);
+                    if (allTownsB != townsWithoutTextChannel) { // A town/s was removed
+                        for (Town townB : townsWithoutTextChannel) {
+                            createChannels(guild, townB.getName(), success, false, true, null, getTownTextCategoryId());
+                        }
+                    }
+                    List<VoiceChannel> allTownVoiceChannels = new ArrayList<VoiceChannel>();
+                    if (guild.getCategoryById(getTownVoiceCategoryId()).getVoiceChannels() != null) {
+                        allTownVoiceChannels = guild.getCategoryById(getTownVoiceCategoryId()).getVoiceChannels();
+                    }
+                    List<Town> allTownsC = new ArrayList<>(TownyUniverse.getInstance().getTowns());
+                    List<Town> townsWithoutVoiceChannel = new ArrayList<>(allTownsC);
+                    for (VoiceChannel voiceChannel : allTownVoiceChannels) { // allVoiceChannels
+                        for (Town townC : allTownsC) { // allTowns
+                            if (voiceChannel.getName().equalsIgnoreCase(townC.getName())) {
+                                townsWithoutVoiceChannel.remove(townC); // Removing matches
+                            }
+                        }
+                    }
+                    System.out.println(allTownsC);
+                    System.out.println(townsWithoutVoiceChannel);
+                    if (allTownsC != townsWithoutVoiceChannel) { // A town/s was removed
+                        for (Town townC : townsWithoutVoiceChannel) {
+                            createChannels(guild, townC.getName(), success, true, false, getTownVoiceCategoryId(), null);
+                        }
+                    }
+                }, failure -> {
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    Main.plugin.getLogger().info("Failed to dispatch creation of server role: " + "town-" + town.getName());
+                    Main.plugin.getLogger().warning(failure.getMessage());
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                });
+            }
+        } else if (townsWithoutRole.isEmpty()) {
+            System.out.println("Reached townsWithoutRole.isEmpty()");
+
+            List<TextChannel> allTownTextChannels = new ArrayList<TextChannel>();
+            if (guild.getCategoryById(getTownTextCategoryId()).getTextChannels() != null) {
+                allTownTextChannels = guild.getCategoryById(getTownTextCategoryId()).getTextChannels();
+            }
+            List<Town> allTownsB = new ArrayList<>(TownyUniverse.getInstance().getTowns());
+            List<Town> townsWithoutTextChannel = new ArrayList<>(allTownsB);
+            for (TextChannel textChannel : allTownTextChannels) { // allTextChannels
+                for (Town townB : allTownsB) { // allTowns
+                    if (textChannel.getName().equalsIgnoreCase(townB.getName())) {
+                        townsWithoutTextChannel.remove(townB); // Removing matches
+                    }
+                }
+            }
+            System.out.println(allTownsB);
+            System.out.println(townsWithoutTextChannel);
+            if (allTownTextChannels.isEmpty() || allTownsB != townsWithoutTextChannel) { // A town/s was removed
+                for (Town townB : townsWithoutTextChannel) {
+                    createChannels(guild, townB.getName(), guild.getRolesByName("town-" + townB.getName(), true).get(0), false, true, null, getTownTextCategoryId());
+                }
+            }
+            List<VoiceChannel> allTownVoiceChannels = new ArrayList<VoiceChannel>();
+            if (guild.getCategoryById(getTownVoiceCategoryId()).getVoiceChannels() != null) {
+                allTownVoiceChannels = guild.getCategoryById(getTownVoiceCategoryId()).getVoiceChannels();
+            }
+            List<Town> allTownsC = new ArrayList<>(TownyUniverse.getInstance().getTowns());
+            List<Town> townsWithoutVoiceChannel = new ArrayList<>(allTownsC);
+            for (VoiceChannel voiceChannel : allTownVoiceChannels) { // allVoiceChannels
+                for (Town townC : allTownsC) { // allTowns
+                    if (voiceChannel.getName().equalsIgnoreCase(townC.getName())) {
+                        townsWithoutVoiceChannel.remove(townC); // Removing matches
+                    }
+                }
+            }
+            System.out.println(allTownsC);
+            System.out.println(townsWithoutVoiceChannel);
+            if (allTownVoiceChannels.isEmpty() || allTownsC != townsWithoutVoiceChannel) { // A town/s was removed
+                for (Town townC : townsWithoutVoiceChannel) {
+                    createChannels(guild, townC.getName(), guild.getRolesByName("town-" + townC.getName(), true).get(0), true, false, getTownVoiceCategoryId(), null);
+                }
+            }
+        }
+
+        if (!nationsWithoutRole.isEmpty()) { // A nation/s was removed
+            System.out.println("Reached nationsWithoutRole.size() != 0");
+
+            for (Nation nation : nationsWithoutRole) {
+                RoleAction role = guild.createRole().setName("nation-" + nation.getName()).setColor(Color.decode(Main.plugin.config.getString("nation.RoleCreateColorCode")));
+                role.queue(success -> {
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    Main.plugin.getLogger().info("Successfully dispatched creation of server role: " + "nation-" + nation.getName());
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    List<TextChannel> allNationTextChannels = new ArrayList<TextChannel>();
+                    if (guild.getCategoryById(getNationTextCategoryId()).getTextChannels() != null) {
+                        allNationTextChannels = guild.getCategoryById(getNationTextCategoryId()).getTextChannels();
+                    }
+                    List<Nation> allNationsB = new ArrayList<>(TownyUniverse.getInstance().getNations());
+                    List<Nation> nationsWithoutTextChannel = new ArrayList<>(allNationsB);
+                    for (TextChannel textChannel : allNationTextChannels) { // allTextChannels
+                        for (Nation nationB : allNationsB) { // allNations
+                            if (textChannel.getName().equalsIgnoreCase(nationB.getName())) {
+                                nationsWithoutTextChannel.remove(nationB); // Removing matches
+                            }
+                        }
+                    }
+                    System.out.println(allNationsB);
+                    System.out.println(nationsWithoutTextChannel);
+                    if (allNationsB != nationsWithoutTextChannel) { // A nation/s was removed
+                        for (Nation nationB : nationsWithoutTextChannel) {
+                            createChannels(guild, nationB.getName(), success, false, true, null, getNationTextCategoryId());
+                        }
+                    }
+                    List<VoiceChannel> allNationVoiceChannels = new ArrayList<VoiceChannel>();
+                    if (guild.getCategoryById(getNationVoiceCategoryId()).getVoiceChannels() != null) {
+                        allNationVoiceChannels = guild.getCategoryById(getNationVoiceCategoryId()).getVoiceChannels();
+                    }
+                    List<Nation> allNationsC = new ArrayList<>(TownyUniverse.getInstance().getNations());
+                    List<Nation> nationsWithoutVoiceChannel = new ArrayList<>(allNationsC);
+                    for (VoiceChannel voiceChannel : allNationVoiceChannels) { // allVoiceChannels
+                        for (Nation nationC : allNationsC) { // allNations
+                            if (voiceChannel.getName().equalsIgnoreCase(nationC.getName())) {
+                                nationsWithoutVoiceChannel.remove(nationC); // Removing matches
+                            }
+                        }
+                    }
+                    System.out.println(allNationsC);
+                    System.out.println(nationsWithoutVoiceChannel);
+                    if (allNationsC != nationsWithoutVoiceChannel) { // A nation/s was removed
+                        for (Nation nationC : nationsWithoutVoiceChannel) {
+                            createChannels(guild, nationC.getName(), success, true, false, getNationVoiceCategoryId(), null);
+                        }
+                    }
+                }, failure -> {
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    Main.plugin.getLogger().info("Failed to dispatch creation of server role: " + "nation-" + nation.getName());
+                    Main.plugin.getLogger().warning(failure.getMessage());
+                    Main.plugin.getLogger().info("--------------------------------------------------");
+                });
+            }
+        } else if (nationsWithoutRole.isEmpty()) {
+            System.out.println("Reached nationsWithoutRole.isEmpty()");
+
+            List<TextChannel> allNationTextChannels = new ArrayList<TextChannel>();
+            if (guild.getCategoryById(getNationTextCategoryId()).getTextChannels() != null) {
+                allNationTextChannels = guild.getCategoryById(getNationTextCategoryId()).getTextChannels();
+            }
+            List<Nation> allNationsB = new ArrayList<>(TownyUniverse.getInstance().getNations());
+            List<Nation> nationsWithoutTextChannel = new ArrayList<>(allNationsB);
+            for (TextChannel textChannel : allNationTextChannels) { // allTextChannels
+                for (Nation nationB : allNationsB) { // allNations
+                    if (textChannel.getName().equalsIgnoreCase(nationB.getName())) {
+                        nationsWithoutTextChannel.remove(nationB); // Removing matches
+                    }
+                }
+            }
+            System.out.println(allNationsB);
+            System.out.println(nationsWithoutTextChannel);
+            if (allNationTextChannels.isEmpty() || allNationsB != nationsWithoutTextChannel) { // A nation/s was removed
+                for (Nation nationB : nationsWithoutTextChannel) {
+                    createChannels(guild, nationB.getName(), guild.getRolesByName("nation-" + nationB.getName(), true).get(0), false, true, null, getNationTextCategoryId());
+                }
+            }
+            List<VoiceChannel> allNationVoiceChannels = new ArrayList<VoiceChannel>();
+            if (guild.getCategoryById(getNationVoiceCategoryId()).getVoiceChannels() != null) {
+                allNationVoiceChannels = guild.getCategoryById(getNationVoiceCategoryId()).getVoiceChannels();
+            }
+            List<Nation> allNationsC = new ArrayList<>(TownyUniverse.getInstance().getNations());
+            List<Nation> nationsWithoutVoiceChannel = new ArrayList<>(allNationsC);
+            for (VoiceChannel voiceChannel : allNationVoiceChannels) { // allVoiceChannels
+                for (Nation nationC : allNationsC) { // allNations
+                    if (voiceChannel.getName().equalsIgnoreCase(nationC.getName())) {
+                        nationsWithoutVoiceChannel.remove(nationC); // Removing matches
+                    }
+                }
+            }
+            System.out.println(allNationsC);
+            System.out.println(nationsWithoutVoiceChannel);
+            if (allNationVoiceChannels.isEmpty() || allNationsC != nationsWithoutVoiceChannel) { // A nation/s was removed
+                for (Nation nationC : nationsWithoutVoiceChannel) {
+                    createChannels(guild, nationC.getName(), guild.getRolesByName("nation-" + nationC.getName(), true).get(0), true, false, getNationVoiceCategoryId(), null);
+                }
+            }
+        }
+    }
+
+    private static final void logger(String msg, OfflinePlayer offlinePlayer, String discordId, UUID UUID, List<Role> memberRoles) {
+        Main.plugin.getLogger().info("--------------------------------------------------");
+        Main.plugin.getLogger().info("Player Name: " + offlinePlayer.getName());
+        Main.plugin.getLogger().info("Discord ID: " + discordId);
+        Main.plugin.getLogger().info("Player UUID: " + UUID.toString());
+        Main.plugin.getLogger().info(msg);
+        Main.plugin.getLogger().info("=-=-=-=-=-=-=Player-Roles=-=-=-=-=-=-=");
+        for (Role role : memberRoles) {
+            Main.plugin.getLogger().info(role.getName());
+        }
+        Main.plugin.getLogger().info("--------------------------------------------------");
     }
 
     public static final void renameNation(String oldName, String newName) {
@@ -451,6 +913,7 @@ public class TDCManager {
         } else {
             // give the member the role
             DiscordUtil.addRolesToMember(member, townRole);
+
             // notify on discord
             DiscordUtil.privateMessage(member.getUser(), "Your account has been linked to "
                     + townRole.getName().substring(townRole.getName().indexOf('-') + 1) + "!");
@@ -490,7 +953,7 @@ public class TDCManager {
     }
 
     /**
-     * Creates Nnations role, creates the corresponding channels and gives the
+     * Creates Nations role, creates the corresponding channels and gives the
      * Member the role
      *
      * @param player The Player who initiated the creation

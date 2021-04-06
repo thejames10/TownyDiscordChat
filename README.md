@@ -8,19 +8,22 @@
  <a href="https://discord.gg/ynsCb2p3ac">
   <img src="https://discord.com/api/guilds/827698003208962099/widget.png">
  </a>
- <a href="https://github.com/thejames10/TownyDiscordChat/releases">
-  <img src="https://img.shields.io/badge/release-v1.0.0-blue">
- </a>
+
+ <img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/thejames10/TownyDiscordChat?color=blue&include_prereleases">
  
  <a href="https://github.com/thejames10/TownyDiscordChat/releases">
-  <img src="https://img.shields.io/badge/downloads-0-brightgreen">
+  <img src="https://img.shields.io/github/downloads/thejames10/TownyDiscordChat/total.svg?color=brightgreen">
  </a>
 
- <img src="https://img.shields.io/badge/code--size-4 MB-blue">
- <img src="https://img.shields.io/badge/contributors-2-brightgreen">
+ <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/thejames10/TownyDiscordChat">
+
+
+ <a href="https://github.com/thejames10/TownyDiscordChat/releases">
+  <img src="https://img.shields.io/github/contributors/thejames10/TownyDiscordChat.svg?color=brightgreen">
+ </a>
 
  <a href="https://github.com/thejames10/TownyDiscordChat/blob/main/LICENSE">
-  <img src="https://img.shields.io/badge/license-GPL--3.0-orange">
+  <img alt="GitHub license" src="https://img.shields.io/github/license/thejames10/TownyDiscordChat">
  </a>
 
 </p>

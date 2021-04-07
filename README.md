@@ -22,7 +22,7 @@
  </a>
 
 
- <a href="https://github.com/thejames10/TownyDiscordChat/releases">
+ <a href="https://github.com/thejames10/TownyDiscordChat/graphs/contributors">
   <img src="https://img.shields.io/github/contributors/thejames10/TownyDiscordChat.svg?color=brightgreen">
  </a>
 

@@ -4,7 +4,10 @@ import com.TownyDiscordChat.TownyDiscordChat.TDCManager;
 import github.scarsz.discordsrv.api.Subscribe;
 import github.scarsz.discordsrv.api.events.AccountLinkedEvent;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 public class TDCDiscordSRVListener {
 
@@ -19,12 +22,9 @@ public class TDCDiscordSRVListener {
             return;
         }
 
-        Player player = offlinePlayer.getPlayer();
-        if (player == null)
-            return;
+        String discordId = event.getUser().getId();
+        UUID UUID = offlinePlayer.getUniqueId();
 
-        TDCManager.givePlayerTownRole(player);
-        TDCManager.givePlayerNationRole(player);
-
+        TDCManager.discordUserRoleCheck(discordId, UUID);
     }
 }

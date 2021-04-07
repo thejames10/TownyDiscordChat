@@ -17,7 +17,9 @@
   <img src="https://img.shields.io/github/downloads/thejames10/TownyDiscordChat/total.svg?color=brightgreen">
  </a>
 
- <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/thejames10/TownyDiscordChat">
+<a href="https://github.com/thejames10/TownyDiscordChat/releases">
+  <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/thejames10/TownyDiscordChat">
+ </a>
 
 
  <a href="https://github.com/thejames10/TownyDiscordChat/releases">

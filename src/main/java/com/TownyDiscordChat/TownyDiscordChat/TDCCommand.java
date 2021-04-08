@@ -2,8 +2,6 @@ package com.TownyDiscordChat.TownyDiscordChat;
 
 import com.google.common.base.Preconditions;
 import github.scarsz.discordsrv.DiscordSRV;
-import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;

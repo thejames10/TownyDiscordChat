@@ -516,7 +516,7 @@ public class TDCManager {
             Main.plugin.getLogger().info("Reached nationsWithoutVoiceChannel.isEmpty()");
 
             for (Nation nation : nationsWithoutVoiceChannel) {
-                createChannels(guild, nation.getName(), guild.getRolesByName("nation-" + nation.getName(), true).get(0),true, false, getTownVoiceCategoryId(), null);
+                createChannels(guild, nation.getName(), guild.getRolesByName("nation-" + nation.getName(), true).get(0),true, false, getNationVoiceCategoryId(), null);
             }
         }
     }

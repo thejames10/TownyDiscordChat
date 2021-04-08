@@ -31,3 +31,26 @@
  </a>
 
 </p>
+
+<h1>Commands</h1>
+<h4>When adding this plugin to an existing Towny server make sure to run the first 4 commands in the order shown below.<br />Check they have completed before running the next one.</h4>
+<h4>/TDC Check Role CreateAllTownsAndNations</h4>
+<p>Permission Node: TownyDiscordChat.Check.Role.CreateAllTownsAndNations:</p>
+<p>Description: Allows you to force run a check for discord roles of all players in a town or nation and creates them if needed</p>
+<h4>/TDC Check TextChannel AllTownsAndNations</h4>
+<p>Permission Node: TownyDiscordChat.Check.TextChannel.AllTownsAndNations:</p>
+<p>Description: Allows you to force run a check for discord text channels of all players in a town or nation and creates them if needed</p>
+<h4>/TDC Check VoiceChannel AllTownsAndNations</h4>
+<p>Permission Node: TownyDiscordChat.Check.VoiceChannel.AllTownsAndNations:</p>
+<p>Description: Allows you to force run a check for discord voice channels of all players in a town or nation and creates them if needed</p>
+<h4>/TDC Check Role AllLinked</h4>
+<p>Permission Node: TownyDiscordChat.Check.Role.AllLinked:</p>
+<p>Description: Allows you to force run a check for discord roles of all players in a town or nation then adds or removes them if needed</p>
+<h4>/TDC Check Role</h4>
+<p>Permission Node: TownyDiscordChat.Check.Role:</p>
+<p>Description: Allows you to force run a check for discord roles of a single player in a town or nation then adds or removes</p>
+<h1>Nodes Structure</h1>
+<h4>TownyDiscordChat.Admin</h4>
+<p>- TownyDiscordChat.Check.Role.CreateAllTownsAndNations<br />- TownyDiscordChat.Check.TextChannel.AllTownsAndNations<br />- TownyDiscordChat.Check.VoiceChannel.AllTownsAndNations<br />- TownyDiscordChat.Check.Role.AllLinked<br />- TownyDiscordChat.Check.Role</p>
+<h4>TownyDiscordChat.Player</h4>
+<p>- TownyDiscordChat.Check.Role</p>

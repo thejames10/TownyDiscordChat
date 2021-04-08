@@ -4,7 +4,7 @@ import java.awt.Color;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import com.palmergames.bukkit.towny.TownyAPI;
+import com.google.common.base.Preconditions;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
@@ -34,6 +34,9 @@ public class TDCManager {
     private TDCManager() {
     }
 
+    /**
+     * Add or remove Discord ROLE for ALL PLAYERS that are in a town or nation
+     */
     public static final void discordUserRoleCheckAllLinked() {
         Map<String, UUID> linkedAccounts = DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts();
 
@@ -42,6 +45,12 @@ public class TDCManager {
         });
     }
 
+    /**
+     * Add or remove Discord ROLE for PLAYER that is in a town or nation
+     *
+     * @param discordId Player's Discord ID
+     * @param UUID      Player's minecraft unique ID
+     */
     public static final void discordUserRoleCheck(String discordId, UUID UUID) {
 
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID);
@@ -56,8 +65,8 @@ public class TDCManager {
         }
 
         List<Role> memberRoles = DiscordUtil.getMemberById(discordId).getRoles();
-        List<Role> memberTownRoles = new ArrayList<Role>();
-        List<Role> memberNationRoles = new ArrayList<Role>();
+        List<Role> memberTownRoles = new ArrayList<>();
+        List<Role> memberNationRoles = new ArrayList<>();
         for (Role role : memberRoles) {
             if (role.getName().startsWith("town-")) {
                 memberTownRoles.add(role);
@@ -333,7 +342,10 @@ public class TDCManager {
 
     }
 
-    public static final void discordRoleChannelCreationCheckAllTownsAllNations() {
+    /**
+     * Creates Discord ROLE for TOWN or NATION that doesn't have a Discord ROLE created yet
+     */
+    public static final void discordRoleCheckAllTownsAllNations() {
         Guild guild = DiscordSRV.getPlugin().getMainGuild();
 
         List<Role> allRoles = guild.getRoles();
@@ -344,22 +356,26 @@ public class TDCManager {
         System.out.println(allTowns);
         System.out.println(allNations);
 
+        forEachRole:
         for (Role role : allRoles) { // allRoles
+
             for (Town town : allTowns) { // allTowns
                 if (("town-" + town.getName()).equalsIgnoreCase(role.getName())) {
                     townsWithoutRole.remove(town); // Removing matches
+                    continue forEachRole;
                 }
             }
 
-            for (Nation nation : allNations) { // allTowns
+            for (Nation nation : allNations) { // allNations
                 if (("nation-" + nation.getName()).equalsIgnoreCase(role.getName())) {
                     nationsWithoutRole.remove(nation); // Removing matches
+                    continue forEachRole;
                 }
             }
         }
 
-        if (!townsWithoutRole.isEmpty()) { // Town left that doesn't have role
-            System.out.println("Reached townsWithoutRole.size() != 0");
+        if (!townsWithoutRole.isEmpty()) { // There are towns that don't have a discord role created yet
+            Main.plugin.getLogger().info("Reached townsWithoutRole.isEmpty()");
 
             for (Town town : townsWithoutRole) {
                 RoleAction role = guild.createRole().setName("town-" + town.getName()).setColor(Color.decode(Main.plugin.config.getString("town.RoleCreateColorCode")));
@@ -367,100 +383,16 @@ public class TDCManager {
                     Main.plugin.getLogger().info("--------------------------------------------------");
                     Main.plugin.getLogger().info("Successfully dispatched creation of server role: " + "town-" + town.getName());
                     Main.plugin.getLogger().info("--------------------------------------------------");
-                    List<TextChannel> allTownTextChannels = new ArrayList<TextChannel>();
-                    if (guild.getCategoryById(getTownTextCategoryId()).getTextChannels() != null) {
-                        allTownTextChannels = guild.getCategoryById(getTownTextCategoryId()).getTextChannels();
-                    }
-                    List<Town> allTownsB = new ArrayList<>(TownyUniverse.getInstance().getTowns());
-                    List<Town> townsWithoutTextChannel = new ArrayList<>(allTownsB);
-                    for (TextChannel textChannel : allTownTextChannels) { // allTextChannels
-                        for (Town townB : allTownsB) { // allTowns
-                            if (textChannel.getName().equalsIgnoreCase(townB.getName())) {
-                                townsWithoutTextChannel.remove(townB); // Removing matches
-                            }
-                        }
-                    }
-                    System.out.println(allTownsB);
-                    System.out.println(townsWithoutTextChannel);
-                    if (allTownsB != townsWithoutTextChannel) { // A town/s was removed
-                        for (Town townB : townsWithoutTextChannel) {
-                            createChannels(guild, townB.getName(), success, false, true, null, getTownTextCategoryId());
-                        }
-                    }
-                    List<VoiceChannel> allTownVoiceChannels = new ArrayList<VoiceChannel>();
-                    if (guild.getCategoryById(getTownVoiceCategoryId()).getVoiceChannels() != null) {
-                        allTownVoiceChannels = guild.getCategoryById(getTownVoiceCategoryId()).getVoiceChannels();
-                    }
-                    List<Town> allTownsC = new ArrayList<>(TownyUniverse.getInstance().getTowns());
-                    List<Town> townsWithoutVoiceChannel = new ArrayList<>(allTownsC);
-                    for (VoiceChannel voiceChannel : allTownVoiceChannels) { // allVoiceChannels
-                        for (Town townC : allTownsC) { // allTowns
-                            if (voiceChannel.getName().equalsIgnoreCase(townC.getName())) {
-                                townsWithoutVoiceChannel.remove(townC); // Removing matches
-                            }
-                        }
-                    }
-                    System.out.println(allTownsC);
-                    System.out.println(townsWithoutVoiceChannel);
-                    if (allTownsC != townsWithoutVoiceChannel) { // A town/s was removed
-                        for (Town townC : townsWithoutVoiceChannel) {
-                            createChannels(guild, townC.getName(), success, true, false, getTownVoiceCategoryId(), null);
-                        }
-                    }
                 }, failure -> {
                     Main.plugin.getLogger().info("--------------------------------------------------");
                     Main.plugin.getLogger().info("Failed to dispatch creation of server role: " + "town-" + town.getName());
-                    Main.plugin.getLogger().warning(failure.getMessage());
                     Main.plugin.getLogger().info("--------------------------------------------------");
                 });
             }
-        } else if (townsWithoutRole.isEmpty()) {
-            System.out.println("Reached townsWithoutRole.isEmpty()");
-
-            List<TextChannel> allTownTextChannels = new ArrayList<TextChannel>();
-            if (guild.getCategoryById(getTownTextCategoryId()).getTextChannels() != null) {
-                allTownTextChannels = guild.getCategoryById(getTownTextCategoryId()).getTextChannels();
-            }
-            List<Town> allTownsB = new ArrayList<>(TownyUniverse.getInstance().getTowns());
-            List<Town> townsWithoutTextChannel = new ArrayList<>(allTownsB);
-            for (TextChannel textChannel : allTownTextChannels) { // allTextChannels
-                for (Town townB : allTownsB) { // allTowns
-                    if (textChannel.getName().equalsIgnoreCase(townB.getName())) {
-                        townsWithoutTextChannel.remove(townB); // Removing matches
-                    }
-                }
-            }
-            System.out.println(allTownsB);
-            System.out.println(townsWithoutTextChannel);
-            if (allTownTextChannels.isEmpty() || allTownsB != townsWithoutTextChannel) { // A town/s was removed
-                for (Town townB : townsWithoutTextChannel) {
-                    createChannels(guild, townB.getName(), guild.getRolesByName("town-" + townB.getName(), true).get(0), false, true, null, getTownTextCategoryId());
-                }
-            }
-            List<VoiceChannel> allTownVoiceChannels = new ArrayList<VoiceChannel>();
-            if (guild.getCategoryById(getTownVoiceCategoryId()).getVoiceChannels() != null) {
-                allTownVoiceChannels = guild.getCategoryById(getTownVoiceCategoryId()).getVoiceChannels();
-            }
-            List<Town> allTownsC = new ArrayList<>(TownyUniverse.getInstance().getTowns());
-            List<Town> townsWithoutVoiceChannel = new ArrayList<>(allTownsC);
-            for (VoiceChannel voiceChannel : allTownVoiceChannels) { // allVoiceChannels
-                for (Town townC : allTownsC) { // allTowns
-                    if (voiceChannel.getName().equalsIgnoreCase(townC.getName())) {
-                        townsWithoutVoiceChannel.remove(townC); // Removing matches
-                    }
-                }
-            }
-            System.out.println(allTownsC);
-            System.out.println(townsWithoutVoiceChannel);
-            if (allTownVoiceChannels.isEmpty() || allTownsC != townsWithoutVoiceChannel) { // A town/s was removed
-                for (Town townC : townsWithoutVoiceChannel) {
-                    createChannels(guild, townC.getName(), guild.getRolesByName("town-" + townC.getName(), true).get(0), true, false, getTownVoiceCategoryId(), null);
-                }
-            }
         }
 
-        if (!nationsWithoutRole.isEmpty()) { // A nation/s was removed
-            System.out.println("Reached nationsWithoutRole.size() != 0");
+        if (!nationsWithoutRole.isEmpty()) { // There are nations that don't have a discord role created yet
+            Main.plugin.getLogger().info("Reached nationsWithoutRole.isEmpty()");
 
             for (Nation nation : nationsWithoutRole) {
                 RoleAction role = guild.createRole().setName("nation-" + nation.getName()).setColor(Color.decode(Main.plugin.config.getString("nation.RoleCreateColorCode")));
@@ -468,95 +400,123 @@ public class TDCManager {
                     Main.plugin.getLogger().info("--------------------------------------------------");
                     Main.plugin.getLogger().info("Successfully dispatched creation of server role: " + "nation-" + nation.getName());
                     Main.plugin.getLogger().info("--------------------------------------------------");
-                    List<TextChannel> allNationTextChannels = new ArrayList<TextChannel>();
-                    if (guild.getCategoryById(getNationTextCategoryId()).getTextChannels() != null) {
-                        allNationTextChannels = guild.getCategoryById(getNationTextCategoryId()).getTextChannels();
-                    }
-                    List<Nation> allNationsB = new ArrayList<>(TownyUniverse.getInstance().getNations());
-                    List<Nation> nationsWithoutTextChannel = new ArrayList<>(allNationsB);
-                    for (TextChannel textChannel : allNationTextChannels) { // allTextChannels
-                        for (Nation nationB : allNationsB) { // allNations
-                            if (textChannel.getName().equalsIgnoreCase(nationB.getName())) {
-                                nationsWithoutTextChannel.remove(nationB); // Removing matches
-                            }
-                        }
-                    }
-                    System.out.println(allNationsB);
-                    System.out.println(nationsWithoutTextChannel);
-                    if (allNationsB != nationsWithoutTextChannel) { // A nation/s was removed
-                        for (Nation nationB : nationsWithoutTextChannel) {
-                            createChannels(guild, nationB.getName(), success, false, true, null, getNationTextCategoryId());
-                        }
-                    }
-                    List<VoiceChannel> allNationVoiceChannels = new ArrayList<VoiceChannel>();
-                    if (guild.getCategoryById(getNationVoiceCategoryId()).getVoiceChannels() != null) {
-                        allNationVoiceChannels = guild.getCategoryById(getNationVoiceCategoryId()).getVoiceChannels();
-                    }
-                    List<Nation> allNationsC = new ArrayList<>(TownyUniverse.getInstance().getNations());
-                    List<Nation> nationsWithoutVoiceChannel = new ArrayList<>(allNationsC);
-                    for (VoiceChannel voiceChannel : allNationVoiceChannels) { // allVoiceChannels
-                        for (Nation nationC : allNationsC) { // allNations
-                            if (voiceChannel.getName().equalsIgnoreCase(nationC.getName())) {
-                                nationsWithoutVoiceChannel.remove(nationC); // Removing matches
-                            }
-                        }
-                    }
-                    System.out.println(allNationsC);
-                    System.out.println(nationsWithoutVoiceChannel);
-                    if (allNationsC != nationsWithoutVoiceChannel) { // A nation/s was removed
-                        for (Nation nationC : nationsWithoutVoiceChannel) {
-                            createChannels(guild, nationC.getName(), success, true, false, getNationVoiceCategoryId(), null);
-                        }
-                    }
                 }, failure -> {
                     Main.plugin.getLogger().info("--------------------------------------------------");
                     Main.plugin.getLogger().info("Failed to dispatch creation of server role: " + "nation-" + nation.getName());
-                    Main.plugin.getLogger().warning(failure.getMessage());
                     Main.plugin.getLogger().info("--------------------------------------------------");
                 });
             }
-        } else if (nationsWithoutRole.isEmpty()) {
-            System.out.println("Reached nationsWithoutRole.isEmpty()");
+        }
+    }
 
-            List<TextChannel> allNationTextChannels = new ArrayList<TextChannel>();
-            if (guild.getCategoryById(getNationTextCategoryId()).getTextChannels() != null) {
-                allNationTextChannels = guild.getCategoryById(getNationTextCategoryId()).getTextChannels();
-            }
-            List<Nation> allNationsB = new ArrayList<>(TownyUniverse.getInstance().getNations());
-            List<Nation> nationsWithoutTextChannel = new ArrayList<>(allNationsB);
-            for (TextChannel textChannel : allNationTextChannels) { // allTextChannels
-                for (Nation nationB : allNationsB) { // allNations
-                    if (textChannel.getName().equalsIgnoreCase(nationB.getName())) {
-                        nationsWithoutTextChannel.remove(nationB); // Removing matches
-                    }
+    /**
+     * Creates Discord TEXT_CHANNEL for TOWN or NATION that doesn't have a Discord TEXT_CHANNEL created yet
+     */
+    public static final void discordTextChannelCheckAllTownsAllNations() {
+        Guild guild = DiscordSRV.getPlugin().getMainGuild();
+
+        List<Town> allTowns = new ArrayList<>(TownyUniverse.getInstance().getTowns());
+        List<Nation> allNations = new ArrayList<>(TownyUniverse.getInstance().getNations());
+        List<Town> townsWithoutTextChannel = new ArrayList<>(allTowns);
+        List<Nation> nationsWithoutTextChannel = new ArrayList<>(allNations);
+        List<TextChannel> allTownTextChannels = guild.getCategoryById(getTownTextCategoryId()).getTextChannels();
+        List<TextChannel> allNationTextChannels = guild.getCategoryById(getNationTextCategoryId()).getTextChannels();
+
+        Preconditions.checkNotNull(allTowns);
+        Preconditions.checkNotNull(allNations);
+        Preconditions.checkNotNull(allTownTextChannels);
+        Preconditions.checkNotNull(allNationTextChannels);
+
+        forEachTown:
+        for (Town town : allTowns) { // allTowns
+            for (TextChannel textChannel : allTownTextChannels) { // allTownTextChannels
+                if (textChannel.getName().equalsIgnoreCase(town.getName())) {
+                    townsWithoutTextChannel.remove(town); // Removing matches
+                    continue forEachTown;
                 }
             }
-            System.out.println(allNationsB);
-            System.out.println(nationsWithoutTextChannel);
-            if (allNationTextChannels.isEmpty() || allNationsB != nationsWithoutTextChannel) { // A nation/s was removed
-                for (Nation nationB : nationsWithoutTextChannel) {
-                    createChannels(guild, nationB.getName(), guild.getRolesByName("nation-" + nationB.getName(), true).get(0), false, true, null, getNationTextCategoryId());
+        }
+
+        forEachNation:
+        for (Nation nation : allNations) { // allNations
+            for (TextChannel textChannel : allNationTextChannels) { // allNationTextChannels
+                if (textChannel.getName().equalsIgnoreCase(nation.getName())) {
+                    nationsWithoutTextChannel.remove(nation); // Removing matches
+                    continue forEachNation;
                 }
             }
-            List<VoiceChannel> allNationVoiceChannels = new ArrayList<VoiceChannel>();
-            if (guild.getCategoryById(getNationVoiceCategoryId()).getVoiceChannels() != null) {
-                allNationVoiceChannels = guild.getCategoryById(getNationVoiceCategoryId()).getVoiceChannels();
+        }
+
+
+        if (!townsWithoutTextChannel.isEmpty()) { // There are towns that don't have a Discord VoiceChannel created yet
+            Main.plugin.getLogger().info("Reached townsWithoutTextChannel.isEmpty()");
+
+            for (Town town : townsWithoutTextChannel) {
+                createChannels(guild, town.getName(), guild.getRolesByName("town-" + town.getName(), true).get(0),false, true, null, getTownTextCategoryId());
             }
-            List<Nation> allNationsC = new ArrayList<>(TownyUniverse.getInstance().getNations());
-            List<Nation> nationsWithoutVoiceChannel = new ArrayList<>(allNationsC);
-            for (VoiceChannel voiceChannel : allNationVoiceChannels) { // allVoiceChannels
-                for (Nation nationC : allNationsC) { // allNations
-                    if (voiceChannel.getName().equalsIgnoreCase(nationC.getName())) {
-                        nationsWithoutVoiceChannel.remove(nationC); // Removing matches
-                    }
+        }
+
+        if (!nationsWithoutTextChannel.isEmpty()) { // There are nations that don't have a Discord VoiceChannel created yet
+            Main.plugin.getLogger().info("Reached nationsWithoutVoiceChannel.isEmpty()");
+
+            for (Nation nation : nationsWithoutTextChannel) {
+                createChannels(guild, nation.getName(), guild.getRolesByName("nation-" + nation.getName(), true).get(0),false, true, null, getNationTextCategoryId());
+            }
+        }
+    }
+
+    /**
+     * Creates Discord VOICE_CHANNEL for TOWN or NATION that doesn't have a Discord VOICE_CHANNEL created yet
+     */
+    public static final void discordVoiceChannelCheckAllTownsAllNations() {
+        Guild guild = DiscordSRV.getPlugin().getMainGuild();
+
+        List<Town> allTowns = new ArrayList<>(TownyUniverse.getInstance().getTowns());
+        List<Nation> allNations = new ArrayList<>(TownyUniverse.getInstance().getNations());
+        List<Town> townsWithoutVoiceChannel = new ArrayList<>(allTowns);
+        List<Nation> nationsWithoutVoiceChannel = new ArrayList<>(allNations);
+        List<VoiceChannel> allTownVoiceChannels = guild.getCategoryById(getTownVoiceCategoryId()).getVoiceChannels();
+        List<VoiceChannel> allNationVoiceChannels = guild.getCategoryById(getNationVoiceCategoryId()).getVoiceChannels();
+
+        Preconditions.checkNotNull(allTowns);
+        Preconditions.checkNotNull(allNations);
+        Preconditions.checkNotNull(allTownVoiceChannels);
+        Preconditions.checkNotNull(allNationVoiceChannels);
+
+        forEachTown:
+        for (Town town : allTowns) { // allTowns
+            for (VoiceChannel voiceChannel : allTownVoiceChannels) { // allTownVoiceChannels
+                if (voiceChannel.getName().equalsIgnoreCase(town.getName())) {
+                    townsWithoutVoiceChannel.remove(town); // Removing matches
+                    continue forEachTown;
                 }
             }
-            System.out.println(allNationsC);
-            System.out.println(nationsWithoutVoiceChannel);
-            if (allNationVoiceChannels.isEmpty() || allNationsC != nationsWithoutVoiceChannel) { // A nation/s was removed
-                for (Nation nationC : nationsWithoutVoiceChannel) {
-                    createChannels(guild, nationC.getName(), guild.getRolesByName("nation-" + nationC.getName(), true).get(0), true, false, getNationVoiceCategoryId(), null);
+        }
+
+        forEachNation:
+        for (Nation nation : allNations) { // allNations
+            for (VoiceChannel voiceChannel : allNationVoiceChannels) { // allNationVoiceChannels
+                if (voiceChannel.getName().equalsIgnoreCase(nation.getName())) {
+                    nationsWithoutVoiceChannel.remove(nation); // Removing matches
+                    continue forEachNation;
                 }
+            }
+        }
+
+
+        if (!townsWithoutVoiceChannel.isEmpty()) { // There are towns that don't have a Discord VoiceChannel created yet
+            Main.plugin.getLogger().info("Reached townsWithoutVoiceChannel.isEmpty()");
+
+            for (Town town : townsWithoutVoiceChannel) {
+                createChannels(guild, town.getName(), guild.getRolesByName("town-" + town.getName(), true).get(0),true, false, getTownVoiceCategoryId(), null);
+            }
+        }
+
+        if (!nationsWithoutVoiceChannel.isEmpty()) { // There are nations that don't have a Discord VoiceChannel created yet
+            Main.plugin.getLogger().info("Reached nationsWithoutVoiceChannel.isEmpty()");
+
+            for (Nation nation : nationsWithoutVoiceChannel) {
+                createChannels(guild, nation.getName(), guild.getRolesByName("nation-" + nation.getName(), true).get(0),true, false, getTownVoiceCategoryId(), null);
             }
         }
     }
@@ -1031,6 +991,10 @@ public class TDCManager {
         final long everyoneRoleId = guild.getPublicRole().getIdLong();
         final long roleId = role.getIdLong();
         final long botId = guild.getMember(DiscordSRV.getPlugin().getJda().getSelfUser()).getIdLong();
+
+        Preconditions.checkNotNull(guild, "Channel creation error! @param guild null!");
+        Preconditions.checkNotNull(name, "Channel creation error! @param name null!");
+        Preconditions.checkNotNull(role, "Channel creation error! @param role null!");
 
         if (createVoiceChannel) {
             final ChannelAction<VoiceChannel> voiceChannelAction = guild.createVoiceChannel(name)

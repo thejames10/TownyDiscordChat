@@ -29,7 +29,11 @@ public class TDCTownyListener implements Listener {
 
         System.out.println("NewDayEvent fired!");
 
-        TDCManager.discordRoleChannelCreationCheckAllTownsAllNations();
+        TDCManager.discordRoleCheckAllTownsAllNations();
+
+        TDCManager.discordTextChannelCheckAllTownsAllNations();
+
+        TDCManager.discordVoiceChannelCheckAllTownsAllNations();
 
         Timer t = new java.util.Timer();
         t.schedule(

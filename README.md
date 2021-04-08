@@ -32,8 +32,8 @@
 
 </p>
 
-<h1>Commands</h1>
 <h4>When adding this plugin to an existing Towny server make sure to run the first 4 commands in the order shown below.<br />Check they have completed before running the next one.</h4>
+<h1>Commands</h1>
 <h4>/TDC Check Role CreateAllTownsAndNations</h4>
 <p>Permission Node: TownyDiscordChat.Check.Role.CreateAllTownsAndNations:</p>
 <p>Description: Allows you to force run a check for discord roles of all players in a town or nation and creates them if needed</p>

@@ -1,37 +1,31 @@
 <p align="center">
- <a href="https://discord.gg/ynsCb2p3ac">
-  <img width="500" height="362" src="https://townydiscordchat.com/logo_transparent_background.png">
- </a>
+   <a href="https://discord.gg/ynsCb2p3ac">
+   <img width="500" height="362" src="https://townydiscordchat.com/logo_transparent_background.png">
+   </a>
 </p>
 <p align="center">
-
- <a href="https://discord.gg/ynsCb2p3ac">
-  <img src="https://discord.com/api/guilds/827698003208962099/widget.png">
- </a>
-
- <a href="https://github.com/thejames10/TownyDiscordChat/releases/latest">
-  <img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/thejames10/TownyDiscordChat?color=blue&include_prereleases">
- </a>
- 
- <a href="https://github.com/thejames10/TownyDiscordChat/releases">
-  <img src="https://img.shields.io/github/downloads/thejames10/TownyDiscordChat/total.svg?color=brightgreen">
- </a>
-
-<a href="https://github.com/thejames10/TownyDiscordChat/releases">
-  <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/thejames10/TownyDiscordChat">
- </a>
-
-
- <a href="https://github.com/thejames10/TownyDiscordChat/graphs/contributors">
-  <img src="https://img.shields.io/github/contributors/thejames10/TownyDiscordChat.svg?color=brightgreen">
- </a>
-
- <a href="https://github.com/thejames10/TownyDiscordChat/blob/main/LICENSE">
-  <img alt="GitHub license" src="https://img.shields.io/github/license/thejames10/TownyDiscordChat">
- </a>
-
+   <a href="https://discord.gg/ynsCb2p3ac">
+   <img src="https://discord.com/api/guilds/827698003208962099/widget.png">
+   </a>
+   <a href="https://github.com/thejames10/TownyDiscordChat/releases/latest">
+   <img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/thejames10/TownyDiscordChat?color=blue&include_prereleases">
+   </a>
+   <a href="https://github.com/thejames10/TownyDiscordChat/issues">
+   <img alt="GitHub issues" src="https://img.shields.io/github/issues/thejames10/TownyDiscordChat?color=orange">
+   </a>
+   <a href="https://github.com/thejames10/TownyDiscordChat/releases">
+   <img src="https://img.shields.io/github/downloads/thejames10/TownyDiscordChat/total.svg?color=brightgreen">
+   </a>
+   <a href="https://github.com/thejames10/TownyDiscordChat/releases">
+   <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/thejames10/TownyDiscordChat">
+   </a>
+   <a href="https://github.com/thejames10/TownyDiscordChat/graphs/contributors">
+   <img src="https://img.shields.io/github/contributors/thejames10/TownyDiscordChat.svg?color=brightgreen">
+   </a>
+   <a href="https://github.com/thejames10/TownyDiscordChat/blob/main/LICENSE">
+   <img alt="GitHub license" src="https://img.shields.io/github/license/thejames10/TownyDiscordChat">
+   </a>
 </p>
-
 <h4>When adding this plugin to an existing Towny server make sure to run the first 4 commands in the order shown below.<br />Check they have completed before running the next one.</h4>
 <h1>Commands</h1>
 <h4>/TDC Check Role CreateAllTownsAndNations</h4>

@@ -5,6 +5,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
@@ -13,10 +15,7 @@ import com.palmergames.bukkit.towny.object.Town;
 
 import github.scarsz.discordsrv.dependencies.jda.api.requests.restaction.RoleAction;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -683,34 +682,39 @@ public class TDCManager {
     /**
      * Removes the Role of the Town the Player is in from the Player
      *
-     * @param player the Player to remove the role from
+     * @param offlinePlayer the Player to remove the role from
      */
-    public static final void removePlayerTownRole(@NotNull final Player player) {
+    public static final void removePlayerTownRole(@NotNull final OfflinePlayer offlinePlayer) {
 
         // get the Players Town
-        final Town town = getTown(player);
+        final Town town = getTown(offlinePlayer);
         // check if the player is in a town
         if (town == null) {
-            player.sendMessage("You're not in a town!");
+            sendMessage(offlinePlayer, "You're not in a town!");
             return;
         }
 
-        removePlayerRole(player, town);
+        removePlayerRole(offlinePlayer, town);
+    }
+
+    public static final void removePlayerRole(@NotNull final UUID UUID, @NotNull final Town town) {
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID);
+        removePlayerRole(offlinePlayer, town);
     }
 
     /**
      * Removes the Towns Discord Role from the Player
      *
-     * @param player The Player from which the role should be removed
-     * @param town   The Town which role should be removed from the Player
+     * @param offlinePlayer The Player from which the role should be removed
+     * @param town          The Town which role should be removed from the Player
      */
-    public static final void removePlayerRole(@NotNull final Player player, @NotNull final Town town) {
+    public static final void removePlayerRole(@NotNull final OfflinePlayer offlinePlayer, @NotNull final Town town) {
 
         // get the LinkedId
-        final String linkedId = getLinkedId(player);
+        final String linkedId = getLinkedId(offlinePlayer);
         // check if the player has linked their account
         if (linkedId == null) {
-            player.sendMessage("You haven't linked your Discord, do /discord link to get started!");
+            sendMessage(offlinePlayer, "You haven't linked your Discord, do /discord link to get started!");
             return;
         }
 
@@ -718,7 +722,7 @@ public class TDCManager {
         final Member member = getMember(linkedId);
         // check if the member is in the discord
         if (member == null) {
-            player.sendMessage("You are not in the Discord server!");
+            sendMessage(offlinePlayer, "You are not in the Discord server!");
             return;
         }
 
@@ -736,23 +740,28 @@ public class TDCManager {
                     "You have been removed from the discord " + town + " channels!");
 
             // notify the player ingame
-            player.sendMessage("You have been removed from the discord " + town + " channels!");
+            sendMessage(offlinePlayer, "You have been removed from the discord " + town + " channels!");
         }
+    }
+
+    public static final void removePlayerRole(@NotNull final UUID UUID, @NotNull final Nation nation) {
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID);
+        removePlayerRole(offlinePlayer, nation);
     }
 
     /**
      * Removes the Nations Discord Role from the Player
      *
-     * @param player The Player from which the role should be removed
-     * @param nation   The Town which role should be removed from the Player
+     * @param offlinePlayer The Player from which the role should be removed
+     * @param nation        The Town which role should be removed from the Player
      */
-    public static final void removePlayerRole(@NotNull final Player player, @NotNull final Nation nation) {
+    public static final void removePlayerRole(@NotNull final OfflinePlayer offlinePlayer, @NotNull final Nation nation) {
 
         // get the LinkedId
-        final String linkedId = getLinkedId(player);
+        final String linkedId = getLinkedId(offlinePlayer);
         // check if the player has linked their account
         if (linkedId == null) {
-            player.sendMessage("You haven't linked your Discord, do /discord link to get started!");
+            sendMessage(offlinePlayer, "You haven't linked your Discord, do /discord link to get started!");
             return;
         }
 
@@ -760,7 +769,7 @@ public class TDCManager {
         final Member member = getMember(linkedId);
         // check if the member is in the discord
         if (member == null) {
-            player.sendMessage("You are not in the Discord server!");
+            sendMessage(offlinePlayer, "You are not in the Discord server!");
             return;
         }
 
@@ -778,41 +787,46 @@ public class TDCManager {
                     "You have been removed from the discord " + nation + " channels!");
 
             // notify the player in-game
-            player.sendMessage("You have been removed from the discord " + nation + " channels!");
+            sendMessage(offlinePlayer, "You have been removed from the discord " + nation + " channels!");
         }
     }
 
     /**
      * Gives the Player it towns Discord Role
      *
-     * @param player Player to give the role to
+     * @param offlinePlayer offlinePlayer to give the role to
      */
-    public static final void givePlayerNationRole(@NotNull final Player player) {
+    public static final void givePlayerNationRole(@NotNull final OfflinePlayer offlinePlayer) {
 
         // Get the Players Town
-        final Nation nation = getNation(player);
+        final Nation nation = getNation(offlinePlayer);
         // check if the player is in a town
         if (nation == null) {
-            player.sendMessage("You're not in a nation!");
+            sendMessage(offlinePlayer, "You're not in a nation!");
             return;
         }
-        givePlayerRole(player, nation);
+        givePlayerRole(offlinePlayer, nation);
+    }
+
+    public static final void givePlayerRole (@NotNull final UUID UUID, @NotNull final Nation nation) {
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID);
+        givePlayerRole(offlinePlayer, nation);
     }
 
     /**
      * Gives the Player the Nations Discord Role
      *
-     * @param player Player to give the Role to
-     * @param nation The nation which role the Player should get
+     * @param offlinePlayer offlinePlayer to give the Role to
+     * @param nation        The nation which role the Player should get
      */
-    public static final void givePlayerRole(@NotNull final Player player, @NotNull final Nation nation) {
+    public static final void givePlayerRole(@NotNull final OfflinePlayer offlinePlayer, @NotNull final Nation nation) {
 
         // get the LinkedId
-        final String linkedId = getLinkedId(player);
+        String linkedId = getLinkedId(offlinePlayer);
         // checking to see if the player's minecraft account is linked with their
         // discord account
         if (linkedId == null) {
-            player.sendMessage("You haven't linked your Discord, do /discord link to get started!");
+            sendMessage(offlinePlayer, "You haven't linked your Discord, do /discord link to get started!");
             return;
         }
 
@@ -820,7 +834,7 @@ public class TDCManager {
         final Member member = getMember(linkedId);
         // check if the member is in the discord
         if (member == null) {
-            player.sendMessage("You are not in the Discord server!");
+            sendMessage(offlinePlayer, "You are not in the Discord server!");
             return;
         }
 
@@ -829,44 +843,49 @@ public class TDCManager {
         // check if the role exists
         if (townRole != null) {
             // give the player the town role if it exists
-            giveRoleToMember(player, member, townRole);
+            giveRoleToMember(offlinePlayer, member, townRole);
         } else {
             // create the town role if it does not exist
-            createRole(player, member, nation);
+            createRole(offlinePlayer, member, nation);
         }
     }
 
     /**
      * Gives the Player it towns Discord Role
      *
-     * @param player Player to give the role to
+     * @param offlinePlayer offlinePlayer to give the role to
      */
-    public static final void givePlayerTownRole(@NotNull final Player player) {
+    public static final void givePlayerTownRole(@NotNull final OfflinePlayer offlinePlayer) {
 
         // Get the Players Town
-        final Town town = getTown(player);
+        final Town town = getTown(offlinePlayer);
         // check if the player is in a town
         if (town == null) {
-            player.sendMessage("You're not in a town!");
+            sendMessage(offlinePlayer, "You're not in a town!");
             return;
         }
-        givePlayerRole(player, town);
+        givePlayerRole(offlinePlayer, town);
+    }
+
+    public static final void givePlayerRole (@NotNull final UUID UUID, @NotNull final Town town) {
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID);
+        givePlayerRole(offlinePlayer, town);
     }
 
     /**
      * Gives the Player the Towns Discord Role
      *
-     * @param player Player to give the Role to
-     * @param town   The town which role the Player should get
+     * @param offlinePlayer offlinePlayer to give the Role to
+     * @param town          The town which role the Player should get
      */
-    public static final void givePlayerRole(@NotNull final Player player, @NotNull final Town town) {
+    public static final void givePlayerRole(@NotNull final OfflinePlayer offlinePlayer, @NotNull final Town town) {
 
         // get the LinkedId
-        final String linkedId = getLinkedId(player);
+        final String linkedId = getLinkedId(offlinePlayer);
         // checking to see if the player's minecraft account is linked with their
         // discord account
         if (linkedId == null) {
-            player.sendMessage("You haven't linked your Discord, do /discord link to get started!");
+            sendMessage(offlinePlayer, "You haven't linked your Discord, do '/discord link' to get started!");
             return;
         }
 
@@ -874,7 +893,7 @@ public class TDCManager {
         final Member member = getMember(linkedId);
         // check if the member is in the discord
         if (member == null) {
-            player.sendMessage("You are not in the Discord server!");
+            sendMessage(offlinePlayer, "You are not in the Discord server!");
             return;
         }
 
@@ -883,21 +902,21 @@ public class TDCManager {
         // check if the role exists
         if (townRole != null) {
             // give the player the town role if it exists
-            giveRoleToMember(player, member, townRole);
+            giveRoleToMember(offlinePlayer, member, townRole);
         } else {
             // create the town role if it does not exist
-            createRole(player, member, town);
+            createRole(offlinePlayer, member, town);
         }
     }
 
     /**
      * Gives the player the role and notifies the Player accordingly
      *
-     * @param player   Player to notify
-     * @param member   Member to give the role to
-     * @param townRole The role to give to the Member
+     * @param offlinePlayer Player to notify
+     * @param member        Member to give the role to
+     * @param townRole      The role to give to the Member
      */
-    private static void giveRoleToMember(@NotNull final Player player, @NotNull final Member member,
+    private static void giveRoleToMember(@NotNull final OfflinePlayer offlinePlayer, @NotNull final Member member,
                                          @NotNull final Role townRole) {
         // idk debug output? was here when I got here
         Main.plugin.getLogger().info("--------------------------------------------------");
@@ -913,7 +932,7 @@ public class TDCManager {
         Main.plugin.getLogger().info("--------------------------------------------------");
         // Check to see if the player is already in a town
         if (member.getRoles().contains(townRole)) {
-            player.sendMessage("You are already a part of the " + townRole.getName() + " role!");
+            sendMessage(offlinePlayer, "You are already a part of the " + townRole.getName() + " role!");
         } else {
             // give the member the role
             DiscordUtil.addRolesToMember(member, townRole);
@@ -921,8 +940,8 @@ public class TDCManager {
             // notify on discord
             DiscordUtil.privateMessage(member.getUser(), "Your account has been linked to "
                     + townRole.getName().substring(townRole.getName().indexOf('-') + 1) + "!");
-            // notify ingame
-            player.sendMessage("Your account has been linked to "
+            // notify in-game
+            sendMessage(offlinePlayer, "Your account has been linked to "
                     + townRole.getName().substring(townRole.getName().indexOf('-') + 1) + "!");
         }
     }
@@ -931,15 +950,15 @@ public class TDCManager {
      * Creates Towns role, creates the corresponding channels and gives the Member
      * the role
      *
-     * @param player The Player who initiated the creation
+     * @param offlinePlayer The Player who initiated the creation
      * @param member The member corresponding to the Player
      * @param town   The Town to create the role for
      */
-    private static void createRole(@NotNull final Player player, @NotNull final Member member,
+    private static void createRole(@NotNull final OfflinePlayer offlinePlayer, @NotNull final Member member,
                                    @NotNull final Town town) {
         final Guild guild = member.getGuild();
         if (Main.plugin.config.getBoolean("town.CreateRoleIfNoneExists")) {
-            player.sendMessage(town + " Doesn't have a Role, automatically creating one for you...!");
+            sendMessage(offlinePlayer, town + " Doesn't have a Role, automatically creating one for you...!");
             guild.createRole().setName("town-" + town.getName())
                     .setColor(Color.decode(Main.plugin.config.getString("town.RoleCreateColorCode"))).queue(role -> {
                 DiscordUtil.addRolesToMember(member, role);
@@ -960,18 +979,18 @@ public class TDCManager {
      * Creates Nations role, creates the corresponding channels and gives the
      * Member the role
      *
-     * @param player The Player who initiated the creation
+     * @param offlinePlayer The Player who initiated the creation
      * @param member The member corresponding to the Player
      * @param nation The Nation to create the role for
      */
-    private static void createRole(@NotNull final Player player, @NotNull final Member member,
+    private static void createRole(@NotNull final OfflinePlayer offlinePlayer, @NotNull final Member member,
                                    @NotNull final Nation nation) {
         final Guild guild = member.getGuild();
         if (Main.plugin.config.getBoolean("nation.CreateRoleIfNoneExists")) {
-            player.sendMessage(nation + " Doesn't have a Role, automatically creating one for you...!");
+            sendMessage(offlinePlayer, nation + " Doesn't have a Role, automatically creating one for you...!");
             guild.createRole().setName("nation-" + nation.getName())
                     .setColor(Color.decode(Main.plugin.config.getString("nation.RoleCreateColorCode"))).queue(role -> {
-                giveRoleToMember(player, member, role);
+                giveRoleToMember(offlinePlayer, member, role);
                 createChannels(guild, nation, role);
 
                 Main.plugin.getLogger().info("--------------------------------------------------");
@@ -1081,11 +1100,26 @@ public class TDCManager {
     /**
      * Gets the Discord ID of the Player
      *
-     * @param player Player to get the Discord ID from
+     * @param offlinePlayer offlinePlayer to get the Discord ID from
      * @return The Discord ID or null when the player did not link their Discord
      */
-    private static @Nullable String getLinkedId(@NotNull final Player player) {
-        return DiscordSRV.getPlugin().getAccountLinkManager().getDiscordId(player.getUniqueId());
+    private static @Nullable String getLinkedId(@NotNull final OfflinePlayer offlinePlayer) {
+
+        //return DiscordSRV.getPlugin().getAccountLinkManager().getDiscordId(player.getUniqueId());
+
+        BiMap<String, UUID> biMap = HashBiMap.create(DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts());
+        String discordId = null;
+        try {
+            discordId = biMap.inverse().get(offlinePlayer.getUniqueId());
+        } catch (NullPointerException e) {
+            return null;
+        }
+
+        if (discordId == null) {
+            return null;
+        } else {
+            return discordId;
+        }
     }
 
     /**
@@ -1110,12 +1144,12 @@ public class TDCManager {
     /**
      * Gets the Town of the Player
      *
-     * @param player The Player to get the Town from
+     * @param offlinePlayer The Player to get the Town from
      * @return The Players Town or null if the Player is in no Town
      */
-    private static @Nullable Town getTown(@NotNull final Player player) {
+    private static @Nullable Town getTown(@NotNull final OfflinePlayer offlinePlayer) {
         try {
-            final Resident resident = TownyUniverse.getInstance().getResident(player.getUniqueId());
+            final Resident resident = TownyUniverse.getInstance().getResident(offlinePlayer.getUniqueId());
             return resident.getTown();
         } catch (final NotRegisteredException e) {
             return null;
@@ -1125,11 +1159,12 @@ public class TDCManager {
     /**
      * Gets the Nation of the Player
      *
-     * @param player The Player to get the Nation from
+     * @param offlinePlayer The Player to get the Nation from
      * @return The Players Nation or null if the Player is in no Nation
      */
-    private static @Nullable Nation getNation(@NotNull final Player player) {
-        Town town = getTown(player);
+    private static @Nullable Nation getNation(@NotNull final OfflinePlayer offlinePlayer) {
+
+        Town town = getTown(offlinePlayer);
         if (town == null)
             return null;
         try {
@@ -1192,5 +1227,11 @@ public class TDCManager {
         return Main.plugin.config.getBoolean("nation.UseCategoryForVoice")
                 ? Main.plugin.config.getString("nation.VoiceCategoryId")
                 : null;
+    }
+
+    private static void sendMessage(OfflinePlayer offlinePlayer, String message) {
+        if (offlinePlayer.getPlayer() != null) {
+            offlinePlayer.getPlayer().sendMessage(message);
+        }
     }
 }

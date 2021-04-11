@@ -5,9 +5,14 @@ import java.util.Timer;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.TDCManager;
+import com.google.common.base.Preconditions;
 import com.palmergames.bukkit.towny.event.*;
+import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
+import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 
+import com.palmergames.bukkit.towny.object.Town;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -53,21 +58,51 @@ public class TDCTownyListener implements Listener {
     @EventHandler
     public void onPlayerJoinTown(TownAddResidentEvent event) {
 
-        System.out.println("TownAddResidentEvent fired!");
+        Main.plugin.getLogger().info("TownAddResidentEvent fired!");
 
-        TDCManager.givePlayerRole(event.getResident().getPlayer(), event.getTown());
+        Player player = event.getResident().getPlayer();
+        Town town = event.getTown();
 
-        // Need to check if town also has a nation and add the player to the nation role / channels as well
+        Preconditions.checkNotNull(player);
+        Preconditions.checkNotNull(town);
+
+        TDCManager.givePlayerRole(player, town);
+
+        if (town.hasNation()) {
+            Nation nation = null;
+            try {
+                nation = town.getNation();
+            } catch (NotRegisteredException e) {
+                e.printStackTrace();
+            }
+            Preconditions.checkNotNull(nation);
+            TDCManager.givePlayerRole(event.getResident().getPlayer(), nation);
+        }
     }
 
     @EventHandler
     public void onPlayerLeaveTown(TownRemoveResidentEvent event) {
 
-        System.out.println("TownRemoveResidentEvent fired!");
+        Main.plugin.getLogger().info("TownRemoveResidentEvent fired!");
 
-        TDCManager.removePlayerRole(event.getResident().getPlayer(), event.getTown());
+        Player player = event.getResident().getPlayer();
+        Town town = event.getTown();
 
-        // Need to check if town also has a nation and remove the player from the nation role / channels as well
+        Preconditions.checkNotNull(player);
+        Preconditions.checkNotNull(town);
+
+        TDCManager.removePlayerRole(player, town);
+
+        if (town.hasNation()) {
+            Nation nation = null;
+            try {
+                nation = town.getNation();
+            } catch (NotRegisteredException e) {
+                e.printStackTrace();
+            }
+            Preconditions.checkNotNull(nation);
+            TDCManager.removePlayerRole(event.getResident().getPlayer(), nation);
+        }
     }
 
     @EventHandler
@@ -86,14 +121,9 @@ public class TDCTownyListener implements Listener {
 
         System.out.println("NationRemoveTownEvent fired!");
 
-        // if a town leaves a nation
-        // - All the users of the town should have their nation role removed
-
-        List<Resident> townResidents = event.getTown().getResidents();
-        for (Resident townResident : townResidents) {
-            TDCManager.removePlayerRole(townResident.getPlayer(), event.getTown());
+        for (Resident townResident : event.getTown().getResidents()) {
+            TDCManager.removePlayerRole(townResident.getPlayer(), event.getNation());
         }
-        // Need to check if town also has a nation and remove the players from the nation role / channels as well
     }
 
     @EventHandler

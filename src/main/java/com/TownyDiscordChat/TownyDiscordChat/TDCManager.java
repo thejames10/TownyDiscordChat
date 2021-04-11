@@ -1105,9 +1105,9 @@ public class TDCManager {
      */
     private static @Nullable String getLinkedId(@NotNull final OfflinePlayer offlinePlayer) {
 
-        //return DiscordSRV.getPlugin().getAccountLinkManager().getDiscordId(player.getUniqueId());
+        return DiscordSRV.getPlugin().getAccountLinkManager().getDiscordId(offlinePlayer.getUniqueId());
 
-        BiMap<String, UUID> biMap = HashBiMap.create(DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts());
+       /* BiMap<String, UUID> biMap = HashBiMap.create(DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts());
         String discordId = null;
         try {
             discordId = biMap.inverse().get(offlinePlayer.getUniqueId());
@@ -1120,6 +1120,8 @@ public class TDCManager {
         } else {
             return discordId;
         }
+
+        */
     }
 
     /**

@@ -13,8 +13,10 @@ import com.palmergames.bukkit.towny.object.Town;
 
 import github.scarsz.discordsrv.dependencies.jda.api.requests.restaction.RoleAction;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -452,7 +454,7 @@ public class TDCManager {
             Main.plugin.getLogger().info("Reached townsWithoutTextChannel.isEmpty()");
 
             for (Town town : townsWithoutTextChannel) {
-                createChannels(guild, town.getName(), guild.getRolesByName("town-" + town.getName(), true).get(0),false, true, null, getTownTextCategoryId());
+                createChannels(guild, town.getName(), guild.getRolesByName("town-" + town.getName(), true).get(0), false, true, null, getTownTextCategoryId());
             }
         }
 
@@ -460,7 +462,7 @@ public class TDCManager {
             Main.plugin.getLogger().info("Reached nationsWithoutVoiceChannel.isEmpty()");
 
             for (Nation nation : nationsWithoutTextChannel) {
-                createChannels(guild, nation.getName(), guild.getRolesByName("nation-" + nation.getName(), true).get(0),false, true, null, getNationTextCategoryId());
+                createChannels(guild, nation.getName(), guild.getRolesByName("nation-" + nation.getName(), true).get(0), false, true, null, getNationTextCategoryId());
             }
         }
     }
@@ -508,7 +510,7 @@ public class TDCManager {
             Main.plugin.getLogger().info("Reached townsWithoutVoiceChannel.isEmpty()");
 
             for (Town town : townsWithoutVoiceChannel) {
-                createChannels(guild, town.getName(), guild.getRolesByName("town-" + town.getName(), true).get(0),true, false, getTownVoiceCategoryId(), null);
+                createChannels(guild, town.getName(), guild.getRolesByName("town-" + town.getName(), true).get(0), true, false, getTownVoiceCategoryId(), null);
             }
         }
 
@@ -516,7 +518,7 @@ public class TDCManager {
             Main.plugin.getLogger().info("Reached nationsWithoutVoiceChannel.isEmpty()");
 
             for (Nation nation : nationsWithoutVoiceChannel) {
-                createChannels(guild, nation.getName(), guild.getRolesByName("nation-" + nation.getName(), true).get(0),true, false, getNationVoiceCategoryId(), null);
+                createChannels(guild, nation.getName(), guild.getRolesByName("nation-" + nation.getName(), true).get(0), true, false, getNationVoiceCategoryId(), null);
             }
         }
     }
@@ -735,6 +737,48 @@ public class TDCManager {
 
             // notify the player ingame
             player.sendMessage("You have been removed from the discord " + town + " channels!");
+        }
+    }
+
+    /**
+     * Removes the Nations Discord Role from the Player
+     *
+     * @param player The Player from which the role should be removed
+     * @param nation   The Town which role should be removed from the Player
+     */
+    public static final void removePlayerRole(@NotNull final Player player, @NotNull final Nation nation) {
+
+        // get the LinkedId
+        final String linkedId = getLinkedId(player);
+        // check if the player has linked their account
+        if (linkedId == null) {
+            player.sendMessage("You haven't linked your Discord, do /discord link to get started!");
+            return;
+        }
+
+        // get the discord member from the id
+        final Member member = getMember(linkedId);
+        // check if the member is in the discord
+        if (member == null) {
+            player.sendMessage("You are not in the Discord server!");
+            return;
+        }
+
+        // get the towns discord role
+        final Role nationRole = getRole(nation);
+
+        // check if the Nation Role exists and if the player has the nation role
+        if (nationRole != null && member.getRoles().contains(nationRole)) {
+
+            // remove the nation role from the player
+            DiscordUtil.removeRolesFromMember(member, nationRole);
+
+            // notify the player on discord
+            DiscordUtil.privateMessage(member.getUser(),
+                    "You have been removed from the discord " + nation + " channels!");
+
+            // notify the player in-game
+            player.sendMessage("You have been removed from the discord " + nation + " channels!");
         }
     }
 

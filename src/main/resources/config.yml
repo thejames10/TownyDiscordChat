@@ -5,8 +5,8 @@ nation:
   UseCategoryForText: true
   UseCategoryForVoice: true
 
-  TextCategoryId: 0
-  VoiceCategoryId: 0
+  TextCategoryId: 827329050845904896
+  VoiceCategoryId: 827329050845904896
 
   CreateRoleIfNoneExists: true
   RoleCreateColorCode: "0xc9c012"
@@ -17,8 +17,47 @@ town:
   UseCategoryForText: true
   UseCategoryForVoice: true
 
-  TextCategoryId: 0
-  VoiceCategoryId: 0
+  TextCategoryId: 827314920035057684
+  VoiceCategoryId: 827314920035057684
 
   CreateRoleIfNoneExists: true
   RoleCreateColorCode: "0x006798"
+
+messages:
+  DiscordLogTextChannelId: 826858833505812510
+
+  Prefix: "&8[&2TDC Bot&8]"
+  MsgColor: "&7"
+
+  Role:
+    DoNothing:
+      Success: "Role change not required!"
+      Failure: "Failed to do nothing!"
+    Remove:
+      Success: "Removed role!"
+      Failure: "Failed to remove role!"
+    Add:
+      Success: "Added role!"
+      Failure: "Failed to add role!"
+
+  TextChannel:
+    DoNothing:
+      Success: "TextChannel change not required!"
+      Failure: "Failed to do nothing!"
+    Remove:
+      Success: "Removed TextChannel!"
+      Failure: "Failed to remove TextChannel!"
+    Add:
+      Success: "Added TextChannel!"
+      Failure: "Failed to add TextChannel!"
+
+  VoiceChannel:
+    DoNothing:
+      Success: "VoiceChannel change not required!"
+      Failure: "Failed to do nothing!"
+    Remove:
+      Success: "Removed VoiceChannel!"
+      Failure: "Failed to remove VoiceChannel!"
+    Add:
+      Success: "Added VoiceChannel!"
+      Failure: "Failed to add VoiceChannel!"

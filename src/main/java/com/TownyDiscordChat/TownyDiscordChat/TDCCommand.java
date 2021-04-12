@@ -63,7 +63,6 @@ public class TDCCommand implements CommandExecutor {
                         Preconditions.checkNotNull(UUID, "discordId null in onCommand()!");
 
                         TDCManager.discordUserRoleCheck(discordId, UUID);
-                        player.sendMessage("Check Discord for updated role!");
                     }
                     else {
                         player.sendMessage("You don't have permission to use this command!");

@@ -1,20 +1,24 @@
 package com.TownyDiscordChat.TownyDiscordChat;
 
 import java.awt.Color;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 
+import github.scarsz.discordsrv.dependencies.jda.api.entities.*;
 import github.scarsz.discordsrv.dependencies.jda.api.requests.restaction.RoleAction;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,11 +26,6 @@ import org.jetbrains.annotations.Nullable;
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.util.DiscordUtil;
 import github.scarsz.discordsrv.dependencies.jda.api.Permission;
-import github.scarsz.discordsrv.dependencies.jda.api.entities.Guild;
-import github.scarsz.discordsrv.dependencies.jda.api.entities.Member;
-import github.scarsz.discordsrv.dependencies.jda.api.entities.Role;
-import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
-import github.scarsz.discordsrv.dependencies.jda.api.entities.VoiceChannel;
 import github.scarsz.discordsrv.dependencies.jda.api.requests.restaction.ChannelAction;
 import github.scarsz.discordsrv.dependencies.jda.api.requests.restaction.AuditableRestAction;
 
@@ -133,7 +132,8 @@ public class TDCManager {
         final String _CASE_16 = "CASE_16";
 
         if (!hasTown & !hasNation & !hasTownDiscordRole & !hasNationDiscordRole) {
-            logger("[" + _CASE_01 + "] " + "Do nothing - player doesn't have any town/nation or town/nation roles", offlinePlayer, discordId, UUID, memberRoles);
+            sendMessageToAll(UUID, "Role change not required! [1]");
+            //logger("[" + _CASE_01 + "] " + "Do nothing - player doesn't have any town/nation or town/nation roles", offlinePlayer, discordId, UUID, memberRoles);
         } else if (!hasTown & !hasNation & !hasTownDiscordRole & hasNationDiscordRole) {
             // remove nation role
             int count = 0;
@@ -146,11 +146,13 @@ public class TDCManager {
             }
             removeRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
                 for (Role memberNationRole : memberNationRoles) {
-                    logger("[" + _CASE_02 + "] " + "Successfully dispatched removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "Successfully dispatched removal of server role: " + memberNationRole.getName() + " [2]");
+                    //logger("[" + _CASE_02 + "] " + "Successfully dispatched removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             }, failure -> {
                 for (Role memberNationRole : memberNationRoles) {
-                    logger("[" + _CASE_02 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_02 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName());
+                    //logger("[" + _CASE_02 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             });
         } else if (!hasTown & !hasNation & hasTownDiscordRole & !hasNationDiscordRole) {
@@ -165,11 +167,13 @@ public class TDCManager {
             }
             removeRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
                 for (Role memberTownRole : memberTownRoles) {
-                    logger("[" + _CASE_03 + "] " + "Successfully dispatched removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_03 + "] " + "Successfully dispatched removal of server role: " + memberTownRole.getName());
+                    //logger("[" + _CASE_03 + "] " + "Successfully dispatched removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             }, failure -> {
                 for (Role memberTownRole : memberTownRoles) {
-                    logger("[" + _CASE_03 + "] " + "Failed to dispatch removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_03 + "] " + "Failed to dispatch removal of server role: " + memberTownRole.getName());
+                    //logger("[" + _CASE_03 + "] " + "Failed to dispatch removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             });
         } else if (!hasTown & !hasNation & hasTownDiscordRole & hasNationDiscordRole) {
@@ -187,28 +191,35 @@ public class TDCManager {
             }
             removeRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
                 for (Role memberTownRole : memberTownRoles) {
-                    logger("[" + _CASE_04 + "] " + "Successfully dispatched removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_04 + "] " + "Successfully dispatched removal of server role: " + memberTownRole.getName());
+                    //logger("[" + _CASE_04 + "] " + "Successfully dispatched removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
                 for (Role memberNationRole : memberNationRoles) {
-                    logger("[" + _CASE_04 + "] " + "Successfully dispatched removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_04 + "] " + "Successfully dispatched removal of server role: " + memberNationRole.getName());
+                    //logger("[" + _CASE_04 + "] " + "Successfully dispatched removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             }, failure -> {
                 for (Role memberTownRole : memberTownRoles) {
-                    logger("[" + _CASE_04 + "] " + "Failed to dispatch removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_04 + "] " + "Failed to dispatch removal of server role: " + memberTownRole.getName());
+                    //logger("[" + _CASE_04 + "] " + "Failed to dispatch removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
                 for (Role memberNationRole : memberNationRoles) {
-                    logger("[" + _CASE_04 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_04 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName());
+                    //logger("[" + _CASE_04 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             });
         } else if (!hasTown & hasNation & !hasTownDiscordRole & !hasNationDiscordRole) {
             // Do nothing - should never reach this case
-            logger("[" + _CASE_05 + "] " + "Do nothing - should never reach this case", offlinePlayer, discordId, UUID, memberRoles);
+            sendMessageToAll(UUID, "[" + _CASE_05 + "] " + "Do nothing - should never reach this case");
+            //logger("[" + _CASE_05 + "] " + "Do nothing - should never reach this case", offlinePlayer, discordId, UUID, memberRoles);
         } else if (!hasTown & hasNation & !hasTownDiscordRole & hasNationDiscordRole) {
             // Do nothing - should never reach this case
-            logger("[" + _CASE_06 + "] " + "Do nothing - should never reach this case", offlinePlayer, discordId, UUID, memberRoles);
+            sendMessageToAll(UUID, "[" + _CASE_06 + "] " + "Do nothing - should never reach this case");
+            //logger("[" + _CASE_06 + "] " + "Do nothing - should never reach this case", offlinePlayer, discordId, UUID, memberRoles);
         } else if (!hasTown & hasNation & hasTownDiscordRole & !hasNationDiscordRole) {
             // Do nothing - should never reach this case
-            logger("[" + _CASE_07 + "] " + "Do nothing - should never reach this case", offlinePlayer, discordId, UUID, memberRoles);
+            sendMessageToAll(UUID, "[" + _CASE_07 + "] " + "Do nothing - should never reach this case");
+            //logger("[" + _CASE_07 + "] " + "Do nothing - should never reach this case", offlinePlayer, discordId, UUID, memberRoles);
         } else if (!hasTown & hasNation & hasTownDiscordRole & hasNationDiscordRole) {
             // remove town role
             int count = 0;
@@ -221,11 +232,13 @@ public class TDCManager {
             }
             removeRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
                 for (Role memberTownRole : memberTownRoles) {
-                    logger("[" + _CASE_08 + "] " + "Successfully dispatched removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_08 + "] " + "Successfully dispatched removal of server role: " + memberTownRole.getName());
+                    //logger("[" + _CASE_08 + "] " + "Successfully dispatched removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             }, failure -> {
                 for (Role memberTownRole : memberTownRoles) {
-                    logger("[" + _CASE_08 + "] " + "Failed to dispatch removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_08 + "] " + "Failed to dispatch removal of server role: " + memberTownRole.getName());
+                    //logger("[" + _CASE_08 + "] " + "Failed to dispatch removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             });
         } else if (hasTown & !hasNation & !hasTownDiscordRole & !hasNationDiscordRole) {
@@ -234,11 +247,13 @@ public class TDCManager {
             AuditableRestAction<Void> addRoleAction = guild.addRoleToMember(discordId, memberTownRoles.get(0));
             addRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
                 for (Role memberTownRole : memberTownRoles) {
-                    logger("[" + _CASE_09 + "] " + "Successfully dispatched addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_09 + "] " + "Successfully dispatched addition of server role: " + memberTownRole.getName());
+                    //logger("[" + _CASE_09 + "] " + "Successfully dispatched addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             }, failure -> {
                 for (Role memberTownRole : memberTownRoles) {
-                    logger("[" + _CASE_09 + "] " + "Failed to dispatch addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_09 + "] " + "Failed to dispatch addition of server role: " + memberTownRole.getName());
+                    //logger("[" + _CASE_09 + "] " + "Failed to dispatch addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             });
         } else if (hasTown & !hasNation & !hasTownDiscordRole & hasNationDiscordRole) {
@@ -250,17 +265,21 @@ public class TDCManager {
             }
             roleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
                 for (Role memberTownRole : memberTownRoles) {
-                    logger("[" + _CASE_10 + "] " + "Successfully dispatched addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_10 + "] " + "Successfully dispatched addition of server role: " + memberTownRole.getName());
+                    //logger("[" + _CASE_10 + "] " + "Successfully dispatched addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
                 for (Role memberNationRole : memberNationRoles) {
-                    logger("[" + _CASE_10 + "] " + "Successfully dispatched removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_10 + "] " + "Successfully dispatched removal of server role: " + memberNationRole.getName());
+                    //logger("[" + _CASE_10 + "] " + "Successfully dispatched removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             }, failure -> {
                 for (Role memberTownRole : memberTownRoles) {
-                    logger("[" + _CASE_10 + "] " + "Failed to dispatch addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_10 + "] " + "Failed to dispatch addition of server role: " + memberTownRole.getName());
+                    //logger("[" + _CASE_10 + "] " + "Failed to dispatch addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
                 for (Role memberNationRole : memberNationRoles) {
-                    logger("[" + _CASE_10 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_10 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName());
+                    //logger("[" + _CASE_10 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             });
         } else if (hasTown & !hasNation & hasTownDiscordRole & !hasNationDiscordRole) {
@@ -278,11 +297,13 @@ public class TDCManager {
             }
             removeRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
                 for (Role memberNationRole : memberNationRoles) {
-                    logger("[" + _CASE_12 + "] " + "Successfully dispatched removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_12 + "] " + "Successfully dispatched removal of server role: " + memberNationRole.getName());
+                    //logger("[" + _CASE_12 + "] " + "Successfully dispatched removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             }, failure -> {
                 for (Role memberNationRole : memberNationRoles) {
-                    logger("[" + _CASE_12 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_12 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName());
+                    //logger("[" + _CASE_12 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             });
         } else if (hasTown & hasNation & !hasTownDiscordRole & !hasNationDiscordRole) {
@@ -291,11 +312,13 @@ public class TDCManager {
             AuditableRestAction<Void> addRoleAction = guild.addRoleToMember(discordId, memberTownRoles.get(0));
             addRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
                 for (Role memberTownRole : memberTownRoles) {
-                    logger("[" + _CASE_13 + "] " + "Successfully dispatched addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_13 + "] " + "Successfully dispatched addition of server role: " + memberTownRole.getName());
+                    //logger("[" + _CASE_13 + "] " + "Successfully dispatched addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             }, failure -> {
                 for (Role memberTownRole : memberTownRoles) {
-                    logger("[" + _CASE_13 + "] " + "Failed to dispatch addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_13 + "] " + "Failed to dispatch addition of server role: " + memberTownRole.getName());
+                    //logger("[" + _CASE_13 + "] " + "Failed to dispatch addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             });
 
@@ -303,11 +326,13 @@ public class TDCManager {
             addRoleAction = guild.addRoleToMember(discordId, memberTownRoles.get(0));
             addRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
                 for (Role memberNationRole : memberNationRoles) {
-                    logger("[" + _CASE_13 + "] " + "Successfully dispatched addition of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_13 + "] " + "Successfully dispatched addition of server role: " + memberNationRole.getName());
+                    //logger("[" + _CASE_13 + "] " + "Successfully dispatched addition of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             }, failure -> {
                 for (Role memberNationRole : memberNationRoles) {
-                    logger("[" + _CASE_13 + "] " + "Failed to dispatch addition of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_13 + "] " + "Failed to dispatch addition of server role: " + memberNationRole.getName());
+                    //logger("[" + _CASE_13 + "] " + "Failed to dispatch addition of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             });
         } else if (hasTown & hasNation & !hasTownDiscordRole & hasNationDiscordRole) {
@@ -316,11 +341,13 @@ public class TDCManager {
             AuditableRestAction<Void> addRoleAction = guild.addRoleToMember(discordId, memberTownRoles.get(0));
             addRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
                 for (Role memberTownRole : memberTownRoles) {
-                    logger("[" + _CASE_14 + "] " + "Successfully dispatched addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_14 + "] " + "Successfully dispatched addition of server role: " + memberTownRole.getName());
+                    //logger("[" + _CASE_14 + "] " + "Successfully dispatched addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             }, failure -> {
                 for (Role memberTownRole : memberTownRoles) {
-                    logger("[" + _CASE_14 + "] " + "Failed to dispatch addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_14 + "] " + "Failed to dispatch addition of server role: " + memberTownRole.getName());
+                    //logger("[" + _CASE_14 + "] " + "Failed to dispatch addition of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             });
         } else if (hasTown & hasNation & hasTownDiscordRole & !hasNationDiscordRole) {
@@ -329,16 +356,19 @@ public class TDCManager {
             AuditableRestAction<Void> addRoleAction = guild.addRoleToMember(discordId, memberNationRoles.get(0));
             addRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
                 for (Role memberNationRole : memberNationRoles) {
-                    logger("[" + _CASE_15 + "] " + "Successfully dispatched addition of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_15 + "] " + "Successfully dispatched addition of server role: " + memberNationRole.getName());
+                    //logger("[" + _CASE_15 + "] " + "Successfully dispatched addition of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             }, failure -> {
                 for (Role memberNationRole : memberNationRoles) {
-                    logger("[" + _CASE_15 + "] " + "Failed to dispatch addition of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
+                    sendMessageToAll(UUID, "[" + _CASE_15 + "] " + "Failed to dispatch addition of server role: " + memberNationRole.getName());
+                    //logger("[" + _CASE_15 + "] " + "Failed to dispatch addition of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
                 }
             });
         } else if (hasTown & hasNation & hasTownDiscordRole & hasNationDiscordRole) {
             // Do nothing - player already has required discord roles
-            logger("[" + _CASE_16 + "] " + "Do nothing - player already has required discord roles", offlinePlayer, discordId, UUID, memberRoles);
+            sendMessageToAll(UUID, "[" + _CASE_16 + "] " + "Do nothing - player already has required discord roles");
+            //logger("[" + _CASE_16 + "] " + "Do nothing - player already has required discord roles", offlinePlayer, discordId, UUID, memberRoles);
         }
 
     }
@@ -690,7 +720,7 @@ public class TDCManager {
         final Town town = getTown(offlinePlayer);
         // check if the player is in a town
         if (town == null) {
-            sendMessage(offlinePlayer, "You're not in a town!");
+            sendMessageToPlayerGame(offlinePlayer, "You're not in a town!");
             return;
         }
 
@@ -714,7 +744,7 @@ public class TDCManager {
         final String linkedId = getLinkedId(offlinePlayer);
         // check if the player has linked their account
         if (linkedId == null) {
-            sendMessage(offlinePlayer, "You haven't linked your Discord, do /discord link to get started!");
+            sendMessageToPlayerGame(offlinePlayer, "You haven't linked your Discord, do /discord link to get started!");
             return;
         }
 
@@ -722,7 +752,7 @@ public class TDCManager {
         final Member member = getMember(linkedId);
         // check if the member is in the discord
         if (member == null) {
-            sendMessage(offlinePlayer, "You are not in the Discord server!");
+            sendMessageToPlayerGame(offlinePlayer, "You are not in the Discord server!");
             return;
         }
 
@@ -740,7 +770,7 @@ public class TDCManager {
                     "You have been removed from the discord " + town + " channels!");
 
             // notify the player ingame
-            sendMessage(offlinePlayer, "You have been removed from the discord " + town + " channels!");
+            sendMessageToPlayerGame(offlinePlayer, "You have been removed from the discord " + town + " channels!");
         }
     }
 
@@ -761,7 +791,7 @@ public class TDCManager {
         final String linkedId = getLinkedId(offlinePlayer);
         // check if the player has linked their account
         if (linkedId == null) {
-            sendMessage(offlinePlayer, "You haven't linked your Discord, do /discord link to get started!");
+            sendMessageToPlayerGame(offlinePlayer, "You haven't linked your Discord, do /discord link to get started!");
             return;
         }
 
@@ -769,7 +799,7 @@ public class TDCManager {
         final Member member = getMember(linkedId);
         // check if the member is in the discord
         if (member == null) {
-            sendMessage(offlinePlayer, "You are not in the Discord server!");
+            sendMessageToPlayerGame(offlinePlayer, "You are not in the Discord server!");
             return;
         }
 
@@ -787,7 +817,7 @@ public class TDCManager {
                     "You have been removed from the discord " + nation + " channels!");
 
             // notify the player in-game
-            sendMessage(offlinePlayer, "You have been removed from the discord " + nation + " channels!");
+            sendMessageToPlayerGame(offlinePlayer, "You have been removed from the discord " + nation + " channels!");
         }
     }
 
@@ -802,13 +832,13 @@ public class TDCManager {
         final Nation nation = getNation(offlinePlayer);
         // check if the player is in a town
         if (nation == null) {
-            sendMessage(offlinePlayer, "You're not in a nation!");
+            sendMessageToPlayerGame(offlinePlayer, "You're not in a nation!");
             return;
         }
         givePlayerRole(offlinePlayer, nation);
     }
 
-    public static final void givePlayerRole (@NotNull final UUID UUID, @NotNull final Nation nation) {
+    public static final void givePlayerRole(@NotNull final UUID UUID, @NotNull final Nation nation) {
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID);
         givePlayerRole(offlinePlayer, nation);
     }
@@ -826,7 +856,7 @@ public class TDCManager {
         // checking to see if the player's minecraft account is linked with their
         // discord account
         if (linkedId == null) {
-            sendMessage(offlinePlayer, "You haven't linked your Discord, do /discord link to get started!");
+            sendMessageToPlayerGame(offlinePlayer, "You haven't linked your Discord, do /discord link to get started!");
             return;
         }
 
@@ -834,7 +864,7 @@ public class TDCManager {
         final Member member = getMember(linkedId);
         // check if the member is in the discord
         if (member == null) {
-            sendMessage(offlinePlayer, "You are not in the Discord server!");
+            sendMessageToPlayerGame(offlinePlayer, "You are not in the Discord server!");
             return;
         }
 
@@ -861,13 +891,13 @@ public class TDCManager {
         final Town town = getTown(offlinePlayer);
         // check if the player is in a town
         if (town == null) {
-            sendMessage(offlinePlayer, "You're not in a town!");
+            sendMessageToPlayerGame(offlinePlayer, "You're not in a town!");
             return;
         }
         givePlayerRole(offlinePlayer, town);
     }
 
-    public static final void givePlayerRole (@NotNull final UUID UUID, @NotNull final Town town) {
+    public static final void givePlayerRole(@NotNull final UUID UUID, @NotNull final Town town) {
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID);
         givePlayerRole(offlinePlayer, town);
     }
@@ -885,7 +915,7 @@ public class TDCManager {
         // checking to see if the player's minecraft account is linked with their
         // discord account
         if (linkedId == null) {
-            sendMessage(offlinePlayer, "You haven't linked your Discord, do '/discord link' to get started!");
+            sendMessageToPlayerGame(offlinePlayer, "You haven't linked your Discord, do '/discord link' to get started!");
             return;
         }
 
@@ -893,7 +923,7 @@ public class TDCManager {
         final Member member = getMember(linkedId);
         // check if the member is in the discord
         if (member == null) {
-            sendMessage(offlinePlayer, "You are not in the Discord server!");
+            sendMessageToPlayerGame(offlinePlayer, "You are not in the Discord server!");
             return;
         }
 
@@ -932,7 +962,7 @@ public class TDCManager {
         Main.plugin.getLogger().info("--------------------------------------------------");
         // Check to see if the player is already in a town
         if (member.getRoles().contains(townRole)) {
-            sendMessage(offlinePlayer, "You are already a part of the " + townRole.getName() + " role!");
+            sendMessageToPlayerGame(offlinePlayer, "You are already a part of the " + townRole.getName() + " role!");
         } else {
             // give the member the role
             DiscordUtil.addRolesToMember(member, townRole);
@@ -941,7 +971,7 @@ public class TDCManager {
             DiscordUtil.privateMessage(member.getUser(), "Your account has been linked to "
                     + townRole.getName().substring(townRole.getName().indexOf('-') + 1) + "!");
             // notify in-game
-            sendMessage(offlinePlayer, "Your account has been linked to "
+            sendMessageToPlayerGame(offlinePlayer, "Your account has been linked to "
                     + townRole.getName().substring(townRole.getName().indexOf('-') + 1) + "!");
         }
     }
@@ -951,14 +981,14 @@ public class TDCManager {
      * the role
      *
      * @param offlinePlayer The Player who initiated the creation
-     * @param member The member corresponding to the Player
-     * @param town   The Town to create the role for
+     * @param member        The member corresponding to the Player
+     * @param town          The Town to create the role for
      */
     private static void createRole(@NotNull final OfflinePlayer offlinePlayer, @NotNull final Member member,
                                    @NotNull final Town town) {
         final Guild guild = member.getGuild();
         if (Main.plugin.config.getBoolean("town.CreateRoleIfNoneExists")) {
-            sendMessage(offlinePlayer, town + " Doesn't have a Role, automatically creating one for you...!");
+            sendMessageToPlayerGame(offlinePlayer, town + " Doesn't have a Role, automatically creating one for you...!");
             guild.createRole().setName("town-" + town.getName())
                     .setColor(Color.decode(Main.plugin.config.getString("town.RoleCreateColorCode"))).queue(role -> {
                 DiscordUtil.addRolesToMember(member, role);
@@ -980,14 +1010,14 @@ public class TDCManager {
      * Member the role
      *
      * @param offlinePlayer The Player who initiated the creation
-     * @param member The member corresponding to the Player
-     * @param nation The Nation to create the role for
+     * @param member        The member corresponding to the Player
+     * @param nation        The Nation to create the role for
      */
     private static void createRole(@NotNull final OfflinePlayer offlinePlayer, @NotNull final Member member,
                                    @NotNull final Nation nation) {
         final Guild guild = member.getGuild();
         if (Main.plugin.config.getBoolean("nation.CreateRoleIfNoneExists")) {
-            sendMessage(offlinePlayer, nation + " Doesn't have a Role, automatically creating one for you...!");
+            sendMessageToPlayerGame(offlinePlayer, nation + " Doesn't have a Role, automatically creating one for you...!");
             guild.createRole().setName("nation-" + nation.getName())
                     .setColor(Color.decode(Main.plugin.config.getString("nation.RoleCreateColorCode"))).queue(role -> {
                 giveRoleToMember(offlinePlayer, member, role);
@@ -1104,24 +1134,7 @@ public class TDCManager {
      * @return The Discord ID or null when the player did not link their Discord
      */
     private static @Nullable String getLinkedId(@NotNull final OfflinePlayer offlinePlayer) {
-
         return DiscordSRV.getPlugin().getAccountLinkManager().getDiscordId(offlinePlayer.getUniqueId());
-
-       /* BiMap<String, UUID> biMap = HashBiMap.create(DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts());
-        String discordId = null;
-        try {
-            discordId = biMap.inverse().get(offlinePlayer.getUniqueId());
-        } catch (NullPointerException e) {
-            return null;
-        }
-
-        if (discordId == null) {
-            return null;
-        } else {
-            return discordId;
-        }
-
-        */
     }
 
     /**
@@ -1231,9 +1244,71 @@ public class TDCManager {
                 : null;
     }
 
-    private static void sendMessage(OfflinePlayer offlinePlayer, String message) {
+    private static void sendMessageToAll(UUID UUID, String message) {
+        Preconditions.checkNotNull(UUID);
+        Preconditions.checkNotNull(message);
+
+        String chatColor = ChatColor.translateAlternateColorCodes('&', Preconditions.checkNotNull(Main.plugin.config.getString("messages.MsgColor")));
+
+        sendMessageToPlayerGame(Bukkit.getOfflinePlayer(UUID), getPluginPrefix() + " " + chatColor + message);
+        sendMessageToPlayerDiscord(UUID, getPluginPrefix() + " " + chatColor + message);
+        sendMessageToDiscordLogChannel(UUID, getPluginPrefix() + " " + chatColor + message);
+        Main.plugin.getLogger().info(message);
+    }
+
+    private static void sendMessageToPlayerGame(OfflinePlayer offlinePlayer, String message) {
+        Preconditions.checkNotNull(offlinePlayer);
+        Preconditions.checkNotNull(message);
+
         if (offlinePlayer.getPlayer() != null) {
             offlinePlayer.getPlayer().sendMessage(message);
         }
+    }
+
+    private static void sendMessageToPlayerDiscord(UUID UUID, String message) {
+        Preconditions.checkNotNull(UUID);
+        Preconditions.checkNotNull(message);
+
+        String linkedId = Preconditions.checkNotNull(getLinkedId(Bukkit.getOfflinePlayer(UUID)));
+        User user = Preconditions.checkNotNull(DiscordUtil.getUserById(linkedId));
+
+        DiscordUtil.privateMessage(user, ChatColor.stripColor(message));
+    }
+
+    private static void sendMessageToDiscordLogChannel(UUID UUID, String message) {
+        Preconditions.checkNotNull(message);
+
+        String discordLogTextChannelId = Preconditions.checkNotNull(Main.plugin.config.getString("messages.DiscordLogTextChannelId"));
+
+        if (!discordLogTextChannelId.equals("0")) {
+            OfflinePlayer offlinePlayer = Preconditions.checkNotNull(Bukkit.getOfflinePlayer(UUID));
+            Guild guild = Preconditions.checkNotNull(DiscordSRV.getPlugin().getMainGuild());
+            TextChannel textChannel = Preconditions.checkNotNull(guild.getTextChannelById(discordLogTextChannelId));
+            String discordId = Preconditions.checkNotNull(getLinkedId(offlinePlayer));
+            Member member = Preconditions.checkNotNull(DiscordUtil.getMemberById(discordId));
+            List<Role> roles = Preconditions.checkNotNull(member).getRoles();
+
+            Instant instant = Instant.now();
+            ZoneId zoneId = ZoneId.of("America/Toronto"); // Add this to config so anyone can change this
+            ZonedDateTime zonedDateTime = instant.atZone(zoneId);
+            String logTime = DateTimeFormatter.ofPattern("dd/MM/yyyy - hh:mm").format(zonedDateTime); // Add this to config so anyone can change this
+
+            String logMsg = String.join("\n"
+                    , logTime
+                    , "--------------------------------------------------"
+                    , "Minecraft Name: " + offlinePlayer.getName()
+                    , "Minecraft UUID: " + UUID.toString()
+                    , "Discord Name: " + member.getUser().getAsMention()
+                    , "Discord ID: " + getLinkedId(offlinePlayer)
+                    , "Discord Roles: " + roles
+                    , "Message: " + message
+                    , "--------------------------------------------------");
+
+            DiscordUtil.sendMessage(textChannel, ChatColor.stripColor(logMsg));
+        }
+    }
+
+    private static String getPluginPrefix() {
+        return ChatColor.translateAlternateColorCodes('&', Preconditions.checkNotNull(Main.plugin.config.getString("messages.Prefix")));
     }
 }

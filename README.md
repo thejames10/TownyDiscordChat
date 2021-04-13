@@ -26,7 +26,7 @@
    <img alt="GitHub license" src="https://img.shields.io/github/license/thejames10/TownyDiscordChat">
    </a>
 </p>
-<h4>When adding this plugin to an existing Towny server make sure to run the first 4 commands in the order shown below.<br />Check they have completed before running the next one.</h4>
+<h4>When adding this plugin to an existing Towny server make sure to run the first 4 commands in the order shown below. Check they have completed before running the next one.</h4>
 <h1>Commands</h1>
 <h4>/TDC Check Role CreateAllTownsAndNations</h4>
 <p>Permission Node: TownyDiscordChat.Check.Role.CreateAllTownsAndNations:</p>

@@ -40,8 +40,8 @@ public class TDCCommand implements CommandExecutor {
                         // The first argument is "Check" and second is "Role" and third is "AllLinked", therefore "/<base> Check Role AllLinked
                         // /TDC Check Role AllLinked command
                         if (sender.hasPermission("TownyDiscordChat.Admin") || sender.hasPermission("TownyDiscordChat.Check.Role.AllLinked")) {
-                            TDCManager.discordUserRoleCheckAllLinked();
                             TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsPleasewait());
+                            TDCManager.discordUserRoleCheckAllLinked();
                         } else {
                             TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsNopermission());
                         }
@@ -50,8 +50,8 @@ public class TDCCommand implements CommandExecutor {
                         // The first argument is "Check" and second is "Role" and third is "CreateAllTownsAndNations", therefore "/<base> Check Role CreateAllTownsAndNations
                         // /TDC Check Role CreateAllTownsAndNations command
                         if (sender.hasPermission("TownyDiscordChat.Admin") || sender.hasPermission("TownyDiscordChat.Check.Role.CreateAllTownsAndNations")) {
-                            TDCManager.discordRoleCheckAllTownsAllNations();
                             TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsPleasewait());
+                            TDCManager.discordRoleCheckAllTownsAllNations();
                         } else {
                             TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsNopermission());
                         }
@@ -65,8 +65,8 @@ public class TDCCommand implements CommandExecutor {
                         Preconditions.checkNotNull(UUID, "UUID null in onCommand()!");
                         Preconditions.checkNotNull(UUID, "discordId null in onCommand()!");
 
-                        TDCManager.discordUserRoleCheck(discordId, UUID);
                         TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsPleasewait());
+                        TDCManager.discordUserRoleCheck(discordId, UUID);
                     }
                     else {
                         TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsNopermission());
@@ -78,8 +78,8 @@ public class TDCCommand implements CommandExecutor {
                         // The first argument is "Check" and second is "TextChannel" and third is "AllTownsAndNations", therefore "/<base> Check TextChannel AllTownsAndNations
                         // /TDC Check TextChannel AllTownsAndNations command
                         if (sender.hasPermission("TownyDiscordChat.Admin") || sender.hasPermission("TownyDiscordChat.Check.TextChannel.AllTownsAndNations")) {
-                            TDCManager.discordTextChannelCheckAllTownsAllNations();
                             TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsPleasewait());
+                            TDCManager.discordTextChannelCheckAllTownsAllNations();
                         }
                         else {
                             TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsNopermission());
@@ -93,8 +93,8 @@ public class TDCCommand implements CommandExecutor {
                         // The first argument is "Check" and second is "VoiceChannel" and third is "AllTownsAndNations", therefore "/<base> Check VoiceChannel AllTownsAndNations
                         // /TDC Check VoiceChannel AllTownsAndNations command
                         if (sender.hasPermission("TownyDiscordChat.Admin") || sender.hasPermission("TownyDiscordChat.Check.VoiceChannel.AllTownsAndNations")) {
-                            TDCManager.discordVoiceChannelCheckAllTownsAllNations();
                             TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsPleasewait());
+                            TDCManager.discordVoiceChannelCheckAllTownsAllNations();
                         } else {
                             TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsNopermission());
                         }

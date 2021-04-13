@@ -28,15 +28,15 @@
 </p>
 <h1>Installation</h1>
 <ol>
-<li><strong>Install</strong>/<strong>Configure</strong> <strong><a href="https://www.spigotmc.org/resources/towny-advanced.72694/" target="_blank" rel="noopener">Towny</a></strong> and <strong><a href="https://www.spigotmc.org/resources/discordsrv.18494/" target="_blank" rel="noopener">DiscordSRV</a></strong>.</li>
-<li><strong>Download</strong> our latest <strong><a href="https://github.com/thejames10/TownyDiscordChat/releases/latest" target="_blank" rel="noopener">release</a></strong>.</li>
-<li><strong>Delete</strong> existing <strong>config.yml</strong> if you are using a <strong>previous version</strong>.</li>
-<li><strong>Start server</strong> to <strong>generate</strong> <strong>config.yml</strong> then <strong>stop</strong> the <strong>server</strong>.</li>
-<li><strong>Configure</strong> the plugin with <strong><a href="https://github.com/thejames10/TownyDiscordChat/releases/latest" target="_blank" rel="noopener">recommended settings</a></strong>.</li>
-<li><strong>Configure</strong> <a href="https://github.com/thejames10/TownyDiscordChat#nodes-structure" target="_blank" rel="noopener"><strong>permission nodes</strong></a> to <strong>use</strong> in-game <strong>commands</strong>.</li>
-<li><strong>Start</strong> the <strong>server</strong> and <strong>join</strong> the <strong>game</strong>.</li>
-<li><strong>Run</strong> the <a href="https://github.com/thejames10/TownyDiscordChat/blob/main/README.md#when-adding-this-plugin-to-an-existing-towny-server-make-sure-to-run-the-first-4-commands-in-the-order-shown-below-check-they-have-completed-before-running-the-next-one" target="_blank" rel="noopener"><strong>first 4 commands</strong></a> if this is your <strong>first time</strong>.</li>
-<li>Enjoy!</li>
+   <li><strong>Install</strong>/<strong>Configure</strong> <strong><a href="https://www.spigotmc.org/resources/towny-advanced.72694/" target="_blank" rel="noopener">Towny</a></strong> and <strong><a href="https://www.spigotmc.org/resources/discordsrv.18494/" target="_blank" rel="noopener">DiscordSRV</a></strong>.</li>
+   <li><strong>Download</strong> our latest <strong><a href="https://github.com/thejames10/TownyDiscordChat/releases/latest" target="_blank" rel="noopener">release</a></strong>.</li>
+   <li><strong>Delete</strong> existing <strong>config.yml</strong> if you are using a <strong>previous version</strong>.</li>
+   <li><strong>Start server</strong> to <strong>generate</strong> <strong>config.yml</strong> then <strong>stop</strong> the <strong>server</strong>.</li>
+   <li><strong>Configure</strong> the plugin with <strong><a href="https://github.com/thejames10/TownyDiscordChat/releases/latest" target="_blank" rel="noopener">recommended settings</a></strong>.</li>
+   <li><strong>Configure</strong> <a href="https://github.com/thejames10/TownyDiscordChat#nodes-structure" target="_blank" rel="noopener"><strong>permission nodes</strong></a> to <strong>use</strong> in-game <strong>commands</strong>.</li>
+   <li><strong>Start</strong> the <strong>server</strong> and <strong>join</strong> the <strong>game</strong>.</li>
+   <li><strong>Run</strong> the <a href="https://github.com/thejames10/TownyDiscordChat/blob/main/README.md#when-adding-this-plugin-to-an-existing-towny-server-make-sure-to-run-the-first-4-commands-in-the-order-shown-below-check-they-have-completed-before-running-the-next-one" target="_blank" rel="noopener"><strong>first 4 commands</strong></a> if this is your <strong>first time</strong>.</li>
+   <li>Enjoy!</li>
 </ol>
 <h4>When adding this plugin to an existing Towny server make sure to run the first 4 commands in the order shown below. <br>Check they have completed before running the next one.</h4>
 <h1>Commands</h1>

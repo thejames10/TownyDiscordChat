@@ -40,6 +40,7 @@
 </ol>
 
 <h1>Configuration File</h1>
+<h4>DO NOT COPY THIS FILE. FOR REFERENCE ONLY. SEE COMMENTS.</h4>
 
 ```YAML
 nation:

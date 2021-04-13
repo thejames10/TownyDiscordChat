@@ -82,7 +82,7 @@ messages:
   # See https://github.com/thejames10/TownyDiscordChat/blob/main/AvailableDateFormats.txt
   DateFormat: dd/MM/yyyy - hh:mm a
   # Make sure to set this to a channel during pre-release - https://www.youtube.com/watch?v=NLWtSHWKbAI
-  DiscordLogTextChannelId: 0
+  DiscordLogTextChannelId: 0 # I would set this to a channelId that is NOT within the TOWN or NATION categories.
   # Prefix used when sending messages via discord or minecraft
   Prefix: '&8[&2TDC Bot&8]'
   

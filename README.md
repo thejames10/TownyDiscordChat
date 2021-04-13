@@ -38,6 +38,115 @@
    <li><strong>Run</strong> the <a href="https://github.com/thejames10/TownyDiscordChat/blob/main/README.md#when-adding-this-plugin-to-an-existing-towny-server-make-sure-to-run-the-first-4-commands-in-the-order-shown-below-check-they-have-completed-before-running-the-next-one" target="_blank" rel="noopener"><strong>first 4 commands</strong></a> if this is your <strong>first time</strong>.</li>
    <li>Enjoy!</li>
 </ol>
+
+<h1>Configuration File</h1>
+
+```YAML
+nation:
+  # Make sure this is 'true' during pre-release
+  CreateTextChannelForRole: true
+  # Make sure this is 'true' during pre-release
+  CreateVoiceChannelForRole: true
+  # Make sure this is 'true' during pre-release
+  UseCategoryForText: true
+  # Make sure this is 'true' during pre-release
+  UseCategoryForVoice: true
+  # Make sure to set this to a category during pre-release - https://www.youtube.com/watch?v=NLWtSHWKbAI
+  TextCategoryId: 0 # This can be the same as the nation.VoiceCategoryID but make sure they are NOT the same as the town categoryIds
+  # Make sure to set this to a category during pre-release - https://www.youtube.com/watch?v=NLWtSHWKbAI
+  VoiceCategoryId: 0 # This can be the same as the nation.TextCategoryID but make sure they are NOT the same as the town categoryIds
+  # Make sure this is 'true' during pre-release
+  CreateRoleIfNoneExists: true
+  # Make sure this is a valid color during pre-release
+  RoleCreateColorCode: '0xc9c012'
+town:
+  # Make sure this is 'true' during pre-release
+  CreateTextChannelForRole: true
+  # Make sure this is 'true' during pre-release
+  CreateVoiceChannelForRole: true
+  # Make sure this is 'true' during pre-release
+  UseCategoryForText: true
+  # Make sure this is 'true' during pre-release
+  UseCategoryForVoice: true
+  # Make sure to set this to a category during pre-release - https://www.youtube.com/watch?v=NLWtSHWKbAI
+  TextCategoryId: 0 # This can be the same as the town.VoiceCategoryID but make sure they are NOT the same as the nation categoryIds
+  # Make sure to set this to a category during pre-release - https://www.youtube.com/watch?v=NLWtSHWKbAI
+  VoiceCategoryId: 0 # This can be the same as the town.TextCategoryID but make sure they are NOT the same as the nation categoryIds
+  # Make sure this is 'true' during pre-release
+  CreateRoleIfNoneExists: true
+  # Make sure this is a valid color during pre-release
+  RoleCreateColorCode: '0x006798'
+messages:
+  # See https://github.com/thejames10/TownyDiscordChat/blob/main/AvailableTimeZones.txt
+  TimeZone: UTC
+  # See https://github.com/thejames10/TownyDiscordChat/blob/main/AvailableDateFormats.txt
+  DateFormat: dd/MM/yyyy - hh:mm a
+  # Make sure to set this to a channel during pre-release - https://www.youtube.com/watch?v=NLWtSHWKbAI
+  DiscordLogTextChannelId: 0
+  # Prefix used when sending messages via discord or minecraft
+  Prefix: '&8[&2TDC Bot&8]'
+  
+  Commands:
+    PleaseWait: '&7Please wait...'
+    NoPermission: '&7You don''t have permission to use this command!'
+  Role:
+    DoNothing:
+      Success: '&7Role change not required!'
+      Failure: '&7Failed to do nothing!'
+    Remove:
+      Success: '&7Removed role!'
+      Failure: '&7Failed to remove role!'
+    Add:
+      Success: '&7Added role!'
+      Failure: '&7Failed to add role!'
+    Create:
+      Success: '&7Created role!'
+      Failure: '&7Failed to create role!'
+    Delete:
+      Success: '&7Deleted role!'
+      Failure: '&7Failed to delete role!'
+    Rename:
+      Success: '&7Renamed role!'
+      Failure: '&7Failed to rename role!'
+  TextChannel:
+    DoNothing:
+      Success: '&7TextChannel change not required!'
+      Failure: '&7Failed to do nothing!'
+    Remove:
+      Success: '&7Removed TextChannel!'
+      Failure: '&7Failed to remove TextChannel!'
+    Add:
+      Success: '&7Added TextChannel!'
+      Failure: '&7Failed to add TextChannel!'
+    Create:
+      Success: '&7Created TextChannel!'
+      Failure: '&7Failed to create TextChannel!'
+    Delete:
+      Success: '&7Deleted TextChannel!'
+      Failure: '&7Failed to delete TextChannel!'
+    Rename:
+      Success: '&7Renamed TextChannel!'
+      Failure: '&7Failed to rename TextChannel!'
+  VoiceChannel:
+    DoNothing:
+      Success: '&7VoiceChannel change not required!'
+      Failure: '&7Failed to do nothing!'
+    Remove:
+      Success: '&7Removed VoiceChannel!'
+      Failure: '&7Failed to remove VoiceChannel!'
+    Add:
+      Success: '&7Added VoiceChannel!'
+      Failure: '&7Failed to add VoiceChannel!'
+    Create:
+      Success: '&7Created VoiceChannel!'
+      Failure: '&7Failed to create VoiceChannel!'
+    Delete:
+      Success: '&7Deleted VoiceChannel!'
+      Failure: '&7Failed to delete VoiceChannel!'
+    Rename:
+      Success: '&7Renamed VoiceChannel!'
+      Failure: '&7Failed to rename VoiceChannel!
+```
 <h4>When adding this plugin to an existing Towny server make sure to run the first 4 commands in the order shown below. <br>Check they have completed before running the next one.</h4>
 <h1>Commands</h1>
 <h4>/TDC Check Role CreateAllTownsAndNations</h4>

@@ -1,7 +1,7 @@
 package com.TownyDiscordChat.TownyDiscordChat;
 
-import com.google.common.base.Preconditions;
 import github.scarsz.discordsrv.DiscordSRV;
+import github.scarsz.discordsrv.dependencies.google.common.base.Preconditions;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.*;
 import github.scarsz.discordsrv.util.DiscordUtil;
 import org.bukkit.Bukkit;
@@ -24,7 +24,6 @@ public class TDCMessages {
         sendMessageToPlayerGame(Bukkit.getOfflinePlayer(UUID), getPluginPrefix() + " " +  message);
         sendMessageToPlayerDiscord(UUID, getPluginPrefix() + " " +  message);
         sendMessageToDiscordLogChannel(UUID, getPluginPrefix() + " " +  message);
-        Main.plugin.getLogger().info(ChatColor.stripColor(message));
     }
 
     public static void sendMessageToPlayerGame(OfflinePlayer offlinePlayer, String message) {
@@ -79,6 +78,7 @@ public class TDCMessages {
                     , "--------------------------------------------------");
 
             DiscordUtil.sendMessage(textChannel, ChatColor.stripColor(logMsg));
+            Main.plugin.getLogger().info(ChatColor.stripColor(logMsg));
         }
     }
 

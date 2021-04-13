@@ -13,12 +13,14 @@ import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 
 import com.palmergames.bukkit.towny.object.Town;
+import org.bukkit.Server;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Guild;
 import github.scarsz.discordsrv.util.DiscordUtil;
+import org.bukkit.plugin.PluginManager;
 
 // see javadocs for all towny listeners
 // https://javadoc.jitpack.io/com/github/TownyAdvanced/Towny/0.96.5.0/javadoc/

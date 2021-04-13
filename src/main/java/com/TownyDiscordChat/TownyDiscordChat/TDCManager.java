@@ -132,50 +132,28 @@ public class TDCManager {
         final String _CASE_16 = "CASE_16";
 
         if (!hasTown & !hasNation & !hasTownDiscordRole & !hasNationDiscordRole) {
-            sendMessageToAll(UUID, "Role change not required! [1]");
+            TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleDoNothingSuccess() + "[1]");
             //logger("[" + _CASE_01 + "] " + "Do nothing - player doesn't have any town/nation or town/nation roles", offlinePlayer, discordId, UUID, memberRoles);
         } else if (!hasTown & !hasNation & !hasTownDiscordRole & hasNationDiscordRole) {
             // remove nation role
-            int count = 0;
-            AuditableRestAction<Void> removeRoleAction = guild.removeRoleFromMember(discordId, memberNationRoles.get(0));
-            for (Role memberNationRole : memberNationRoles) {
-                if (count > 0) {
-                    removeRoleAction.and(guild.removeRoleFromMember(discordId, memberNationRole));
-                }
-                count++;
+            for (int x = 0; x < memberNationRoles.size(); x ++) {
+                Role memberNationRole = memberNationRoles.get(x);
+                guild.removeRoleFromMember(discordId, memberNationRole).queueAfter(10, TimeUnit.SECONDS, success -> {
+                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveSuccess() + " " + memberNationRole.getName() + " [2]");
+                }, failure -> {
+                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveFailure() + " " + memberNationRole.getName() + " [2]");
+                });
             }
-            removeRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
-                for (Role memberNationRole : memberNationRoles) {
-                    sendMessageToAll(UUID, "Successfully dispatched removal of server role: " + memberNationRole.getName() + " [2]");
-                    //logger("[" + _CASE_02 + "] " + "Successfully dispatched removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
-                }
-            }, failure -> {
-                for (Role memberNationRole : memberNationRoles) {
-                    sendMessageToAll(UUID, "[" + _CASE_02 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName());
-                    //logger("[" + _CASE_02 + "] " + "Failed to dispatch removal of server role: " + memberNationRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
-                }
-            });
         } else if (!hasTown & !hasNation & hasTownDiscordRole & !hasNationDiscordRole) {
             // remove town role
-            int count = 0;
-            AuditableRestAction<Void> removeRoleAction = guild.removeRoleFromMember(discordId, memberTownRoles.get(0));
-            for (Role memberTownRole : memberTownRoles) {
-                if (count > 0) {
-                    removeRoleAction.and(guild.removeRoleFromMember(discordId, memberTownRole));
-                }
-                count++;
+            for (int x = 0; x < memberTownRoles.size(); x ++) {
+                Role memberTownRole = memberTownRoles.get(x);
+                guild.removeRoleFromMember(discordId, memberTownRole).queueAfter(10, TimeUnit.SECONDS, success -> {
+                        TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveSuccess() + " " + memberTownRole.getName() + " [3]");
+                }, failure -> {
+                        TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveFailure() + " " + memberTownRole.getName());
+                });
             }
-            removeRoleAction.queueAfter(10, TimeUnit.SECONDS, success -> {
-                for (Role memberTownRole : memberTownRoles) {
-                    sendMessageToAll(UUID, "[" + _CASE_03 + "] " + "Successfully dispatched removal of server role: " + memberTownRole.getName());
-                    //logger("[" + _CASE_03 + "] " + "Successfully dispatched removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
-                }
-            }, failure -> {
-                for (Role memberTownRole : memberTownRoles) {
-                    sendMessageToAll(UUID, "[" + _CASE_03 + "] " + "Failed to dispatch removal of server role: " + memberTownRole.getName());
-                    //logger("[" + _CASE_03 + "] " + "Failed to dispatch removal of server role: " + memberTownRole.getName(), offlinePlayer, discordId, UUID, memberRoles);
-                }
-            });
         } else if (!hasTown & !hasNation & hasTownDiscordRole & hasNationDiscordRole) {
             // remove town and nation role
             int count = 0;
@@ -1133,7 +1111,7 @@ public class TDCManager {
      * @param offlinePlayer offlinePlayer to get the Discord ID from
      * @return The Discord ID or null when the player did not link their Discord
      */
-    private static @Nullable String getLinkedId(@NotNull final OfflinePlayer offlinePlayer) {
+    public static @Nullable String getLinkedId(@NotNull final OfflinePlayer offlinePlayer) {
         return DiscordSRV.getPlugin().getAccountLinkManager().getDiscordId(offlinePlayer.getUniqueId());
     }
 
@@ -1242,73 +1220,5 @@ public class TDCManager {
         return Main.plugin.config.getBoolean("nation.UseCategoryForVoice")
                 ? Main.plugin.config.getString("nation.VoiceCategoryId")
                 : null;
-    }
-
-    private static void sendMessageToAll(UUID UUID, String message) {
-        Preconditions.checkNotNull(UUID);
-        Preconditions.checkNotNull(message);
-
-        String chatColor = ChatColor.translateAlternateColorCodes('&', Preconditions.checkNotNull(Main.plugin.config.getString("messages.MsgColor")));
-
-        sendMessageToPlayerGame(Bukkit.getOfflinePlayer(UUID), getPluginPrefix() + " " + chatColor + message);
-        sendMessageToPlayerDiscord(UUID, getPluginPrefix() + " " + chatColor + message);
-        sendMessageToDiscordLogChannel(UUID, getPluginPrefix() + " " + chatColor + message);
-        Main.plugin.getLogger().info(message);
-    }
-
-    private static void sendMessageToPlayerGame(OfflinePlayer offlinePlayer, String message) {
-        Preconditions.checkNotNull(offlinePlayer);
-        Preconditions.checkNotNull(message);
-
-        if (offlinePlayer.getPlayer() != null) {
-            offlinePlayer.getPlayer().sendMessage(message);
-        }
-    }
-
-    private static void sendMessageToPlayerDiscord(UUID UUID, String message) {
-        Preconditions.checkNotNull(UUID);
-        Preconditions.checkNotNull(message);
-
-        String linkedId = Preconditions.checkNotNull(getLinkedId(Bukkit.getOfflinePlayer(UUID)));
-        User user = Preconditions.checkNotNull(DiscordUtil.getUserById(linkedId));
-
-        DiscordUtil.privateMessage(user, ChatColor.stripColor(message));
-    }
-
-    private static void sendMessageToDiscordLogChannel(UUID UUID, String message) {
-        Preconditions.checkNotNull(message);
-
-        String discordLogTextChannelId = Preconditions.checkNotNull(Main.plugin.config.getString("messages.DiscordLogTextChannelId"));
-
-        if (!discordLogTextChannelId.equals("0")) {
-            OfflinePlayer offlinePlayer = Preconditions.checkNotNull(Bukkit.getOfflinePlayer(UUID));
-            Guild guild = Preconditions.checkNotNull(DiscordSRV.getPlugin().getMainGuild());
-            TextChannel textChannel = Preconditions.checkNotNull(guild.getTextChannelById(discordLogTextChannelId));
-            String discordId = Preconditions.checkNotNull(getLinkedId(offlinePlayer));
-            Member member = Preconditions.checkNotNull(DiscordUtil.getMemberById(discordId));
-            List<Role> roles = Preconditions.checkNotNull(member).getRoles();
-
-            Instant instant = Instant.now();
-            ZoneId zoneId = ZoneId.of("America/Toronto"); // Add this to config so anyone can change this
-            ZonedDateTime zonedDateTime = instant.atZone(zoneId);
-            String logTime = DateTimeFormatter.ofPattern("dd/MM/yyyy - hh:mm").format(zonedDateTime); // Add this to config so anyone can change this
-
-            String logMsg = String.join("\n"
-                    , logTime
-                    , "--------------------------------------------------"
-                    , "Minecraft Name: " + offlinePlayer.getName()
-                    , "Minecraft UUID: " + UUID.toString()
-                    , "Discord Name: " + member.getUser().getAsMention()
-                    , "Discord ID: " + getLinkedId(offlinePlayer)
-                    , "Discord Roles: " + roles
-                    , "Message: " + message
-                    , "--------------------------------------------------");
-
-            DiscordUtil.sendMessage(textChannel, ChatColor.stripColor(logMsg));
-        }
-    }
-
-    private static String getPluginPrefix() {
-        return ChatColor.translateAlternateColorCodes('&', Preconditions.checkNotNull(Main.plugin.config.getString("messages.Prefix")));
     }
 }

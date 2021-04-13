@@ -24,6 +24,8 @@ town:
   RoleCreateColorCode: "0x006798"
 
 messages:
+  TimeZone: "America/Toronto"
+  DateFormat: "dd/MM/yyyy - hh:mm"
   DiscordLogTextChannelId: 826858833505812510
 
   Prefix: "&8[&2TDC Bot&8]"

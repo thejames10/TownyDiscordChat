@@ -1,7 +1,7 @@
 package com.TownyDiscordChat.TownyDiscordChat;
 
-import com.google.common.base.Preconditions;
 import github.scarsz.discordsrv.DiscordSRV;
+import github.scarsz.discordsrv.dependencies.google.common.base.Preconditions;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -19,6 +19,9 @@ public class TDCCommand implements CommandExecutor {
 
         if (args.length == 0) {
             // No arguments were provided, just "/TownyDiscordChat | /tdc"
+
+            // Put plugin and author information here
+
             return true;
         }
 
@@ -37,20 +40,20 @@ public class TDCCommand implements CommandExecutor {
                         // The first argument is "Check" and second is "Role" and third is "AllLinked", therefore "/<base> Check Role AllLinked
                         // /TDC Check Role AllLinked command
                         if (sender.hasPermission("TownyDiscordChat.Admin") || sender.hasPermission("TownyDiscordChat.Check.Role.AllLinked")) {
+                            TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsPleasewait());
                             TDCManager.discordUserRoleCheckAllLinked();
-                            player.sendMessage("Check Discord for updated roles!");
                         } else {
-                            player.sendMessage("You don't have permission to use this command!");
+                            TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsNopermission());
                         }
                         return true;
                     } else if (args.length >= 3 && args[2].equalsIgnoreCase("CreateAllTownsAndNations")) {
                         // The first argument is "Check" and second is "Role" and third is "CreateAllTownsAndNations", therefore "/<base> Check Role CreateAllTownsAndNations
                         // /TDC Check Role CreateAllTownsAndNations command
                         if (sender.hasPermission("TownyDiscordChat.Admin") || sender.hasPermission("TownyDiscordChat.Check.Role.CreateAllTownsAndNations")) {
+                            TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsPleasewait());
                             TDCManager.discordRoleCheckAllTownsAllNations();
-                            player.sendMessage("Check Discord for updated roles!");
                         } else {
-                            player.sendMessage("You don't have permission to use this command!");
+                            TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsNopermission());
                         }
                         return true;
                     }
@@ -62,11 +65,11 @@ public class TDCCommand implements CommandExecutor {
                         Preconditions.checkNotNull(UUID, "UUID null in onCommand()!");
                         Preconditions.checkNotNull(UUID, "discordId null in onCommand()!");
 
+                        TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsPleasewait());
                         TDCManager.discordUserRoleCheck(discordId, UUID);
-                        player.sendMessage("Check Discord for updated role!");
                     }
                     else {
-                        player.sendMessage("You don't have permission to use this command!");
+                        TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsNopermission());
                     }
                     return true;
                 } else if (args.length >= 2 && args[1].equalsIgnoreCase("TextChannel")) {
@@ -75,11 +78,11 @@ public class TDCCommand implements CommandExecutor {
                         // The first argument is "Check" and second is "TextChannel" and third is "AllTownsAndNations", therefore "/<base> Check TextChannel AllTownsAndNations
                         // /TDC Check TextChannel AllTownsAndNations command
                         if (sender.hasPermission("TownyDiscordChat.Admin") || sender.hasPermission("TownyDiscordChat.Check.TextChannel.AllTownsAndNations")) {
+                            TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsPleasewait());
                             TDCManager.discordTextChannelCheckAllTownsAllNations();
-                            player.sendMessage("Check Discord for updated roles!");
                         }
                         else {
-                            player.sendMessage("You don't have permission to use this command!");
+                            TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsNopermission());
                         }
                         return true;
                     }
@@ -90,10 +93,10 @@ public class TDCCommand implements CommandExecutor {
                         // The first argument is "Check" and second is "VoiceChannel" and third is "AllTownsAndNations", therefore "/<base> Check VoiceChannel AllTownsAndNations
                         // /TDC Check VoiceChannel AllTownsAndNations command
                         if (sender.hasPermission("TownyDiscordChat.Admin") || sender.hasPermission("TownyDiscordChat.Check.VoiceChannel.AllTownsAndNations")) {
+                            TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsPleasewait());
                             TDCManager.discordVoiceChannelCheckAllTownsAllNations();
-                            player.sendMessage("Check Discord for updated roles!");
                         } else {
-                            player.sendMessage("You don't have permission to use this command!");
+                            TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsNopermission());
                         }
                         return true;
                     }
@@ -101,13 +104,8 @@ public class TDCCommand implements CommandExecutor {
                 }
                 return true;
             }
-
-            if (args[0].equalsIgnoreCase("baz")) {
-                // The first argument is "baz", therefore "/foo baz"
-                return true;
-            }
+            return  true;
         }
-
         return true;
     }
 }

@@ -17,7 +17,7 @@ public class Main extends JavaPlugin {
 
     public void onEnable() {
         int pluginId = 10980;
-        Metrics metrics = new Metrics(this, pluginId);
+        new Metrics(this, pluginId);
 
         saveDefaultConfig();
         reloadConfig();

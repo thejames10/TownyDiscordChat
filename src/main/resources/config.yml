@@ -22,3 +22,74 @@ town:
 
   CreateRoleIfNoneExists: true
   RoleCreateColorCode: "0x006798"
+
+messages:
+  TimeZone: "UTC"
+  DateFormat: "dd/MM/yyyy - hh:mm a"
+  DiscordLogTextChannelId: 0
+
+  Prefix: "&8[&2TDC Bot&8]"
+
+  Commands:
+    PleaseWait: "&7Please wait..."
+    NoPermission: "&7You don't have permission to use this command!"
+
+  Role:
+    DoNothing:
+      Success: "&7Role change not required!"
+      Failure: "&7Failed to do nothing!"
+    Remove:
+      Success: "&7Removed role!"
+      Failure: "&7Failed to remove role!"
+    Add:
+      Success: "&7Added role!"
+      Failure: "&7Failed to add role!"
+    Create:
+      Success: "&7Created role!"
+      Failure: "&7Failed to create role!"
+    Delete:
+      Success: "&7Deleted role!"
+      Failure: "&7Failed to delete role!"
+    Rename:
+      Success: "&7Renamed role!"
+      Failure: "&7Failed to rename role!"
+
+  TextChannel:
+    DoNothing:
+      Success: "&7TextChannel change not required!"
+      Failure: "&7Failed to do nothing!"
+    Remove:
+      Success: "&7Removed TextChannel!"
+      Failure: "&7Failed to remove TextChannel!"
+    Add:
+      Success: "&7Added TextChannel!"
+      Failure: "&7Failed to add TextChannel!"
+    Create:
+      Success: "&7Created TextChannel!"
+      Failure: "&7Failed to create TextChannel!"
+    Delete:
+      Success: "&7Deleted TextChannel!"
+      Failure: "&7Failed to delete TextChannel!"
+    Rename:
+      Success: "&7Renamed TextChannel!"
+      Failure: "&7Failed to rename TextChannel!"
+
+  VoiceChannel:
+    DoNothing:
+      Success: "&7VoiceChannel change not required!"
+      Failure: "&7Failed to do nothing!"
+    Remove:
+      Success: "&7Removed VoiceChannel!"
+      Failure: "&7Failed to remove VoiceChannel!"
+    Add:
+      Success: "&7Added VoiceChannel!"
+      Failure: "&7Failed to add VoiceChannel!"
+    Create:
+      Success: "&7Created VoiceChannel!"
+      Failure: "&7Failed to create VoiceChannel!"
+    Delete:
+      Success: "&7Deleted VoiceChannel!"
+      Failure: "&7Failed to delete VoiceChannel!"
+    Rename:
+      Success: "&7Renamed VoiceChannel!"
+      Failure: "&7Failed to rename VoiceChannel!"

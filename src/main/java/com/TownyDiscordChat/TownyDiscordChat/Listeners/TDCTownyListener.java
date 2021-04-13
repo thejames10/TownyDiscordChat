@@ -6,13 +6,13 @@ import java.util.UUID;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.TDCManager;
-import com.google.common.base.Preconditions;
 import com.palmergames.bukkit.towny.event.*;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 
 import com.palmergames.bukkit.towny.object.Town;
+import github.scarsz.discordsrv.dependencies.google.common.base.Preconditions;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -137,11 +137,6 @@ public class TDCTownyListener implements Listener {
         Guild guild = DiscordSRV.getPlugin().getMainGuild();
 
         TDCManager.renameTown(OLD_NAME, NEW_NAME);
-
-        final String DISCORDSRV_GLOBAL_CHANNEL_ID = DiscordSRV.getPlugin().getChannels().get("global");
-        DiscordUtil.sendMessage(guild.getTextChannelById(DISCORDSRV_GLOBAL_CHANNEL_ID),
-                OLD_NAME + " text and voice channels have been renamed to " + NEW_NAME + "!");
-
     }
 
     @EventHandler
@@ -155,11 +150,6 @@ public class TDCTownyListener implements Listener {
         Guild guild = DiscordSRV.getPlugin().getMainGuild();
 
         TDCManager.renameNation(OLD_NAME, NEW_NAME);
-
-        final String DISCORDSRV_GLOBAL_CHANNEL_ID = DiscordSRV.getPlugin().getChannels().get("global");
-        DiscordUtil.sendMessage(guild.getTextChannelById(DISCORDSRV_GLOBAL_CHANNEL_ID),
-                OLD_NAME + " text and voice channels have been renamed to " + NEW_NAME + "!");
-
     }
 
     @EventHandler
@@ -170,11 +160,6 @@ public class TDCTownyListener implements Listener {
         Guild guild = DiscordSRV.getPlugin().getMainGuild();
 
         TDCManager.deleteRoleAndChannelsFromTown(event.getTownName());
-
-        final String DISCORDSRV_GLOBAL_CHANNEL_ID = DiscordSRV.getPlugin().getChannels().get("global");
-        DiscordUtil.sendMessage(guild.getTextChannelById(DISCORDSRV_GLOBAL_CHANNEL_ID),
-                event.getTownName() + " text and voice channels have been removed");
-
     }
 
     @EventHandler
@@ -185,10 +170,5 @@ public class TDCTownyListener implements Listener {
         Guild guild = DiscordSRV.getPlugin().getMainGuild();
 
         TDCManager.deleteRoleAndChannelsFromNation(event.getNationName());
-
-        final String DISCORDSRV_GLOBAL_CHANNEL_ID = DiscordSRV.getPlugin().getChannels().get("global");
-        DiscordUtil.sendMessage(guild.getTextChannelById(DISCORDSRV_GLOBAL_CHANNEL_ID),
-                event.getNationName() + " text and voice channels have been removed");
-
     }
 }

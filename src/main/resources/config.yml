@@ -5,8 +5,8 @@ nation:
   UseCategoryForText: true
   UseCategoryForVoice: true
 
-  TextCategoryId: 827329050845904896
-  VoiceCategoryId: 827329050845904896
+  TextCategoryId: 0
+  VoiceCategoryId: 0
 
   CreateRoleIfNoneExists: true
   RoleCreateColorCode: "0xc9c012"
@@ -17,16 +17,16 @@ town:
   UseCategoryForText: true
   UseCategoryForVoice: true
 
-  TextCategoryId: 827314920035057684
-  VoiceCategoryId: 827314920035057684
+  TextCategoryId: 0
+  VoiceCategoryId: 0
 
   CreateRoleIfNoneExists: true
   RoleCreateColorCode: "0x006798"
 
 messages:
-  TimeZone: "America/Toronto"
-  DateFormat: "dd/MM/yyyy - hh:mm"
-  DiscordLogTextChannelId: 826858833505812510
+  TimeZone: "UTC"
+  DateFormat: "dd/MM/yyyy - hh:mm a"
+  DiscordLogTextChannelId: 0
 
   Prefix: "&8[&2TDC Bot&8]"
 

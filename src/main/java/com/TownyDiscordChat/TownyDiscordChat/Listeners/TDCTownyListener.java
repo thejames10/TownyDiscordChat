@@ -6,21 +6,19 @@ import java.util.UUID;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.TDCManager;
-import com.google.common.base.Preconditions;
 import com.palmergames.bukkit.towny.event.*;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 
 import com.palmergames.bukkit.towny.object.Town;
-import org.bukkit.Server;
+import github.scarsz.discordsrv.dependencies.google.common.base.Preconditions;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Guild;
 import github.scarsz.discordsrv.util.DiscordUtil;
-import org.bukkit.plugin.PluginManager;
 
 // see javadocs for all towny listeners
 // https://javadoc.jitpack.io/com/github/TownyAdvanced/Towny/0.96.5.0/javadoc/

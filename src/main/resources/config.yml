@@ -29,37 +29,67 @@ messages:
   DiscordLogTextChannelId: 826858833505812510
 
   Prefix: "&8[&2TDC Bot&8]"
-  MsgColor: "&7"
+
+  Commands:
+    PleaseWait: "&7Please wait..."
+    NoPermission: "&7You don't have permission to use this command!"
 
   Role:
     DoNothing:
-      Success: "Role change not required!"
-      Failure: "Failed to do nothing!"
+      Success: "&7Role change not required!"
+      Failure: "&7Failed to do nothing!"
     Remove:
-      Success: "Removed role!"
-      Failure: "Failed to remove role!"
+      Success: "&7Removed role!"
+      Failure: "&7Failed to remove role!"
     Add:
-      Success: "Added role!"
-      Failure: "Failed to add role!"
+      Success: "&7Added role!"
+      Failure: "&7Failed to add role!"
+    Create:
+      Success: "&7Created role!"
+      Failure: "&7Failed to create role!"
+    Delete:
+      Success: "&7Deleted role!"
+      Failure: "&7Failed to delete role!"
+    Rename:
+      Success: "&7Renamed role!"
+      Failure: "&7Failed to rename role!"
 
   TextChannel:
     DoNothing:
-      Success: "TextChannel change not required!"
-      Failure: "Failed to do nothing!"
+      Success: "&7TextChannel change not required!"
+      Failure: "&7Failed to do nothing!"
     Remove:
-      Success: "Removed TextChannel!"
-      Failure: "Failed to remove TextChannel!"
+      Success: "&7Removed TextChannel!"
+      Failure: "&7Failed to remove TextChannel!"
     Add:
-      Success: "Added TextChannel!"
-      Failure: "Failed to add TextChannel!"
+      Success: "&7Added TextChannel!"
+      Failure: "&7Failed to add TextChannel!"
+    Create:
+      Success: "&7Created TextChannel!"
+      Failure: "&7Failed to create TextChannel!"
+    Delete:
+      Success: "&7Deleted TextChannel!"
+      Failure: "&7Failed to delete TextChannel!"
+    Rename:
+      Success: "&7Renamed TextChannel!"
+      Failure: "&7Failed to rename TextChannel!"
 
   VoiceChannel:
     DoNothing:
-      Success: "VoiceChannel change not required!"
-      Failure: "Failed to do nothing!"
+      Success: "&7VoiceChannel change not required!"
+      Failure: "&7Failed to do nothing!"
     Remove:
-      Success: "Removed VoiceChannel!"
-      Failure: "Failed to remove VoiceChannel!"
+      Success: "&7Removed VoiceChannel!"
+      Failure: "&7Failed to remove VoiceChannel!"
     Add:
-      Success: "Added VoiceChannel!"
-      Failure: "Failed to add VoiceChannel!"
+      Success: "&7Added VoiceChannel!"
+      Failure: "&7Failed to add VoiceChannel!"
+    Create:
+      Success: "&7Created VoiceChannel!"
+      Failure: "&7Failed to create VoiceChannel!"
+    Delete:
+      Success: "&7Deleted VoiceChannel!"
+      Failure: "&7Failed to delete VoiceChannel!"
+    Rename:
+      Success: "&7Renamed VoiceChannel!"
+      Failure: "&7Failed to rename VoiceChannel!"

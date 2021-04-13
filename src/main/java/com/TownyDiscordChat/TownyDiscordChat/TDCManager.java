@@ -283,13 +283,9 @@ public class TDCManager {
             for (Town town : townsWithoutRole) {
                 RoleAction role = guild.createRole().setName("town-" + town.getName()).setColor(Color.decode(Main.plugin.config.getString("town.RoleCreateColorCode")));
                 role.queue(success -> {
-                    Main.plugin.getLogger().info("--------------------------------------------------");
-                    Main.plugin.getLogger().info("Successfully dispatched creation of server role: " + "town-" + town.getName());
-                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateSuccess() + " town-" + town.getName() + " [17]");
                 }, failure -> {
-                    Main.plugin.getLogger().info("--------------------------------------------------");
-                    Main.plugin.getLogger().info("Failed to dispatch creation of server role: " + "town-" + town.getName());
-                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateFailure() + " town-" + town.getName() + " [17]");
                 });
             }
         }
@@ -300,13 +296,9 @@ public class TDCManager {
             for (Nation nation : nationsWithoutRole) {
                 RoleAction role = guild.createRole().setName("nation-" + nation.getName()).setColor(Color.decode(Main.plugin.config.getString("nation.RoleCreateColorCode")));
                 role.queue(success -> {
-                    Main.plugin.getLogger().info("--------------------------------------------------");
-                    Main.plugin.getLogger().info("Successfully dispatched creation of server role: " + "nation-" + nation.getName());
-                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateSuccess() + " nation-" + nation.getName() + " [17]");
                 }, failure -> {
-                    Main.plugin.getLogger().info("--------------------------------------------------");
-                    Main.plugin.getLogger().info("Failed to dispatch creation of server role: " + "nation-" + nation.getName());
-                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateFailure() + " town-" + nation.getName() + " [17]");
                 });
             }
         }
@@ -424,19 +416,6 @@ public class TDCManager {
         }
     }
 
-    private static final void logger(String msg, OfflinePlayer offlinePlayer, String discordId, UUID UUID, List<Role> memberRoles) {
-        Main.plugin.getLogger().info("--------------------------------------------------");
-        Main.plugin.getLogger().info("Player Name: " + offlinePlayer.getName());
-        Main.plugin.getLogger().info("Discord ID: " + discordId);
-        Main.plugin.getLogger().info("Player UUID: " + UUID.toString());
-        Main.plugin.getLogger().info(msg);
-        Main.plugin.getLogger().info("=-=-=-=-=-=-=Player-Roles=-=-=-=-=-=-=");
-        for (Role role : memberRoles) {
-            Main.plugin.getLogger().info(role.getName());
-        }
-        Main.plugin.getLogger().info("--------------------------------------------------");
-    }
-
     public static final void renameNation(String oldName, String newName) {
         rename(oldName, newName, "nation-", getNationTextCategoryId(), getNationVoiceCategoryId());
     }
@@ -450,26 +429,18 @@ public class TDCManager {
         Guild guild = DiscordSRV.getPlugin().getMainGuild();
 
         getRole(roleprefix + oldName).getManager().setName(roleprefix + newName).queue(success -> {
-            Main.plugin.getLogger().info("--------------------------------------------------");
-            Main.plugin.getLogger().info("Successfully dispatched rename of server role: " + roleprefix + oldName + " to " + roleprefix + newName);
-            Main.plugin.getLogger().info("--------------------------------------------------");
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleRenameSuccess() + " " + roleprefix + oldName + " to " + roleprefix + newName + " [18]");
         }, failure -> {
-            Main.plugin.getLogger().info("--------------------------------------------------");
-            Main.plugin.getLogger().info("Failed to dispatch rename of server role: " + roleprefix + oldName + " to " + roleprefix + newName);
-            Main.plugin.getLogger().info("--------------------------------------------------");
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleRenameFailure() + " " + roleprefix + oldName + " to " + roleprefix + newName + " [18]");
         });
 
         List<TextChannel> discordTextChannels = guild.getTextChannelsByName(oldName, true);
         for (TextChannel discordTextChannel : discordTextChannels) {
             if (townTextCategoryId == null || discordTextChannel.getParent().getId().equals(townTextCategoryId)) {
                 discordTextChannel.getManager().setName(newName).queue(success -> {
-                    Main.plugin.getLogger().info("--------------------------------------------------");
-                    Main.plugin.getLogger().info("Successfully dispatched rename of text channel: " + oldName + " to " + newName);
-                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelRenameSuccess() + " " + oldName + " to " + newName + " [19]");
                 }, failure -> {
-                    Main.plugin.getLogger().info("--------------------------------------------------");
-                    Main.plugin.getLogger().info("Failed to dispatch rename of text channel: " + oldName + " to " + newName);
-                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelRenameFailure() + " " + oldName + " to " + newName + " [19]");
                 });
             }
         }
@@ -478,13 +449,9 @@ public class TDCManager {
         for (VoiceChannel discordVoiceChannel : discordVoiceChannels) {
             if (townVoiceCategoryId == null || discordVoiceChannel.getParent().getId().equals(townVoiceCategoryId)) {
                 discordVoiceChannel.getManager().setName(newName).queue(success -> {
-                    Main.plugin.getLogger().info("--------------------------------------------------");
-                    Main.plugin.getLogger().info("Successfully dispatched rename of voice channel: " + oldName + " to " + newName);
-                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgVoiceChannelRenameSuccess() + " " + oldName + " to " + newName + " [20]");
                 }, failure -> {
-                    Main.plugin.getLogger().info("--------------------------------------------------");
-                    Main.plugin.getLogger().info("Failed to dispatch rename of voice channel: " + oldName + " to " + newName);
-                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgVoiceChannelRenameFailure() + " " + oldName + " to " + newName + " [20]");
                 });
             }
         }
@@ -541,26 +508,18 @@ public class TDCManager {
 
         if (role != null)
             role.delete().queue(success -> {
-                Main.plugin.getLogger().info("--------------------------------------------------");
-                Main.plugin.getLogger().info("Successfully dispatched deletion of server role: " + name);
-                Main.plugin.getLogger().info("--------------------------------------------------");
+                TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleDeleteSuccess() + " " + name + " [21]");
             }, failure -> {
-                Main.plugin.getLogger().info("--------------------------------------------------");
-                Main.plugin.getLogger().info("Failed to dispatch deletion of server role: " + name);
-                Main.plugin.getLogger().info("--------------------------------------------------");
+                TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleDeleteFailure() + " " + name + " [21]");
             });
 
         final List<TextChannel> discordTextChannels = guild.getTextChannelsByName(name.substring(name.indexOf("-") + 1), true);
         for (final TextChannel discordTextChannel : discordTextChannels) {
             if (textChannelParentId == null || discordTextChannel.getParent().getId().equals(textChannelParentId)) {
                 discordTextChannel.delete().queue(success -> {
-                    Main.plugin.getLogger().info("--------------------------------------------------");
-                    Main.plugin.getLogger().info("Successfully dispatched deletion of text channel: " + name.substring(name.indexOf("-") + 1));
-                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelDeleteSuccess() + " " + name.substring(name.indexOf("-") + 1) + " [22]");
                 }, failure -> {
-                    Main.plugin.getLogger().info("--------------------------------------------------");
-                    Main.plugin.getLogger().info("Failed to dispatch deletion of text channel: " + name.substring(name.indexOf("-") + 1));
-                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelDeleteFailure() + " " + name.substring(name.indexOf("-") + 1) + " [22]");
                 });
             }
         }
@@ -569,13 +528,9 @@ public class TDCManager {
         for (final VoiceChannel discordVoiceChannel : discordVoiceChannels) {
             if (voiceChannelParentId == null || discordVoiceChannel.getParent().getId().equals(voiceChannelParentId)) {
                 discordVoiceChannel.delete().queue(success -> {
-                    Main.plugin.getLogger().info("--------------------------------------------------");
-                    Main.plugin.getLogger().info("Successfully dispatched deletion of voice channel: " + name.substring(name.indexOf("-") + 1));
-                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgVoiceChannelDeleteSuccess() + " " + name.substring(name.indexOf("-") + 1) + " [23]");
                 }, failure -> {
-                    Main.plugin.getLogger().info("--------------------------------------------------");
-                    Main.plugin.getLogger().info("Failed to dispatch deletion of voice channel: " + name.substring(name.indexOf("-") + 1));
-                    Main.plugin.getLogger().info("--------------------------------------------------");
+                    TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgVoiceChannelDeleteFailure() + " " + name.substring(name.indexOf("-") + 1) + " [23]");
                 });
             }
         }
@@ -866,13 +821,9 @@ public class TDCManager {
                 DiscordUtil.addRolesToMember(member, role);
                 createChannels(guild, town, role);
 
-                Main.plugin.getLogger().info("--------------------------------------------------");
-                Main.plugin.getLogger().info("Successfully dispatched creation of server role: " + "town-" + town.getName());
-                Main.plugin.getLogger().info("--------------------------------------------------");
+                TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateSuccess() + " town-" + town.getName() + " [24]");
             }, failure -> {
-                Main.plugin.getLogger().info("--------------------------------------------------");
-                Main.plugin.getLogger().info("Failed to dispatch creation of server role: " + "town-" + town.getName());
-                Main.plugin.getLogger().info("--------------------------------------------------");
+                TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateFailure() + " town-" + town.getName() + " [24]");
             });
         }
     }
@@ -895,13 +846,9 @@ public class TDCManager {
                 giveRoleToMember(offlinePlayer, member, role);
                 createChannels(guild, nation, role);
 
-                Main.plugin.getLogger().info("--------------------------------------------------");
-                Main.plugin.getLogger().info("Successfully dispatched creation of server role: " + "nation-" + nation.getName());
-                Main.plugin.getLogger().info("--------------------------------------------------");
+                TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateSuccess() + " nation-" + nation.getName() + " [25]");
             }, failure -> {
-                Main.plugin.getLogger().info("--------------------------------------------------");
-                Main.plugin.getLogger().info("Failed to dispatch creation of server role: " + "nation-" + nation.getName());
-                Main.plugin.getLogger().info("--------------------------------------------------");
+                TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateFailure() + " nation-" + nation.getName() + " [25]");
             });
         }
     }
@@ -970,13 +917,9 @@ public class TDCManager {
                 voiceChannelAction.setParent(guild.getCategoryById(voiceChannelCategoryId));
             }
             voiceChannelAction.queue(success -> {
-                Main.plugin.getLogger().info("--------------------------------------------------");
-                Main.plugin.getLogger().info("Successfully dispatched creation of voice channel: " + name);
-                Main.plugin.getLogger().info("--------------------------------------------------");
+                TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgVoiceChannelCreateSuccess() + " " + name + " [26]");
             }, failure -> {
-                Main.plugin.getLogger().info("--------------------------------------------------");
-                Main.plugin.getLogger().info("Failed to dispatch creation of voice channel: " + name);
-                Main.plugin.getLogger().info("--------------------------------------------------");
+                TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgVoiceChannelCreateFailure() + " " + name + " [26]");
             });
         }
         if (createTextChannel) {
@@ -988,13 +931,9 @@ public class TDCManager {
                 textChannelAction.setParent(guild.getCategoryById(textChannelCategoryId));
             }
             textChannelAction.queue(success -> {
-                Main.plugin.getLogger().info("--------------------------------------------------");
-                Main.plugin.getLogger().info("Successfully dispatched creation of text channel: " + name);
-                Main.plugin.getLogger().info("--------------------------------------------------");
+                TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelCreateSuccess() + " " + name + " [27]");
             }, failure -> {
-                Main.plugin.getLogger().info("--------------------------------------------------");
-                Main.plugin.getLogger().info("Failed to dispatch creation of text channel: " + name);
-                Main.plugin.getLogger().info("--------------------------------------------------");
+                TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelCreateFailure() + " " + name + " [27]");
             });
         }
     }

@@ -2,6 +2,7 @@ package com.TownyDiscordChat.TownyDiscordChat;
 
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.google.common.base.Preconditions;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -17,18 +18,26 @@ public class TDCCommand implements CommandExecutor {
         if (!(sender instanceof Player))
             return true;
 
-        if (args.length == 0) {
-            // No arguments were provided, just "/TownyDiscordChat | /tdc"
-
-            // Put plugin and author information here
-
-            return true;
-        }
-
         Player player = ((Player) sender).getPlayer();
 
         Preconditions.checkNotNull(player);
 
+        if (args.length == 0) {
+            // No arguments were provided, just "/TownyDiscordChat | /tdc"
+
+            String msg = String.join("\n"
+                    , ChatColor.DARK_GREEN + "------------------------"
+                    , ChatColor.DARK_GREEN + "Plugin: " + ChatColor.GRAY + "TownyDiscordChat"
+                    , ChatColor.DARK_GREEN + "Version: " + ChatColor.GRAY + "1.0.5"
+                    , ChatColor.DARK_GREEN + "Authors: " + ChatColor.GRAY + "thejames10,Hugo5000"
+                    , ChatColor.DARK_GREEN + "Root Cmd: " + ChatColor.GRAY + "/TownyDiscordChat"
+                    , ChatColor.DARK_GREEN + "Alias: " + ChatColor.GRAY + "/TDC"
+                    , ChatColor.DARK_GREEN + "---------------------------------");
+
+            TDCMessages.sendMessageToPlayerGame(player,msg);
+
+            return true;
+        }
 
         if (args.length >= 1) {
             // Some arguments were provided

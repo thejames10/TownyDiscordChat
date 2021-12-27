@@ -45,3 +45,7 @@ craftbukkit.jar
 /server/plugins/TownyDiscordChat/
 /server/plugins/Vault/
 /server/plugins/PluginMetrics/
+.vs/ProjectSettings.json
+.vs/slnx.sqlite
+.vs/TownyDiscordChat/v17/.suo
+.vs/VSWorkspaceState.json

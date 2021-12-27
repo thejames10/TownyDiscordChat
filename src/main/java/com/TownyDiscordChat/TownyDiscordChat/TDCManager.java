@@ -1028,7 +1028,10 @@ public class TDCManager {
      * @return The Discord Role or null if it does not exist
      */
     private static @Nullable Role getRole(@NotNull final String name) {
+        //DiscordUtil.getRoleName(Role role)
         return DiscordUtil.getRoleByName(DiscordSRV.getPlugin().getMainGuild(), name);
+        //DiscordUtil.ge
+        //DiscordUtil.getJda().getRoleByName
     }
 
     private static @Nullable String getTownVoiceCategoryId() {

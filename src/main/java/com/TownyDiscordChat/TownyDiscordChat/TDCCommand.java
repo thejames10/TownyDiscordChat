@@ -28,7 +28,7 @@ public class TDCCommand implements CommandExecutor {
             String msg = String.join("\n"
                     , ChatColor.DARK_GREEN + "------------------------"
                     , ChatColor.DARK_GREEN + "Plugin: " + ChatColor.GRAY + "TownyDiscordChat"
-                    , ChatColor.DARK_GREEN + "Version: " + ChatColor.GRAY + "1.0.6"
+                    , ChatColor.DARK_GREEN + "Version: " + ChatColor.GRAY + "1.0.7"
                     , ChatColor.DARK_GREEN + "Authors: " + ChatColor.GRAY + "thejames10,Hugo5000"
                     , ChatColor.DARK_GREEN + "Root Cmd: " + ChatColor.GRAY + "/TownyDiscordChat"
                     , ChatColor.DARK_GREEN + "Alias: " + ChatColor.GRAY + "/TDC"

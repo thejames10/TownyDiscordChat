@@ -6,7 +6,7 @@
 
     <groupId>com.TownyDiscordChat</groupId>
     <artifactId>TownyDiscordChat</artifactId>
-    <version>Build-1.0.6</version>
+    <version>Build-1.0.7</version>
 
     <repositories>
 
@@ -58,7 +58,7 @@
         <dependency>
             <groupId>com.discordsrv</groupId>
             <artifactId>discordsrv</artifactId>
-            <version>1.22.0</version>
+            <version>1.24.0</version>
             <scope>provided</scope>
         </dependency>
 

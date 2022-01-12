@@ -19,7 +19,21 @@ import java.util.UUID;
 public class TDCMessages {
 
     /**
-     * Send message to game discord and log channel
+     * Send message to player's game and designated log channel
+     *
+     * @param UUID    the associated minecraft player
+     * @param message the message
+     */
+    public static void sendMessageToPlayerGameAndLog(UUID UUID, String message) {
+        Preconditions.checkNotNull(UUID);
+        Preconditions.checkNotNull(message);
+
+        sendMessageToPlayerGame(Bukkit.getOfflinePlayer(UUID), message);
+        sendMessageToDiscordLogChannel(UUID, message);
+    }
+
+    /**
+     * Send message to player's game, player's discord and designated log channel
      *
      * @param UUID    the associated minecraft player
      * @param message the message

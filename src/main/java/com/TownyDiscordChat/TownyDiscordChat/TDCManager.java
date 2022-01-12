@@ -109,39 +109,39 @@ public class TDCManager {
 
         if (!hasTown & !hasNation & !hasTownDiscordRole & !hasNationDiscordRole) {
             // Do nothing
-            TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleDoNothingSuccess() + "[1]");
+            TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleDoNothingSuccess() + "[1]");
         } else if (!hasTown & !hasNation & !hasTownDiscordRole & hasNationDiscordRole) {
             // remove nation role
             for (Role memberNationRole : memberNationRoles) {
                 guild.removeRoleFromMember(discordId, memberNationRole).queueAfter(10, TimeUnit.SECONDS, success -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveSuccess() + " " + memberNationRole.getName() + " [2]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleRemoveSuccess() + " " + memberNationRole.getName() + " [2]");
                 }, failure -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveFailure() + " " + memberNationRole.getName() + " [2]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleRemoveFailure() + " " + memberNationRole.getName() + " [2]");
                 });
             }
         } else if (!hasTown & !hasNation & hasTownDiscordRole & !hasNationDiscordRole) {
             // remove town role
             for (Role memberTownRole : memberTownRoles) {
                 guild.removeRoleFromMember(discordId, memberTownRole).queueAfter(10, TimeUnit.SECONDS, success -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveSuccess() + " " + memberTownRole.getName() + " [3]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleRemoveSuccess() + " " + memberTownRole.getName() + " [3]");
                 }, failure -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveFailure() + " " + memberTownRole.getName() + " [3]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleRemoveFailure() + " " + memberTownRole.getName() + " [3]");
                 });
             }
         } else if (!hasTown & !hasNation & hasTownDiscordRole & hasNationDiscordRole) {
             // remove town and nation
             for (Role memberTownRole : memberTownRoles) {
                 guild.removeRoleFromMember(discordId, memberTownRole).queueAfter(10, TimeUnit.SECONDS, success -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveSuccess() + " " + memberTownRole.getName() + " [4]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleRemoveSuccess() + " " + memberTownRole.getName() + " [4]");
                 }, failure -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveFailure() + " " + memberTownRole.getName() + " [4]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleRemoveFailure() + " " + memberTownRole.getName() + " [4]");
                 });
             }
             for (Role memberNationRole : memberNationRoles) {
                 guild.removeRoleFromMember(discordId, memberNationRole).queueAfter(10, TimeUnit.SECONDS, success -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveSuccess() + " " + memberNationRole.getName() + " [4]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleRemoveSuccess() + " " + memberNationRole.getName() + " [4]");
                 }, failure -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveFailure() + " " + memberNationRole.getName() + " [4]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleRemoveFailure() + " " + memberNationRole.getName() + " [4]");
                 });
             }
         } else if (!hasTown & hasNation & !hasTownDiscordRole & !hasNationDiscordRole) {
@@ -157,9 +157,9 @@ public class TDCManager {
             // remove town role
             for (Role memberTownRole : memberTownRoles) {
                 guild.removeRoleFromMember(discordId, memberTownRole).queueAfter(10, TimeUnit.SECONDS, success -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveSuccess() + " " + memberTownRole.getName() + " [8]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleRemoveSuccess() + " " + memberTownRole.getName() + " [8]");
                 }, failure -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveFailure() + " " + memberTownRole.getName() + " [8]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleRemoveFailure() + " " + memberTownRole.getName() + " [8]");
                 });
             }
         } else if (hasTown & !hasNation & !hasTownDiscordRole & !hasNationDiscordRole) {
@@ -167,9 +167,9 @@ public class TDCManager {
             memberTownRoles.add(guild.getRolesByName("town-" + town.getName(), true).get(0));
             for (Role memberTownRole : memberTownRoles) {
                 guild.addRoleToMember(discordId, memberTownRole).queueAfter(10, TimeUnit.SECONDS, success -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleAddSuccess() + " " + memberTownRole.getName() + " [9]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleAddSuccess() + " " + memberTownRole.getName() + " [9]");
                 }, failure -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleAddFailure() + " " + memberTownRole.getName() + " [9]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleAddFailure() + " " + memberTownRole.getName() + " [9]");
                 });
             }
         } else if (hasTown & !hasNation & !hasTownDiscordRole & hasNationDiscordRole) {
@@ -177,28 +177,28 @@ public class TDCManager {
             memberTownRoles.add(guild.getRolesByName("town-" + town.getName(), true).get(0));
             for (Role memberTownRole : memberTownRoles) {
                 guild.addRoleToMember(discordId, memberTownRole).queueAfter(10, TimeUnit.SECONDS, success -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleAddSuccess() + " " + memberTownRole.getName() + " [10]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleAddSuccess() + " " + memberTownRole.getName() + " [10]");
                 }, failure -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleAddFailure() + " " + memberTownRole.getName() + " [10]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleAddFailure() + " " + memberTownRole.getName() + " [10]");
                 });
             }
             for (Role memberNationRole : memberNationRoles) {
                 guild.removeRoleFromMember(discordId, memberNationRole).queueAfter(10, TimeUnit.SECONDS, success -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveSuccess() + " " + memberNationRole.getName() + " [10]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleRemoveSuccess() + " " + memberNationRole.getName() + " [10]");
                 }, failure -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveFailure() + " " + memberNationRole.getName() + " [10]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleRemoveFailure() + " " + memberNationRole.getName() + " [10]");
                 });
             }
         } else if (hasTown & !hasNation & hasTownDiscordRole & !hasNationDiscordRole) {
             // Do nothing - player already has required discord roles
-            TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleDoNothingSuccess() + " [11]");
+            TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleDoNothingSuccess() + " [11]");
         } else if (hasTown & !hasNation & hasTownDiscordRole & hasNationDiscordRole) {
             // remove nation role
             for (Role memberNationRole : memberNationRoles) {
                 guild.removeRoleFromMember(discordId, memberNationRole).queueAfter(10, TimeUnit.SECONDS, success -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveSuccess() + " " + memberNationRole.getName() + " [12]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleRemoveSuccess() + " " + memberNationRole.getName() + " [12]");
                 }, failure -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleRemoveFailure() + " " + memberNationRole.getName() + " [12]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleRemoveFailure() + " " + memberNationRole.getName() + " [12]");
                 });
             }
         } else if (hasTown & hasNation & !hasTownDiscordRole & !hasNationDiscordRole) {
@@ -206,17 +206,17 @@ public class TDCManager {
             memberTownRoles.add(guild.getRolesByName("town-" + town.getName(), true).get(0));
             for (Role memberTownRole : memberTownRoles) {
                 guild.addRoleToMember(discordId, memberTownRole).queueAfter(10, TimeUnit.SECONDS, success -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleAddSuccess() + " " + memberTownRole.getName() + " [13]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleAddSuccess() + " " + memberTownRole.getName() + " [13]");
                 }, failure -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleAddFailure() + " " + memberTownRole.getName() + " [13]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleAddFailure() + " " + memberTownRole.getName() + " [13]");
                 });
             }
             memberNationRoles.add(guild.getRolesByName("nation-" + nation.getName(), true).get(0));
             for (Role memberNationRole : memberNationRoles) {
                 guild.addRoleToMember(discordId, memberNationRole).queueAfter(10, TimeUnit.SECONDS, success -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleAddSuccess() + " " + memberNationRole.getName() + " [13]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleAddSuccess() + " " + memberNationRole.getName() + " [13]");
                 }, failure -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleAddFailure() + " " + memberNationRole.getName() + " [13]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleAddFailure() + " " + memberNationRole.getName() + " [13]");
                 });
             }
         } else if (hasTown & hasNation & !hasTownDiscordRole & hasNationDiscordRole) {
@@ -224,9 +224,9 @@ public class TDCManager {
             memberTownRoles.add(guild.getRolesByName("town-" + town.getName(), true).get(0));
             for (Role memberTownRole : memberTownRoles) {
                 guild.addRoleToMember(discordId, memberTownRole).queueAfter(10, TimeUnit.SECONDS, success -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleAddSuccess() + " " + memberTownRole.getName() + " [14]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleAddSuccess() + " " + memberTownRole.getName() + " [14]");
                 }, failure -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleAddFailure() + " " + memberTownRole.getName() + " [14]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleAddFailure() + " " + memberTownRole.getName() + " [14]");
                 });
             }
         } else if (hasTown & hasNation & hasTownDiscordRole & !hasNationDiscordRole) {
@@ -234,14 +234,14 @@ public class TDCManager {
             memberNationRoles.add(guild.getRolesByName("nation-" + nation.getName(), true).get(0));
             for (Role memberNationRole : memberNationRoles) {
                 guild.addRoleToMember(discordId, memberNationRole).queueAfter(10, TimeUnit.SECONDS, success -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleAddSuccess() + " " + memberNationRole.getName() + " [15]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleAddSuccess() + " " + memberNationRole.getName() + " [15]");
                 }, failure -> {
-                    TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleAddFailure() + " " + memberNationRole.getName() + " [15]");
+                    TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleAddFailure() + " " + memberNationRole.getName() + " [15]");
                 });
             }
         } else if (hasTown & hasNation & hasTownDiscordRole & hasNationDiscordRole) {
             // Do nothing - player already has required discord roles
-            TDCMessages.sendMessageToAll(UUID, TDCMessages.getConfigMsgRoleDoNothingSuccess() + " [16]");
+            TDCMessages.sendMessageToPlayerGameAndLog(UUID, TDCMessages.getConfigMsgRoleDoNothingSuccess() + " [16]");
         }
     }
 

@@ -13,6 +13,9 @@ commands:
     description: Link Discord and Towny Data
     aliases: [tdc]
     usage: /TownyDiscordChat
+  SQL:
+    description: SQL Testing
+    usage: /SQL
 
   permissions:
     TownyDiscordChat.Admin:

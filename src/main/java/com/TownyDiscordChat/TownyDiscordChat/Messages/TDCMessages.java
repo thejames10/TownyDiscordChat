@@ -1,5 +1,7 @@
-package com.TownyDiscordChat.TownyDiscordChat;
+package com.TownyDiscordChat.TownyDiscordChat.Messages;
 
+import com.TownyDiscordChat.TownyDiscordChat.Main;
+import com.TownyDiscordChat.TownyDiscordChat.Core.TDCManager;
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.google.common.base.Preconditions;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.*;

@@ -1,9 +1,11 @@
-package com.TownyDiscordChat.TownyDiscordChat;
+package com.TownyDiscordChat.TownyDiscordChat.Core;
 
 import java.awt.Color;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import com.TownyDiscordChat.TownyDiscordChat.Main;
+import com.TownyDiscordChat.TownyDiscordChat.Messages.TDCMessages;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;

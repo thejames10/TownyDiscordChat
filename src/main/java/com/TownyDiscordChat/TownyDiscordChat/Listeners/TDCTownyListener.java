@@ -5,7 +5,7 @@ import java.util.Timer;
 import java.util.UUID;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
-import com.TownyDiscordChat.TownyDiscordChat.TDCManager;
+import com.TownyDiscordChat.TownyDiscordChat.Core.TDCManager;
 import com.palmergames.bukkit.towny.event.*;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
@@ -18,7 +18,6 @@ import org.bukkit.event.Listener;
 
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Guild;
-import github.scarsz.discordsrv.util.DiscordUtil;
 
 // see javadocs for all towny listeners
 // https://javadoc.jitpack.io/com/github/TownyAdvanced/Towny/0.96.5.0/javadoc/
@@ -34,11 +33,11 @@ public class TDCTownyListener implements Listener {
 
         System.out.println("NewDayEvent fired!");
 
-        TDCManager.discordRoleCheckAllTownsAllNations();
+        //TDCManager.discordRoleCheckAllTownsAllNations();
 
-        TDCManager.discordTextChannelCheckAllTownsAllNations();
+        //TDCManager.discordTextChannelCheckAllTownsAllNations();
 
-        TDCManager.discordVoiceChannelCheckAllTownsAllNations();
+        //TDCManager.discordVoiceChannelCheckAllTownsAllNations();
 
         Timer t = new java.util.Timer();
         t.schedule(
@@ -46,7 +45,7 @@ public class TDCTownyListener implements Listener {
                     @Override
                     public void run() {
                         System.out.println("Running delayed task...");
-                        TDCManager.discordUserRoleCheckAllLinked();
+                        //TDCManager.discordUserRoleCheckAllLinked();
                         //t.cancel();
                     }
                 },
@@ -150,6 +149,16 @@ public class TDCTownyListener implements Listener {
         Guild guild = DiscordSRV.getPlugin().getMainGuild();
 
         TDCManager.renameNation(OLD_NAME, NEW_NAME);
+    }
+
+    @EventHandler
+    public void onNewTownCreated(NewTownEvent event) {
+        //event.getTown().getMayor()
+    }
+
+    @EventHandler
+    public void onNewNationCreated(NewNationEvent event) {
+        //event.getNation().getKing()
     }
 
     @EventHandler

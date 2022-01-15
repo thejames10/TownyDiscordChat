@@ -1,12 +1,15 @@
 package com.TownyDiscordChat.TownyDiscordChat;
 
+import com.TownyDiscordChat.TownyDiscordChat.Commands.TDCCommand;
+import com.TownyDiscordChat.TownyDiscordChat.Commands.TDCSQL;
 import com.TownyDiscordChat.TownyDiscordChat.Listeners.TDCDiscordSRVListener;
 import com.TownyDiscordChat.TownyDiscordChat.Listeners.TDCTownyListener;
 import com.TownyDiscordChat.TownyDiscordChat.MySQL.MySQL;
-import com.TownyDiscordChat.TownyDiscordChat.MySQL.SQLGetter;
+import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.Nations;
+import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.Players;
+import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.Towns;
 import github.scarsz.discordsrv.DiscordSRV;
 import org.bstats.bukkit.Metrics;
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.configuration.file.FileConfiguration;
 
@@ -16,7 +19,9 @@ import java.util.Objects;
 public class Main extends JavaPlugin {
 
     public MySQL SQL;
-    public SQLGetter data;
+    public Players playersDB;
+    public Towns townsDB;
+    public Nations nationsDB;
 
     public static Main plugin;
 
@@ -27,7 +32,9 @@ public class Main extends JavaPlugin {
         new Metrics(this, pluginId);
 
         this.SQL = new MySQL();
-        this.data = new SQLGetter(this);
+        this.playersDB = new Players(this);
+        this.townsDB = new Towns(this);
+        this.nationsDB = new Nations(this);
 
         try {
             SQL.connect();
@@ -38,7 +45,9 @@ public class Main extends JavaPlugin {
         try {
             if (SQL.isConnected()) {
                 getLogger().info("Database is connected!");
-                data.createTable();
+                playersDB.createTable();
+                townsDB.createTable();
+                nationsDB.createTable();
             }
         } catch (SQLException e) {
             e.printStackTrace();

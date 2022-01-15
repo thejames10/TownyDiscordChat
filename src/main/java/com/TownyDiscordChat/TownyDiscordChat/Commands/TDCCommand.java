@@ -1,5 +1,7 @@
-package com.TownyDiscordChat.TownyDiscordChat;
+package com.TownyDiscordChat.TownyDiscordChat.Commands;
 
+import com.TownyDiscordChat.TownyDiscordChat.Core.TDCManager;
+import com.TownyDiscordChat.TownyDiscordChat.Messages.TDCMessages;
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.google.common.base.Preconditions;
 import org.bukkit.ChatColor;

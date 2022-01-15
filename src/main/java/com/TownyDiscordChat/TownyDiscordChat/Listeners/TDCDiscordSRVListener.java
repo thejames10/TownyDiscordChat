@@ -1,7 +1,10 @@
 package com.TownyDiscordChat.TownyDiscordChat.Listeners;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
-import com.TownyDiscordChat.TownyDiscordChat.TDCManager;
+import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.Towns;
+import com.palmergames.bukkit.towny.Towny;
+import com.palmergames.bukkit.towny.TownyUniverse;
+import com.palmergames.bukkit.towny.object.Resident;
 import github.scarsz.discordsrv.api.Subscribe;
 import github.scarsz.discordsrv.api.events.AccountLinkedEvent;
 import github.scarsz.discordsrv.api.events.AccountUnlinkedEvent;
@@ -23,11 +26,23 @@ public class TDCDiscordSRVListener {
 
         String discordId = event.getUser().getId();
         UUID UUID = offlinePlayer.getUniqueId();
+        Resident resident = TownyUniverse.getInstance().getResident(UUID);
+        boolean isMayor = false;
+        boolean isKing = false;
+        if (resident != null) {
+            isMayor = resident.isMayor();
+            isKing = resident.isKing();
+        }
 
-        Main.plugin.data.createEntry(UUID, discordId,"-1","-1",
-                "-1","-1","-1","-1");
+        if (Main.plugin.playersDB.entryExists(UUID.toString(), "UUID")) { // Entry already exists
+        } else { // Doesn't exist
 
-        TDCManager.discordUserRoleCheck(discordId, UUID);
+            Main.plugin.playersDB.createEntry(UUID, discordId,"EMPTY","EMPTY",
+                    "EMPTY","EMPTY","EMPTY",
+                    "EMPTY",Boolean.toString(isMayor), Boolean.toString(isKing));
+        }
+
+        //TDCManager.discordUserRoleCheck(discordId, UUID);
     }
 
     @Subscribe
@@ -36,7 +51,13 @@ public class TDCDiscordSRVListener {
 
         OfflinePlayer offlinePlayer = event.getPlayer();
 
-        UUID UUID = offlinePlayer.getUniqueId();
-        //Main.plugin.data.update
+        String UUID = offlinePlayer.getUniqueId().toString();
+        Main.plugin.playersDB.updateEntry("EMPTY","discordUserId", UUID, "UUID");
+        Main.plugin.playersDB.updateEntry("EMPTY","townRoleName", UUID, "UUID");
+        Main.plugin.playersDB.updateEntry("EMPTY","townRoleId", UUID, "UUID");
+        Main.plugin.playersDB.updateEntry("EMPTY","townTextChannelId", UUID, "UUID");
+        Main.plugin.playersDB.updateEntry("EMPTY","townVoiceChannelId", UUID, "UUID");
+        Main.plugin.playersDB.updateEntry("EMPTY","nationTextChannelId", UUID, "UUID");
+        Main.plugin.playersDB.updateEntry("EMPTY","nationVoiceChannelId", UUID, "UUID");
     }
 }

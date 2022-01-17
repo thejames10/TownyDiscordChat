@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.Core.TDCManager;
+import com.google.common.base.Strings;
 import com.palmergames.bukkit.towny.event.*;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
@@ -30,154 +31,152 @@ public class TDCTownyListener implements Listener {
 
     @EventHandler
     public void onNewDay(NewDayEvent event) {
-
-        System.out.println("NewDayEvent fired!");
-
-        //TDCManager.discordRoleCheckAllTownsAllNations();
-
-        //TDCManager.discordTextChannelCheckAllTownsAllNations();
-
-        //TDCManager.discordVoiceChannelCheckAllTownsAllNations();
-
-        Timer t = new java.util.Timer();
-        t.schedule(
-                new java.util.TimerTask() {
-                    @Override
-                    public void run() {
-                        System.out.println("Running delayed task...");
-                        //TDCManager.discordUserRoleCheckAllLinked();
-                        //t.cancel();
-                    }
-                },
-                300000
-
-        );
+        Main.plugin.getLogger().info("NewDayEvent fired!");
     }
 
     @EventHandler
     public void onPlayerJoinTown(TownAddResidentEvent event) {
-
         Main.plugin.getLogger().info("TownAddResidentEvent fired!");
 
-        UUID UUID = event.getResident().getUUID();
-        Town town = event.getTown();
+        String UUID = event.getResident().getUUID().toString();
+        String townName = event.getTown().getName();
 
         Preconditions.checkNotNull(UUID);
-        Preconditions.checkNotNull(town);
+        Preconditions.checkNotNull(townName);
 
-        TDCManager.givePlayerRole(UUID, town);
+        Main.plugin.playersDB.updateEntry(townName, "townRoleName", UUID, "UUID");
 
-        if (town.hasNation()) {
-            Nation nation = null;
+        if (event.getTown().hasNation()) {
             try {
-                nation = town.getNation();
+                Main.plugin.playersDB.updateEntry(event.getTown().getNation().getName(), "nationRoleName", UUID, "UUID");
             } catch (NotRegisteredException e) {
                 e.printStackTrace();
             }
-            Preconditions.checkNotNull(nation);
-            TDCManager.givePlayerRole(UUID, nation);
         }
     }
 
     @EventHandler
     public void onPlayerLeaveTown(TownRemoveResidentEvent event) {
-
         Main.plugin.getLogger().info("TownRemoveResidentEvent fired!");
 
-        UUID UUID = event.getResident().getUUID();
-        Town town = event.getTown();
+        String UUID = event.getResident().getUUID().toString();
 
         Preconditions.checkNotNull(UUID);
-        Preconditions.checkNotNull(town);
 
-        TDCManager.removePlayerRole(UUID, town);
+        Main.plugin.playersDB.updateEntry("EMPTY", "townRoleName", UUID, "UUID");
 
-        if (town.hasNation()) {
-            Nation nation = null;
-            try {
-                nation = town.getNation();
-            } catch (NotRegisteredException e) {
-                e.printStackTrace();
-            }
-            Preconditions.checkNotNull(nation);
-            TDCManager.removePlayerRole(UUID, nation);
+        if (event.getResident().hasNation()) {
+            Main.plugin.playersDB.updateEntry("EMPTY", "nationRoleName", UUID, "UUID");
         }
     }
 
     @EventHandler
     public void onTownJoinNation(NationAddTownEvent event) {
-
         Main.plugin.getLogger().info("NationAddTownEvent fired!");
 
+        String nationName = event.getNation().getName();
+
         List<Resident> townResidents = event.getTown().getResidents();
+
+        Preconditions.checkNotNull(townResidents);
+
         for (Resident townResident : townResidents) {
-            TDCManager.givePlayerRole(townResident.getUUID(), event.getNation());
+            String UUID = townResident.getUUID().toString();
+
+            Preconditions.checkNotNull(UUID);
+
+            Main.plugin.playersDB.updateEntry(nationName, "nationRoleName", UUID, "UUID");
         }
     }
 
     @EventHandler
     public void onTownLeaveNation(NationRemoveTownEvent event) {
+        Main.plugin.getLogger().info("NationRemoveTownEvent fired!");
 
-        System.out.println("NationRemoveTownEvent fired!");
+        String nationName = event.getNation().getName();
 
-        for (Resident townResident : event.getTown().getResidents()) {
-            TDCManager.removePlayerRole(townResident.getUUID(), event.getNation());
-        }
+        Preconditions.checkNotNull(nationName);
+
+        Main.plugin.playersDB.updateEntry("EMPTY", "nationRoleName", nationName, "nationRoleName");
     }
 
     @EventHandler
     public void onRenameTown(RenameTownEvent event) {
+        Main.plugin.getLogger().info("RenameTownEvent fired!");
 
-        System.out.println("RenameTownEvent fired!");
+        String OLD_NAME = event.getOldName();
+        String NEW_NAME = event.getTown().getName();
 
-        final String OLD_NAME = event.getOldName();
-        final String NEW_NAME = event.getTown().getName();
+        Preconditions.checkNotNull(OLD_NAME);
+        Preconditions.checkNotNull(NEW_NAME);
 
-        Guild guild = DiscordSRV.getPlugin().getMainGuild();
-
-        TDCManager.renameTown(OLD_NAME, NEW_NAME);
+        Main.plugin.townsDB.updateEntry(NEW_NAME, "townRoleName", OLD_NAME, "townRoleName");
+        Main.plugin.playersDB.updateEntry(NEW_NAME, "townRoleName", OLD_NAME, "townRoleName");
     }
 
     @EventHandler
     public void onRenameNation(RenameNationEvent event) {
+        Main.plugin.getLogger().info("RenameNationEvent fired!");
 
-        System.out.println("RenameNationEvent fired!");
+        String OLD_NAME = event.getOldName();
+        String NEW_NAME = event.getNation().getName();
 
-        final String OLD_NAME = event.getOldName();
-        final String NEW_NAME = event.getNation().getName();
+        Preconditions.checkNotNull(OLD_NAME);
+        Preconditions.checkNotNull(NEW_NAME);
 
-        Guild guild = DiscordSRV.getPlugin().getMainGuild();
-
-        TDCManager.renameNation(OLD_NAME, NEW_NAME);
+        Main.plugin.nationsDB.updateEntry(NEW_NAME, "nationRoleName", OLD_NAME, "nationRoleName");
+        Main.plugin.playersDB.updateEntry(NEW_NAME, "nationRoleName", OLD_NAME, "nationRoleName");
     }
 
     @EventHandler
     public void onNewTownCreated(NewTownEvent event) {
-        //event.getTown().getMayor()
+        Main.plugin.getLogger().info("NewTownEvent fired!");
+
+        String townName = event.getTown().getName();
+        String townUUID = event.getTown().getUUID().toString();
+
+        Preconditions.checkNotNull(townName);
+        Preconditions.checkNotNull(townUUID);
+
+        Main.plugin.townsDB.createEntry(townName, townUUID);
     }
 
     @EventHandler
     public void onNewNationCreated(NewNationEvent event) {
-        //event.getNation().getKing()
+        Main.plugin.getLogger().info("NewNationEvent fired!");
+
+        String nationName = event.getNation().getName();
+        String nationUUID = event.getNation().getUUID().toString();
+
+        Preconditions.checkNotNull(nationName);
+        Preconditions.checkNotNull(nationUUID);
+
+        Main.plugin.nationsDB.createEntry(nationName, nationUUID);
     }
 
     @EventHandler
     public void onDeleteTown(DeleteTownEvent event) {
+        Main.plugin.getLogger().info("DeleteTownEvent fired!");
 
-        System.out.println("DeleteTownEvent fired!");
+        String townName = event.getTownName();
 
-        Guild guild = DiscordSRV.getPlugin().getMainGuild();
+        Preconditions.checkNotNull(townName);
 
-        TDCManager.deleteRoleAndChannelsFromTown(event.getTownName());
+        Main.plugin.townsDB.deleteEntry(townName, "townRoleName");
+
+        Main.plugin.playersDB.updateEntry("EMPTY", "townRoleName", townName, "townRoleName");
     }
 
     @EventHandler
     public void onDeleteNation(DeleteNationEvent event) {
+        Main.plugin.getLogger().info("DeleteNationEvent fired!");
 
-        System.out.println("DeleteNationEvent fired!");
+        String nationName = event.getNationName();
 
-        Guild guild = DiscordSRV.getPlugin().getMainGuild();
+        Preconditions.checkNotNull(nationName);
 
-        TDCManager.deleteRoleAndChannelsFromNation(event.getNationName());
+        Main.plugin.townsDB.deleteEntry(nationName, "nationRoleName");
+
+        Main.plugin.playersDB.updateEntry("EMPTY", "nationRoleName", nationName, "nationRoleName");
     }
 }

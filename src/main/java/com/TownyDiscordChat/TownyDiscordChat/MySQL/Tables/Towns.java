@@ -5,10 +5,9 @@ import com.TownyDiscordChat.TownyDiscordChat.MySQL.Interfaces.SQLGetter;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class Towns implements SQLGetter {
+public class Towns extends SQLGetter {
 
     private final Main plugin;
 
@@ -44,63 +43,19 @@ public class Towns implements SQLGetter {
         }
     }
 
-    @Override
     public void deleteEntry(String searchValue, String searchColName) {
-        if (entryExists(searchValue, searchColName)) {
-            try {
-                PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("DELETE FROM " + TABLE + " "
-                        + "WHERE " + searchColName + "=?");
-                ps.setString(1, searchValue);
-                ps.executeUpdate();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
+        deleteEntry(searchValue, searchColName, TABLE);
     }
 
-    @Override
     public boolean entryExists(String searchValue, String searchColName) {
-        try {
-            PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("SELECT * FROM " + TABLE + " WHERE " + searchColName + "=?");
-            ps.setString(1, searchValue);
-
-            ResultSet resultSet = ps.executeQuery();
-            if (resultSet.next()) {
-                // entry is found
-                return true;
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
+        return entryExists(searchValue, searchColName, TABLE);
     }
 
-    @Override
     public void updateEntry(String setValue, String setCol, String searchValue, String searchColName) {
-        try {
-            PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("UPDATE " + TABLE + " SET " + setCol + "=? WHERE " + searchColName + "=?");
-            ps.setString(1, setValue);
-            ps.setString(2, searchValue);
-
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        updateEntry(setValue, setCol, searchValue, searchColName, TABLE);
     }
 
-    @Override
     public @Nullable String getEntry(String selectCol, String searchValue, String searchColName) {
-        if (entryExists(searchValue, searchColName)) {
-            try {
-                PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("SELECT " + selectCol + " FROM " + TABLE + " WHERE " + searchColName + "=?");
-                ps.setString(1, searchValue);
-
-                ResultSet resultSet = ps.executeQuery();
-                if (resultSet.next()) { return resultSet.getString(1); };
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return null;
+        return getEntry(selectCol, searchValue, searchColName, TABLE);
     }
 }

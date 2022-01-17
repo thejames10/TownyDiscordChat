@@ -30,9 +30,9 @@ public class TDCSQL implements CommandExecutor {
 
             Main.plugin.playersDB.deleteEntry("Testing", "discordUserId");
 
-            Main.plugin.playersDB.createEntry("Testing","Testing",
+            /*Main.plugin.playersDB.createEntry("Testing","Testing",
                     "Testing", "Testing","Testing",
-                    "Testing", "Testing","Testing","false","false");
+                    "Testing", "Testing","Testing","false","false");*/
 
         }
 

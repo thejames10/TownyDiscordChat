@@ -5,9 +5,7 @@ import com.TownyDiscordChat.TownyDiscordChat.Commands.TDCSQL;
 import com.TownyDiscordChat.TownyDiscordChat.Listeners.TDCDiscordSRVListener;
 import com.TownyDiscordChat.TownyDiscordChat.Listeners.TDCTownyListener;
 import com.TownyDiscordChat.TownyDiscordChat.MySQL.MySQL;
-import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.Nations;
-import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.Players;
-import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.Towns;
+import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.*;
 import github.scarsz.discordsrv.DiscordSRV;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -22,6 +20,10 @@ public class Main extends JavaPlugin {
     public Players playersDB;
     public Towns townsDB;
     public Nations nationsDB;
+    public TownTextChannels townTextChannelsDB;
+    public TownVoiceChannels townVoiceChannelsDB;
+    public NationTextChannels nationTextChannelsDB;
+    public NationVoiceChannels nationVoiceChannelsDB;
 
     public static Main plugin;
 
@@ -35,6 +37,10 @@ public class Main extends JavaPlugin {
         this.playersDB = new Players(this);
         this.townsDB = new Towns(this);
         this.nationsDB = new Nations(this);
+        this.townTextChannelsDB = new TownTextChannels(this);
+        this.townVoiceChannelsDB = new TownVoiceChannels(this);
+        this.nationTextChannelsDB = new NationTextChannels(this);
+        this.nationVoiceChannelsDB = new NationVoiceChannels(this);
 
         try {
             SQL.connect();
@@ -48,6 +54,21 @@ public class Main extends JavaPlugin {
                 playersDB.createTable();
                 townsDB.createTable();
                 nationsDB.createTable();
+                townTextChannelsDB.createTable();
+                townVoiceChannelsDB.createTable();
+                nationTextChannelsDB.createTable();
+                nationVoiceChannelsDB.createTable();
+
+                // Sync Existing Players with PlayersDB
+                //  // Compare lists first then perform api calls to reduce overall api calls
+                // Sync Existing Towns with TownsDB
+                //  // Compare lists first then perform api calls to reduce overall api calls
+                // Sync Existing Nations with NationsDB
+                //  // Compare lists first then perform api calls to reduce overall api calls
+                // Sync Existing TextChannels with TextChannelsDB
+                //  // Compare lists first then perform api calls to reduce overall api calls
+                // Sync Existing VoiceChannels with VoiceChannelsDB
+                //  // Compare lists first then perform api calls to reduce overall api calls
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -58,7 +79,7 @@ public class Main extends JavaPlugin {
         saveConfig();
         config = getConfig();
 
-        Objects.requireNonNull(getCommand("TownyDiscordChat")).setExecutor(new TDCCommand());
+        //Objects.requireNonNull(getCommand("TownyDiscordChat")).setExecutor(new TDCCommand());
         Objects.requireNonNull(getCommand("SQL")).setExecutor(new TDCSQL());
         getLogger().info("TownyDiscordChat has been Enabled!");
         plugin = this;

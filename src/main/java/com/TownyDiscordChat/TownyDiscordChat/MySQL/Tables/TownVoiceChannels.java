@@ -6,15 +6,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.UUID;
 
-public class Players extends SQLGetter {
+public class TownVoiceChannels extends SQLGetter {
 
     private final Main plugin;
 
-    private final String TABLE = "players";
+    private final String TABLE = "town_voice_channels";
 
-    public Players(Main plugin) {
+    public TownVoiceChannels(Main plugin) {
         this.plugin = plugin;
     }
 
@@ -22,31 +21,25 @@ public class Players extends SQLGetter {
         PreparedStatement ps;
         try {
             ps = plugin.SQL.getConnection().prepareStatement("CREATE TABLE IF NOT EXISTS " + TABLE + " "
-                    + "(UUID VARCHAR(100),discordUserId VARCHAR(100),townRoleName VARCHAR(100),nationRoleName VARCHAR(100),isMayor VARCHAR(100),isKing VARCHAR(100),doCleanUp VARCHAR(100),PRIMARY KEY (UUID))");
+                    + "(townRoleName VARCHAR(100),townVoiceChannelName VARCHAR(100),townVoiceChannelId VARCHAR(100), townVoiceChannelParentCategoryName VARCHAR(100), townVoiceChannelParentCategoryId VARCHAR(100), doCleanUp VARCHAR(100),PRIMARY KEY (townRoleName))");
             ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    public void createEntry (UUID UUID, String discordUserId, String townRoleName,
-                             String nationRoleName, String isMayor, String isKing) {
-        createEntry(UUID.toString(), discordUserId, townRoleName, nationRoleName, isMayor, isKing);
-    }
-
-    public void createEntry(String UUID, String discordUserId, String townRoleName,
-                            String nationRoleName, String isMayor, String isKing) {
+    public void createEntry(String townRoleName, String townVoiceChannelName, String townVoiceChannelId,
+                            String townVoiceChannelParentCategoryName, String townVoiceChannelParentCategoryId) {
         try {
-            if (!entryExists(discordUserId, "discordUserId")) {
+            if (!entryExists(townRoleName, "townRoleName")) {
                 PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("INSERT IGNORE INTO " + TABLE + " "
-                        + "(UUID,discordUserId,townRoleName,nationRoleName,isMayor,isKing,doCleanUp) VALUES (?,?,?,?,?,?,?)");
-                ps.setString(1, UUID);
-                ps.setString(2, discordUserId);
-                ps.setString(3, townRoleName);
-                ps.setString(4, nationRoleName);
-                ps.setString(5, isMayor);
-                ps.setString(6, isKing);
-                ps.setString(7, "false");
+                        + "(townRoleName,townVoiceChannelName,townVoiceChannelId,townVoiceChannelParentCategoryName,townVoiceChannelParentCategoryId,doCleanUp) VALUES (?,?,?,?,?,?)");
+                ps.setString(1, townRoleName);
+                ps.setString(2, townVoiceChannelName);
+                ps.setString(3, townVoiceChannelId);
+                ps.setString(4, townVoiceChannelParentCategoryName);
+                ps.setString(5, townVoiceChannelParentCategoryId);
+                ps.setString(6, "false");
                 ps.executeUpdate();
             }
         } catch (SQLException e) {
@@ -67,6 +60,6 @@ public class Players extends SQLGetter {
     }
 
     public @Nullable String getEntry(String selectCol, String searchValue, String searchColName) {
-        return getEntry(selectCol, searchValue, searchColName, TABLE);
+        return  getEntry(selectCol, searchValue, searchColName, TABLE);
     }
 }

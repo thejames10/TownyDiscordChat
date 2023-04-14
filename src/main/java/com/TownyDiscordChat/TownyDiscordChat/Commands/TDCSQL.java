@@ -28,7 +28,7 @@ public class TDCSQL implements CommandExecutor {
 
             player.sendMessage("isConnected? " + isConnected);
 
-            Main.plugin.playersDB.deleteEntry("Testing", "discordUserId");
+            //Main.plugin.playersDB.deleteEntry("Testing", "discordUserId");
 
             /*Main.plugin.playersDB.createEntry("Testing","Testing",
                     "Testing", "Testing","Testing",
@@ -38,10 +38,13 @@ public class TDCSQL implements CommandExecutor {
 
         if (args.length == 1) {
 
-            String oldValue = Main.plugin.playersDB.getEntry("UUID", "Testing", "discordUserId");
-            Main.plugin.playersDB.updateEntry(args[0], "UUID", "Testing", "discordUserId");
+            Main.plugin.queuedTaskDB.queueTownTask(args[0], "11111111", "false");
+            player.sendMessage("Queuing TownTask: " + args[0]);
 
-            player.sendMessage("Changed " + oldValue + " to " + args[0] + " !");
+            //String oldValue = Main.plugin.playersDB.getEntry("UUID", "Testing", "discordUserId");
+            //Main.plugin.playersDB.updateEntry(args[0], "UUID", "Testing", "discordUserId");
+
+            //player.sendMessage("Changed " + oldValue + " to " + args[0] + " !");
         }
 
         return true;

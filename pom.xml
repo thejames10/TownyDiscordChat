@@ -6,7 +6,7 @@
 
     <groupId>com.TownyDiscordChat</groupId>
     <artifactId>TownyDiscordChat</artifactId>
-    <version>Build-1.0.7</version>
+    <version>Build-1.0.8</version>
 
     <repositories>
 
@@ -85,8 +85,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.3</version>
+                <version>3.3.0</version>
                 <configuration>
+                    <outputFile>C:\Users\James\Documents\GitHub\TownyDiscordChat\server\plugins\TownyDiscordChat.jar</outputFile>
                     <relocations>
                         <relocation>
                             <pattern>org.bstats</pattern>
@@ -102,6 +103,14 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>16</source>
+                    <target>16</target>
+                </configuration>
             </plugin>
         </plugins>
     </build>

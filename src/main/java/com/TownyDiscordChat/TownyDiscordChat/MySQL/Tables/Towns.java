@@ -1,17 +1,18 @@
 package com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
-import com.TownyDiscordChat.TownyDiscordChat.MySQL.Interfaces.SQLGetter;
+import com.TownyDiscordChat.TownyDiscordChat.MySQL.Interfaces.SQL;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.List;
 
-public class Towns extends SQLGetter {
+public class Towns extends SQL {
 
     private final Main plugin;
 
-    private final String TABLE = "towns";
+    private final String TABLE = "tdc_towns";
 
     public Towns(Main plugin) {
         this.plugin = plugin;
@@ -21,7 +22,7 @@ public class Towns extends SQLGetter {
         PreparedStatement ps;
         try {
             ps = plugin.SQL.getConnection().prepareStatement("CREATE TABLE IF NOT EXISTS " + TABLE + " "
-                    + "(townRoleName VARCHAR(100),townRoleId VARCHAR(100),doCleanUp VARCHAR(100),PRIMARY KEY (townRoleName))");
+                    + "(townRoleName VARCHAR(100),townRoleId VARCHAR(100),Expired VARCHAR(100),PRIMARY KEY (townRoleName))");
             ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -32,7 +33,7 @@ public class Towns extends SQLGetter {
         try {
             if (!entryExists(townRoleName, "townRoleName")) {
                 PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("INSERT IGNORE INTO " + TABLE + " "
-                        + "(townRoleName,townRoleId,doCleanUp) VALUES (?,?,?)");
+                        + "(townRoleName,townRoleId,Expired) VALUES (?,?,?)");
                 ps.setString(1, townRoleName);
                 ps.setString(2, townRoleId);
                 ps.setString(3, "false");
@@ -57,5 +58,9 @@ public class Towns extends SQLGetter {
 
     public @Nullable String getEntry(String selectCol, String searchValue, String searchColName) {
         return getEntry(selectCol, searchValue, searchColName, TABLE);
+    }
+
+    public @Nullable List<String> getAllColumnEntries(String selectCol) {
+        return getAllColumnEntries(selectCol, TABLE);
     }
 }

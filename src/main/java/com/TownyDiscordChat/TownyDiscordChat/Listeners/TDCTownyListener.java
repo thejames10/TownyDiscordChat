@@ -132,11 +132,15 @@ public class TDCTownyListener implements Listener {
     public void onNewTownCreated(NewTownEvent event) {
         Main.plugin.getLogger().info("NewTownEvent fired!");
 
-        String townName = event.getTown().getName();
-        String townUUID = event.getTown().getUUID().toString();
+        Town town = event.getTown();
+        String townName = town.getName();
+        String townUUID = town.getUUID().toString();
 
+        Preconditions.checkNotNull(town);
         Preconditions.checkNotNull(townName);
         Preconditions.checkNotNull(townUUID);
+
+        TDCManager.createDiscordRole(town);
 
         Main.plugin.townsDB.createEntry(townName, townUUID);
     }
@@ -145,11 +149,15 @@ public class TDCTownyListener implements Listener {
     public void onNewNationCreated(NewNationEvent event) {
         Main.plugin.getLogger().info("NewNationEvent fired!");
 
-        String nationName = event.getNation().getName();
-        String nationUUID = event.getNation().getUUID().toString();
+        Nation nation = event.getNation();
+        String nationName = nation.getName();
+        String nationUUID = nation.getUUID().toString();
 
+        Preconditions.checkNotNull(nation);
         Preconditions.checkNotNull(nationName);
         Preconditions.checkNotNull(nationUUID);
+
+        TDCManager.createDiscordRole(nation);
 
         Main.plugin.nationsDB.createEntry(nationName, nationUUID);
     }
@@ -161,6 +169,10 @@ public class TDCTownyListener implements Listener {
         String townName = event.getTownName();
 
         Preconditions.checkNotNull(townName);
+
+        //DiscordSRV.getPlugin().getMainGuild().getRoleById()
+
+        //TDCManager.deleteRole();
 
         Main.plugin.townsDB.deleteEntry(townName, "townRoleName");
 

@@ -3,6 +3,7 @@ package com.TownyDiscordChat.TownyDiscordChat.Core;
 import java.awt.Color;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.Messages.TDCMessages;
@@ -17,6 +18,7 @@ import github.scarsz.discordsrv.dependencies.jda.api.entities.*;
 import github.scarsz.discordsrv.dependencies.jda.api.requests.restaction.RoleAction;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.util.Consumer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -248,6 +250,70 @@ public class TDCManager {
     }
 
     /**
+     * Creates Discord ROLE for TOWN
+     */
+    public static @Nullable String createDiscordRole(Town town) {
+        Guild guild = DiscordSRV.getPlugin().getMainGuild();
+
+        AtomicReference<String> roleId = null;
+
+        RoleAction role = guild.createRole().setName("town-" + town.getName()).setColor(Color.decode(Main.plugin.config.getString("town.RoleCreateColorCode")));
+        role.queue(success -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateSuccess() + " town-" + town.getName() + " [1023]");
+            roleId.set(success.getId());
+        }, failure -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateFailure() + " town-" + town.getName() + " [1023]");
+        });
+        return roleId.get();
+    }
+
+    public static void createDiscordRole(Town town, Consumer<String> callback) {
+        Guild guild = DiscordSRV.getPlugin().getMainGuild();
+
+        AtomicReference<String> roleId = new AtomicReference<>();
+
+        RoleAction role = guild.createRole().setName("town-" + town.getName()).setColor(Color.decode(Main.plugin.config.getString("town.RoleCreateColorCode")));
+        role.queue(success -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateSuccess() + " town-" + town.getName() + " [1023]");
+            roleId.set(success.getId());
+            callback.accept(roleId.get());
+        }, failure -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateFailure() + " town-" + town.getName() + " [1023]");
+            callback.accept(null);
+        });
+    }
+
+    /**
+     * Creates Discord ROLE for NATION
+     */
+    public static void createDiscordRole(Nation nation) {
+        Guild guild = DiscordSRV.getPlugin().getMainGuild();
+
+        RoleAction role = guild.createRole().setName("nation-" + nation.getName()).setColor(Color.decode(Main.plugin.config.getString("nation.RoleCreateColorCode")));
+        role.queue(success -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateSuccess() + " nation-" + nation.getName() + " [1024]");
+        }, failure -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateFailure() + " town-" + nation.getName() + " [1024]");
+        });
+    }
+
+    public static void createDiscordRole(Nation nation, Consumer<String> callback) {
+        Guild guild = DiscordSRV.getPlugin().getMainGuild();
+
+        AtomicReference<String> roleId = new AtomicReference<>();
+
+        RoleAction role = guild.createRole().setName("nation-" + nation.getName()).setColor(Color.decode(Main.plugin.config.getString("nation.RoleCreateColorCode")));
+        role.queue(success -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateSuccess() + " nation-" + nation.getName() + " [1024]");
+            roleId.set(success.getId());
+            callback.accept(roleId.get());
+        }, failure -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateFailure() + " nation-" + nation.getName() + " [1024]");
+            callback.accept(null);
+        });
+    }
+
+    /**
      * Creates Discord ROLE for TOWN or NATION that doesn't have a Discord ROLE created yet
      */
     public static final void discordRoleCheckAllTownsAllNations() {
@@ -457,6 +523,14 @@ public class TDCManager {
                 });
             }
         }
+    }
+
+    public static void deleteRole(Role role, String name) {
+        role.delete().queue(success -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleDeleteSuccess() + " " + name + " [1025]");
+        }, failure -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleDeleteFailure() + " " + name + " [1025]");
+        });
     }
 
     /**

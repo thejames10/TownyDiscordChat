@@ -1,17 +1,18 @@
 package com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
-import com.TownyDiscordChat.TownyDiscordChat.MySQL.Interfaces.SQLGetter;
+import com.TownyDiscordChat.TownyDiscordChat.MySQL.Interfaces.SQL;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.List;
 
-public class TownTextChannels extends SQLGetter {
+public class TownTextChannels extends SQL {
 
     private final Main plugin;
 
-    private final String TABLE = "town_text_channels";
+    private final String TABLE = "tdc_town_text_channels";
 
     public TownTextChannels(Main plugin) {
         this.plugin = plugin;
@@ -21,7 +22,7 @@ public class TownTextChannels extends SQLGetter {
         PreparedStatement ps;
         try {
             ps = plugin.SQL.getConnection().prepareStatement("CREATE TABLE IF NOT EXISTS " + TABLE + " "
-                    + "(townRoleName VARCHAR(100),townTextChannelName VARCHAR(100),townTextChannelId VARCHAR(100), townTextChannelParentCategoryName VARCHAR(100), townTextChannelParentCategoryId VARCHAR(100), doCleanUp VARCHAR(100),PRIMARY KEY (townRoleName))");
+                    + "(townRoleName VARCHAR(100),townTextChannelName VARCHAR(100),townTextChannelId VARCHAR(100), townTextChannelParentCategoryName VARCHAR(100), townTextChannelParentCategoryId VARCHAR(100), Expired VARCHAR(100),PRIMARY KEY (townRoleName))");
             ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -33,7 +34,7 @@ public class TownTextChannels extends SQLGetter {
         try {
             if (!entryExists(townRoleName, "townRoleName")) {
                 PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("INSERT IGNORE INTO " + TABLE + " "
-                        + "(townRoleName,townTextChannelName,townTextChannelId,townTextChannelParentCategoryName,townTextChannelParentCategoryId,doCleanUp) VALUES (?,?,?,?,?,?)");
+                        + "(townRoleName,townTextChannelName,townTextChannelId,townTextChannelParentCategoryName,townTextChannelParentCategoryId,Expired) VALUES (?,?,?,?,?,?)");
                 ps.setString(1, townRoleName);
                 ps.setString(2, townTextChannelName);
                 ps.setString(3, townTextChannelId);
@@ -61,5 +62,9 @@ public class TownTextChannels extends SQLGetter {
 
     public @Nullable String getEntry(String selectCol, String searchValue, String searchColName) {
         return  getEntry(selectCol, searchValue, searchColName, TABLE);
+    }
+
+    public @Nullable List<String> getAllColumnEntries(String selectCol) {
+        return getAllColumnEntries(selectCol, TABLE);
     }
 }

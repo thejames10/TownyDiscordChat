@@ -1,17 +1,18 @@
 package com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
-import com.TownyDiscordChat.TownyDiscordChat.MySQL.Interfaces.SQLGetter;
+import com.TownyDiscordChat.TownyDiscordChat.MySQL.Interfaces.SQL;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.List;
 
-public class NationVoiceChannels extends SQLGetter {
+public class NationVoiceChannels extends SQL {
 
     private final Main plugin;
 
-    private final String TABLE = "nation_voice_channels";
+    private final String TABLE = "tdc_nation_voice_channels";
 
     public NationVoiceChannels(Main plugin) {
         this.plugin = plugin;
@@ -21,7 +22,7 @@ public class NationVoiceChannels extends SQLGetter {
         PreparedStatement ps;
         try {
             ps = plugin.SQL.getConnection().prepareStatement("CREATE TABLE IF NOT EXISTS " + TABLE + " "
-                    + "(nationRoleName VARCHAR(100),nationVoiceChannelName VARCHAR(100),nationVoiceChannelId VARCHAR(100), nationVoiceChannelParentCategoryName VARCHAR(100), nationVoiceChannelParentCategoryId VARCHAR(100), doCleanUp VARCHAR(100),PRIMARY KEY (nationRoleName))");
+                    + "(nationRoleName VARCHAR(100),nationVoiceChannelName VARCHAR(100),nationVoiceChannelId VARCHAR(100), nationVoiceChannelParentCategoryName VARCHAR(100), nationVoiceChannelParentCategoryId VARCHAR(100), Expired VARCHAR(100),PRIMARY KEY (nationRoleName))");
             ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -33,7 +34,7 @@ public class NationVoiceChannels extends SQLGetter {
         try {
             if (!entryExists(nationRoleName, "townRoleName")) {
                 PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("INSERT IGNORE INTO " + TABLE + " "
-                        + "(nationRoleName,nationVoiceChannelName,nationVoiceChannelId,nationVoiceChannelParentCategoryName,nationVoiceChannelParentCategoryId,doCleanUp) VALUES (?,?,?,?,?,?)");
+                        + "(nationRoleName,nationVoiceChannelName,nationVoiceChannelId,nationVoiceChannelParentCategoryName,nationVoiceChannelParentCategoryId,Expired) VALUES (?,?,?,?,?,?)");
                 ps.setString(1, nationRoleName);
                 ps.setString(2, nationVoiceChannelName);
                 ps.setString(3, nationVoiceChannelId);
@@ -61,5 +62,9 @@ public class NationVoiceChannels extends SQLGetter {
 
     public @Nullable String getEntry(String selectCol, String searchValue, String searchColName) {
         return  getEntry(selectCol, searchValue, searchColName, TABLE);
+    }
+
+    public @Nullable List<String> getAllColumnEntries(String selectCol) {
+        return getAllColumnEntries(selectCol, TABLE);
     }
 }

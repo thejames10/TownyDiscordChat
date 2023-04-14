@@ -22,18 +22,6 @@ public class Name {
         for (String textCategory : textCategories) {
             System.out.println(textCategory);
         }
-
-
-
-
-
-
-
-
-
-        for (Role town : DiscordSRV.getPlugin().getMainGuild().getc) {
-            if (town.getName().contains("town-")) { TextChannels.add(town.getName().substring("town-".length())); }
-        }
-        return TextChannels;
+        return null;
     }
 }

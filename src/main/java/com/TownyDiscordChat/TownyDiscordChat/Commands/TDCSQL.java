@@ -38,8 +38,8 @@ public class TDCSQL implements CommandExecutor {
 
         if (args.length == 1) {
 
-            Main.plugin.queuedTaskDB.queueTownTask(args[0], "11111111", "false");
-            player.sendMessage("Queuing TownTask: " + args[0]);
+            //Main.plugin.queuedTaskDB.queueTownTask(args[0], "11111111", "false");
+            //player.sendMessage("Queuing TownTask: " + args[0]);
 
             //String oldValue = Main.plugin.playersDB.getEntry("UUID", "Testing", "discordUserId");
             //Main.plugin.playersDB.updateEntry(args[0], "UUID", "Testing", "discordUserId");

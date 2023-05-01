@@ -12,8 +12,6 @@ public class NationVoiceChannels extends SQL {
 
     private final Main plugin;
 
-    private final String TABLE = "tdc_nation_voice_channels";
-
     public NationVoiceChannels(Main plugin) {
         this.plugin = plugin;
     }
@@ -21,7 +19,7 @@ public class NationVoiceChannels extends SQL {
     public void createTable() {
         PreparedStatement ps;
         try {
-            ps = plugin.SQL.getConnection().prepareStatement("CREATE TABLE IF NOT EXISTS " + TABLE + " "
+            ps = plugin.SQL.getConnection().prepareStatement("CREATE TABLE IF NOT EXISTS " + TABLE_NATION_VOICE_CHANNELS + " "
                     + "(nationRoleName VARCHAR(100),nationVoiceChannelName VARCHAR(100),nationVoiceChannelId VARCHAR(100), nationVoiceChannelParentCategoryName VARCHAR(100), nationVoiceChannelParentCategoryId VARCHAR(100), Expired VARCHAR(100),PRIMARY KEY (nationRoleName))");
             ps.executeUpdate();
         } catch (SQLException e) {
@@ -33,7 +31,7 @@ public class NationVoiceChannels extends SQL {
                             String nationVoiceChannelParentCategoryName, String nationVoiceChannelParentCategoryId) {
         try {
             if (!entryExists(nationRoleName, "townRoleName")) {
-                PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("INSERT IGNORE INTO " + TABLE + " "
+                PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("INSERT IGNORE INTO " + TABLE_NATION_VOICE_CHANNELS + " "
                         + "(nationRoleName,nationVoiceChannelName,nationVoiceChannelId,nationVoiceChannelParentCategoryName,nationVoiceChannelParentCategoryId,Expired) VALUES (?,?,?,?,?,?)");
                 ps.setString(1, nationRoleName);
                 ps.setString(2, nationVoiceChannelName);
@@ -49,22 +47,22 @@ public class NationVoiceChannels extends SQL {
     }
 
     public void deleteEntry(String searchValue, String searchColName) {
-        deleteEntry(searchValue, searchColName, TABLE);
+        deleteEntry(searchValue, searchColName, TABLE_NATION_VOICE_CHANNELS);
     }
 
     public boolean entryExists(String searchValue, String searchColName) {
-        return entryExists(searchValue, searchColName, TABLE);
+        return entryExists(searchValue, searchColName, TABLE_NATION_VOICE_CHANNELS);
     }
 
     public void updateEntry(String setValue, String setCol, String searchValue, String searchColName) {
-        updateEntry(setValue, setCol, searchValue, searchColName, TABLE);
+        updateEntry(setValue, setCol, searchValue, searchColName, TABLE_NATION_VOICE_CHANNELS);
     }
 
     public @Nullable String getEntry(String selectCol, String searchValue, String searchColName) {
-        return  getEntry(selectCol, searchValue, searchColName, TABLE);
+        return  getEntry(selectCol, searchValue, searchColName, TABLE_NATION_VOICE_CHANNELS);
     }
 
     public @Nullable List<String> getAllColumnEntries(String selectCol) {
-        return getAllColumnEntries(selectCol, TABLE);
+        return getAllColumnEntries(selectCol, TABLE_NATION_VOICE_CHANNELS);
     }
 }

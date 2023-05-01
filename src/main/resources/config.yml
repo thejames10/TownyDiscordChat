@@ -1,3 +1,10 @@
+SQL:
+  host: "blank"
+  port: "blank"
+  database: "blank"
+  username: "blank"
+  password: "blank"
+
 nation:
   CreateTextChannelForRole: true
   CreateVoiceChannelForRole: true
@@ -22,6 +29,28 @@ town:
 
   CreateRoleIfNoneExists: true
   RoleCreateColorCode: "0x006798"
+
+category:
+  SubChannelsMax: 50
+  Town:
+    Name: "MINECRAFT-TOWN-CHAT"
+  Nation:
+    Name: "MINECRAFT-NATION-CHAT"
+  Admin:
+    Name: "MINECRAFT-STAFF"
+
+log:
+  Category:
+    Name: "MINECRAFT-STAFF"
+  Channel:
+    Name: "townydiscordchat-logs"
+
+Discord:
+  Api:
+    RateLimit:
+      Roles: 86
+      Categories: 86
+      Channels: 86
 
 messages:
   TimeZone: "UTC"
@@ -53,6 +82,26 @@ messages:
     Rename:
       Success: "&7Renamed role!"
       Failure: "&7Failed to rename role!"
+
+  Category:
+    DoNothing:
+      Success: "&Category change not required!"
+      Failure: "&7Failed to do nothing!"
+    Remove:
+      Success: "&7Removed category!"
+      Failure: "&7Failed to remove category!"
+    Add:
+      Success: "&7Added category!"
+      Failure: "&7Failed to add category!"
+    Create:
+      Success: "&7Created category!"
+      Failure: "&7Failed to create category!"
+    Delete:
+      Success: "&7Deleted category!"
+      Failure: "&7Failed to delete category!"
+    Rename:
+      Success: "&7Renamed category!"
+      Failure: "&7Failed to rename category!"
 
   TextChannel:
     DoNothing:

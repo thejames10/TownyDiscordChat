@@ -1,16 +1,18 @@
 package com.TownyDiscordChat.TownyDiscordChat.MySQL;
 
+import com.TownyDiscordChat.TownyDiscordChat.Main;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class MySQL {
 
-    private final String host = "BLANK";
-    private final String port = "BLANK";
-    private final String database = "BLANK";
-    private final String username = "BLANK";
-    private final String password = "BLANK";
+    private final String host = Main.plugin.config.getString("SQL.host");
+    private final String port = Main.plugin.config.getString("SQL.port");
+    private final String database = Main.plugin.config.getString("SQL.database");
+    private final String username = Main.plugin.config.getString("SQL.username");
+    private final String password = Main.plugin.config.getString("SQL.password");
 
     private Connection connection;
 

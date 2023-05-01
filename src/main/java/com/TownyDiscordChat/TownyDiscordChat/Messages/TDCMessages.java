@@ -2,6 +2,7 @@ package com.TownyDiscordChat.TownyDiscordChat.Messages;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.Core.TDCManager;
+import com.TownyDiscordChat.TownyDiscordChat.MySQL.Interfaces.SQL;
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.google.common.base.Preconditions;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.*;
@@ -101,28 +102,32 @@ public class TDCMessages {
     public static void sendMessageToDiscordLogChannel(String message) {
         Preconditions.checkNotNull(message);
 
-        String discordLogTextChannelId = Preconditions.checkNotNull(Main.plugin.config.getString("messages.DiscordLogTextChannelId"));
+        //String discordLogTextChannelId = Preconditions.checkNotNull(Main.plugin.config.getString("messages.DiscordLogTextChannelId"));
 
-        if (!discordLogTextChannelId.equals("0")) {
-            Guild guild = Preconditions.checkNotNull(DiscordSRV.getPlugin().getMainGuild());
-            TextChannel textChannel = Preconditions.checkNotNull(guild.getTextChannelById(discordLogTextChannelId));
+        String logTextChannelName = Main.plugin.config.getString("log.Channel.Name");
+        List<String> logTextChannelId = SQL.getAllEntriesWhereEqual("logTextChannelId", "logTextChannelName", logTextChannelName, SQL.TABLE_LOG_TEXT_CHANNEL);
+        if (!logTextChannelId.isEmpty()) {
+            if (!logTextChannelId.get(0).equals("0")) {
+                Guild guild = Preconditions.checkNotNull(DiscordSRV.getPlugin().getMainGuild());
+                TextChannel textChannel = Preconditions.checkNotNull(guild.getTextChannelById(logTextChannelId.get(0)));
 
-            String timeZone = getConfigTimeZone();
-            String dateTimeFormat = getConfigDateTimeFormat();
+                String timeZone = getConfigTimeZone();
+                String dateTimeFormat = getConfigDateTimeFormat();
 
-            Instant instant = Instant.now();
-            ZoneId zoneId = ZoneId.of(timeZone);
-            ZonedDateTime zonedDateTime = instant.atZone(zoneId);
-            String logTime = DateTimeFormatter.ofPattern(dateTimeFormat).format(zonedDateTime);
+                Instant instant = Instant.now();
+                ZoneId zoneId = ZoneId.of(timeZone);
+                ZonedDateTime zonedDateTime = instant.atZone(zoneId);
+                String logTime = DateTimeFormatter.ofPattern(dateTimeFormat).format(zonedDateTime);
 
-            String logMsg = String.join("\n"
-                    , logTime
-                    , "--------------------------------------------------"
-                    , "Message: " + getPluginPrefix() + " " + message
-                    , "--------------------------------------------------");
+                String logMsg = String.join("\n"
+                        , logTime
+                        , "--------------------------------------------------"
+                        , "Message: " + getPluginPrefix() + " " + message
+                        , "--------------------------------------------------");
 
-            DiscordUtil.sendMessage(textChannel, ChatColor.stripColor(logMsg));
-            Main.plugin.getLogger().info(ChatColor.stripColor(logMsg));
+                DiscordUtil.sendMessage(textChannel, ChatColor.stripColor(logMsg));
+                Main.plugin.getLogger().info(ChatColor.stripColor(logMsg));
+            }
         }
     }
 
@@ -135,37 +140,41 @@ public class TDCMessages {
     public static void sendMessageToDiscordLogChannel(UUID UUID, String message) {
         Preconditions.checkNotNull(message);
 
-        String discordLogTextChannelId = Preconditions.checkNotNull(Main.plugin.config.getString("messages.DiscordLogTextChannelId"));
+//        String discordLogTextChannelId = Preconditions.checkNotNull(Main.plugin.config.getString("messages.DiscordLogTextChannelId"));
 
-        if (!discordLogTextChannelId.equals("0")) {
-            OfflinePlayer offlinePlayer = Preconditions.checkNotNull(Bukkit.getOfflinePlayer(UUID));
-            Guild guild = Preconditions.checkNotNull(DiscordSRV.getPlugin().getMainGuild());
-            TextChannel textChannel = Preconditions.checkNotNull(guild.getTextChannelById(discordLogTextChannelId));
-            String discordId = Preconditions.checkNotNull(TDCManager.getLinkedId(offlinePlayer));
-            Member member = Preconditions.checkNotNull(DiscordUtil.getMemberById(discordId));
-            List<Role> roles = Preconditions.checkNotNull(member).getRoles();
+        String logTextChannelName = Main.plugin.config.getString("log.Channel.Name");
+        List<String> logTextChannelId = SQL.getAllEntriesWhereEqual("logTextChannelId", "logTextChannelName", logTextChannelName, SQL.TABLE_LOG_TEXT_CHANNEL);
+        if (!logTextChannelId.isEmpty()) {
+            if (!logTextChannelId.get(0).equals("0")) {
+                OfflinePlayer offlinePlayer = Preconditions.checkNotNull(Bukkit.getOfflinePlayer(UUID));
+                Guild guild = Preconditions.checkNotNull(DiscordSRV.getPlugin().getMainGuild());
+                TextChannel textChannel = Preconditions.checkNotNull(guild.getTextChannelById(logTextChannelId.get(0)));
+                String discordId = Preconditions.checkNotNull(TDCManager.getLinkedId(offlinePlayer));
+                Member member = Preconditions.checkNotNull(DiscordUtil.getMemberById(discordId));
+                List<Role> roles = Preconditions.checkNotNull(member).getRoles();
 
-            String timeZone = getConfigTimeZone();
-            String dateTimeFormat = getConfigDateTimeFormat();
+                String timeZone = getConfigTimeZone();
+                String dateTimeFormat = getConfigDateTimeFormat();
 
-            Instant instant = Instant.now();
-            ZoneId zoneId = ZoneId.of(timeZone);
-            ZonedDateTime zonedDateTime = instant.atZone(zoneId);
-            String logTime = DateTimeFormatter.ofPattern(dateTimeFormat).format(zonedDateTime);
+                Instant instant = Instant.now();
+                ZoneId zoneId = ZoneId.of(timeZone);
+                ZonedDateTime zonedDateTime = instant.atZone(zoneId);
+                String logTime = DateTimeFormatter.ofPattern(dateTimeFormat).format(zonedDateTime);
 
-            String logMsg = String.join("\n"
-                    , logTime
-                    , "--------------------------------------------------"
-                    , "Minecraft Name: " + offlinePlayer.getName()
-                    , "Minecraft UUID: " + UUID
-                    , "Discord Name: " + member.getUser().getAsMention()
-                    , "Discord ID: " + TDCManager.getLinkedId(offlinePlayer)
-                    , "Discord Roles: " + roles
-                    , "Message: " + getPluginPrefix() + " " + message
-                    , "--------------------------------------------------");
+                String logMsg = String.join("\n"
+                        , logTime
+                        , "--------------------------------------------------"
+                        , "Minecraft Name: " + offlinePlayer.getName()
+                        , "Minecraft UUID: " + UUID
+                        , "Discord Name: " + member.getUser().getAsMention()
+                        , "Discord ID: " + TDCManager.getLinkedId(offlinePlayer)
+                        , "Discord Roles: " + roles
+                        , "Message: " + getPluginPrefix() + " " + message
+                        , "--------------------------------------------------");
 
-            DiscordUtil.sendMessage(textChannel, ChatColor.stripColor(logMsg));
-            Main.plugin.getLogger().info(ChatColor.stripColor(logMsg));
+                DiscordUtil.sendMessage(textChannel, ChatColor.stripColor(logMsg));
+                Main.plugin.getLogger().info(ChatColor.stripColor(logMsg));
+            }
         }
     }
 
@@ -303,6 +312,114 @@ public class TDCMessages {
      */
     public static String getConfigMsgRoleRenameFailure() {
         return getConfigMsg("messages.Role.Rename.Failure");
+    }
+
+    /**
+     * Retrieves Category change not required message from config.yml
+     *
+     * @return String message
+     */
+    public static String getConfigMsgCategoryDoNothingSuccess() {
+        return getConfigMsg("messages.Category.DoNothing.Success");
+    }
+
+    /**
+     * Retrieves Failed to do nothing message from config.yml
+     *
+     * @return String message
+     */
+    public static String getConfigMsgCategoryDoNothingFailure() {
+        return getConfigMsg("messages.Category.DoNothing.Failure");
+    }
+
+    /**
+     * Retrieves Removed category message from config.yml
+     *
+     * @return String message
+     */
+    public static String getConfigMsgCategoryRemoveSuccess() {
+        return getConfigMsg("messages.Category.Remove.Success");
+    }
+
+    /**
+     * Retrieves Failed to remove category message from config.yml
+     *
+     * @return String message
+     */
+    public static String getConfigMsgCategoryRemoveFailure() {
+        return getConfigMsg("messages.Category.Remove.Failure");
+    }
+
+    /**
+     * Retrieves Added category message from config.yml
+     *
+     * @return String message
+     */
+    public static String getConfigMsgCategoryAddSuccess() {
+        return getConfigMsg("messages.Category.Add.Success");
+    }
+
+    /**
+     * Retrieves Failed to add category message from config.yml
+     *
+     * @return String message
+     */
+    public static String getConfigMsgCategoryAddFailure() {
+        return getConfigMsg("messages.Category.Add.Failure");
+    }
+
+    /**
+     * Retrieves Created category message from config.yml
+     *
+     * @return String message
+     */
+    public static String getConfigMsgCategoryCreateSuccess() {
+        return getConfigMsg("messages.Category.Create.Success");
+    }
+
+    /**
+     * Retrieves Failed to create category message from config.yml
+     *
+     * @return String message
+     */
+    public static String getConfigMsgCategoryCreateFailure() {
+        return getConfigMsg("messages.Category.Create.Failure");
+    }
+
+    /**
+     * Retrieves Deleted category message from config.yml
+     *
+     * @return String message
+     */
+    public static String getConfigMsgCategoryDeleteSuccess() {
+        return getConfigMsg("messages.Category.Delete.Success");
+    }
+
+    /**
+     * Retrieves Failed to delete category message from config.yml
+     *
+     * @return String message
+     */
+    public static String getConfigMsgCategoryDeleteFailure() {
+        return getConfigMsg("messages.Category.Delete.Failure");
+    }
+
+    /**
+     * Retrieves Renamed category message from config.yml
+     *
+     * @return String message
+     */
+    public static String getConfigMsgCategoryRenameSuccess() {
+        return getConfigMsg("messages.Category.Rename.Success");
+    }
+
+    /**
+     * Retrieves Failed to rename category message from config.yml
+     *
+     * @return String message
+     */
+    public static String getConfigMsgCategoryRenameFailure() {
+        return getConfigMsg("messages.Category.Rename.Failure");
     }
 
     /**

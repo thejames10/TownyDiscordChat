@@ -35,11 +35,9 @@ public class TDCManager {
     /**
      * Add or remove Discord ROLE for ALL PLAYERS that are in a town or nation
      */
-    public static final void discordUserRoleCheckAllLinked() {
+    public static void discordUserRoleCheckAllLinked() {
         Map<String, UUID> linkedAccounts = DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts();
-        linkedAccounts.forEach((discordId, UUID) -> {
-            discordUserRoleCheck(discordId, UUID);
-        });
+        if (!linkedAccounts.isEmpty()) { linkedAccounts.forEach(TDCManager::discordUserRoleCheck); }
     }
 
     /**
@@ -48,7 +46,7 @@ public class TDCManager {
      * @param discordId Player's Discord ID
      * @param UUID      Player's minecraft unique ID
      */
-    public static final void discordUserRoleCheck(String discordId, UUID UUID) {
+    public static void discordUserRoleCheck(String discordId, UUID UUID) {
 
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID);
         if (!offlinePlayer.hasPlayedBefore()) {
@@ -927,6 +925,199 @@ public class TDCManager {
                 TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateFailure() + " nation-" + nation.getName() + " [25]");
             });
         }
+    }
+
+    /**
+     * Creates Category to be used for Text and Voice Channels
+     *
+     * @param name      The name of the Category to be created
+     */
+    public static void createChatCategory(String name, Consumer<String> callback) {
+        Guild guild = DiscordSRV.getPlugin().getMainGuild();
+
+        final long noPermission = 0;
+        final long viewPermission = Permission.VIEW_CHANNEL.getRawValue();
+
+        final long everyoneRoleId = guild.getPublicRole().getIdLong();
+        final long botId = guild.getMember(DiscordSRV.getPlugin().getJda().getSelfUser()).getIdLong();
+
+        Preconditions.checkNotNull(guild, "Category creation error! @param guild null!");
+        Preconditions.checkNotNull(name, "Category creation error! @param name null!");
+
+        final ChannelAction<Category> categoryChannelAction = guild.createCategory(name)
+                .addRolePermissionOverride(everyoneRoleId, noPermission, viewPermission)
+                .addMemberPermissionOverride(botId, viewPermission, noPermission);
+
+        categoryChannelAction.queue(success -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgCategoryCreateSuccess() + " " + name + " [28]");
+            callback.accept(success.getId());
+        }, failure -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgCategoryCreateFailure() + " " + name + " [28]");
+            callback.accept(null);
+        });
+    }
+
+    /**
+     * Creates LogText Channel
+     *
+     * @param name      The name of the LogText Channel to be created
+     */
+    public static void createLogTextChannel(String name, String parentCategoryId, Consumer<String> callback) {
+        Guild guild = DiscordSRV.getPlugin().getMainGuild();
+
+        final long noPermission = 0;
+        final long viewPermission = Permission.VIEW_CHANNEL.getRawValue();
+
+        final long everyoneRoleId = guild.getPublicRole().getIdLong();
+        final long botId = guild.getMember(DiscordSRV.getPlugin().getJda().getSelfUser()).getIdLong();
+
+        Preconditions.checkNotNull(guild, "Channel creation error! @param guild null!");
+        Preconditions.checkNotNull(name, "Channel creation error! @param name null!");
+
+        final ChannelAction<TextChannel> textChannelAction = guild.createTextChannel(name)
+                .addRolePermissionOverride(everyoneRoleId, noPermission, viewPermission)
+                .addMemberPermissionOverride(botId, viewPermission, noPermission)
+                .setParent(guild.getCategoryById(parentCategoryId));
+
+        textChannelAction.queue(success -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelCreateSuccess() + " " + name + " [33]");
+            callback.accept(success.getId());
+        }, failure -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelCreateFailure() + " " + name + " [33]");
+            callback.accept(null);
+        });
+    }
+
+    /**
+     * Creates TownText Channel
+     *
+     * @param name      The name of the TownText Channel to be created
+     */
+    public static void createTownTextChannel(String name, String townRoleId, String townCategoryId, Consumer<String> callback) {
+        Guild guild = DiscordSRV.getPlugin().getMainGuild();
+
+        final long noPermission = 0;
+        final long viewPermission = Permission.VIEW_CHANNEL.getRawValue();
+
+        final long everyoneRoleId = guild.getPublicRole().getIdLong();
+        final long botId = guild.getMember(DiscordSRV.getPlugin().getJda().getSelfUser()).getIdLong();
+
+        Preconditions.checkNotNull(name, "Channel creation error! @param name null!");
+        Preconditions.checkNotNull(townRoleId, "Channel creation error! @param townRoleId null!");
+        Preconditions.checkNotNull(townCategoryId, "Channel creation error! @param townCategoryId null!");
+
+        final ChannelAction<TextChannel> textChannelAction = guild.createTextChannel(name)
+                .addRolePermissionOverride(everyoneRoleId, noPermission, viewPermission)
+                .addRolePermissionOverride(Long.parseLong(townRoleId), viewPermission, noPermission)
+                .addMemberPermissionOverride(botId, viewPermission, noPermission)
+                .setParent(guild.getCategoryById(townCategoryId));
+
+        textChannelAction.queue(success -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelCreateSuccess() + " " + name + " [29]");
+            callback.accept(success.getId());
+        }, failure -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelCreateFailure() + " " + name + " [29]");
+            callback.accept(null);
+        });
+    }
+
+    /**
+     * Creates NationText Channel
+     *
+     * @param name      The name of the NationText Channel to be created
+     */
+    public static void createNationTextChannel(String name, String nationRoleId, String nationCategoryId, Consumer<String> callback) {
+        Guild guild = DiscordSRV.getPlugin().getMainGuild();
+
+        final long noPermission = 0;
+        final long viewPermission = Permission.VIEW_CHANNEL.getRawValue();
+
+        final long everyoneRoleId = guild.getPublicRole().getIdLong();
+        final long botId = guild.getMember(DiscordSRV.getPlugin().getJda().getSelfUser()).getIdLong();
+
+        Preconditions.checkNotNull(name, "Channel creation error! @param name null!");
+        Preconditions.checkNotNull(nationRoleId, "Channel creation error! @param nationRoleId null!");
+        Preconditions.checkNotNull(nationCategoryId, "Channel creation error! @param nationCategoryId null!");
+
+        final ChannelAction<TextChannel> textChannelAction = guild.createTextChannel(name)
+                .addRolePermissionOverride(everyoneRoleId, noPermission, viewPermission)
+                .addRolePermissionOverride(Long.parseLong(nationRoleId), viewPermission, noPermission)
+                .addMemberPermissionOverride(botId, viewPermission, noPermission)
+                .setParent(guild.getCategoryById(nationCategoryId));
+
+        textChannelAction.queue(success -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelCreateSuccess() + " " + name + " [30]");
+            callback.accept(success.getId());
+        }, failure -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelCreateFailure() + " " + name + " [30]");
+            callback.accept(null);
+        });
+    }
+
+    /**
+     * Creates TownVoice Channel
+     *
+     * @param name      The name of the TownVoice Channel to be created
+     */
+    public static void createTownVoiceChannel(String name, String townRoleId, String townCategoryId, Consumer<String> callback) {
+        Guild guild = DiscordSRV.getPlugin().getMainGuild();
+
+        final long noPermission = 0;
+        final long viewPermission = Permission.VIEW_CHANNEL.getRawValue();
+
+        final long everyoneRoleId = guild.getPublicRole().getIdLong();
+        final long botId = guild.getMember(DiscordSRV.getPlugin().getJda().getSelfUser()).getIdLong();
+
+        Preconditions.checkNotNull(name, "Channel creation error! @param name null!");
+        Preconditions.checkNotNull(townRoleId, "Channel creation error! @param townRoleId null!");
+        Preconditions.checkNotNull(townCategoryId, "Channel creation error! @param townCategoryId null!");
+
+        final ChannelAction<VoiceChannel> voiceChannelAction = guild.createVoiceChannel(name)
+                .addRolePermissionOverride(everyoneRoleId, noPermission, viewPermission)
+                .addRolePermissionOverride(Long.parseLong(townRoleId), viewPermission, noPermission)
+                .addMemberPermissionOverride(botId, viewPermission, noPermission)
+                .setParent(guild.getCategoryById(townCategoryId));
+
+        voiceChannelAction.queue(success -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgVoiceChannelCreateSuccess() + " " + name + " [31]");
+            callback.accept(success.getId());
+        }, failure -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgVoiceChannelCreateFailure() + " " + name + " [31]");
+            callback.accept(null);
+        });
+    }
+
+    /**
+     * Creates NationVoice Channel
+     *
+     * @param name      The name of the NationVoice Channel to be created
+     */
+    public static void createNationVoiceChannel(String name, String nationRoleId, String nationCategoryId, Consumer<String> callback) {
+        Guild guild = DiscordSRV.getPlugin().getMainGuild();
+
+        final long noPermission = 0;
+        final long viewPermission = Permission.VIEW_CHANNEL.getRawValue();
+
+        final long everyoneRoleId = guild.getPublicRole().getIdLong();
+        final long botId = guild.getMember(DiscordSRV.getPlugin().getJda().getSelfUser()).getIdLong();
+
+        Preconditions.checkNotNull(name, "Channel creation error! @param name null!");
+        Preconditions.checkNotNull(nationRoleId, "Channel creation error! @param nationRoleId null!");
+        Preconditions.checkNotNull(nationCategoryId, "Channel creation error! @param nationCategoryId null!");
+
+        final ChannelAction<VoiceChannel> voiceChannelAction = guild.createVoiceChannel(name)
+                .addRolePermissionOverride(everyoneRoleId, noPermission, viewPermission)
+                .addRolePermissionOverride(Long.parseLong(nationRoleId), viewPermission, noPermission)
+                .addMemberPermissionOverride(botId, viewPermission, noPermission)
+                .setParent(guild.getCategoryById(nationCategoryId));
+
+        voiceChannelAction.queue(success -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgVoiceChannelCreateSuccess() + " " + name + " [32]");
+            callback.accept(success.getId());
+        }, failure -> {
+            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgVoiceChannelCreateFailure() + " " + name + " [32]");
+            callback.accept(null);
+        });
     }
 
     /**

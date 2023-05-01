@@ -12,8 +12,6 @@ public class TownTextChannels extends SQL {
 
     private final Main plugin;
 
-    private final String TABLE = "tdc_town_text_channels";
-
     public TownTextChannels(Main plugin) {
         this.plugin = plugin;
     }
@@ -21,7 +19,7 @@ public class TownTextChannels extends SQL {
     public void createTable() {
         PreparedStatement ps;
         try {
-            ps = plugin.SQL.getConnection().prepareStatement("CREATE TABLE IF NOT EXISTS " + TABLE + " "
+            ps = plugin.SQL.getConnection().prepareStatement("CREATE TABLE IF NOT EXISTS " + TABLE_TOWN_TEXT_CHANNELS + " "
                     + "(townRoleName VARCHAR(100),townTextChannelName VARCHAR(100),townTextChannelId VARCHAR(100), townTextChannelParentCategoryName VARCHAR(100), townTextChannelParentCategoryId VARCHAR(100), Expired VARCHAR(100),PRIMARY KEY (townRoleName))");
             ps.executeUpdate();
         } catch (SQLException e) {
@@ -33,7 +31,7 @@ public class TownTextChannels extends SQL {
                             String townTextChannelParentCategoryName, String townTextChannelParentCategoryId) {
         try {
             if (!entryExists(townRoleName, "townRoleName")) {
-                PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("INSERT IGNORE INTO " + TABLE + " "
+                PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("INSERT IGNORE INTO " + TABLE_TOWN_TEXT_CHANNELS + " "
                         + "(townRoleName,townTextChannelName,townTextChannelId,townTextChannelParentCategoryName,townTextChannelParentCategoryId,Expired) VALUES (?,?,?,?,?,?)");
                 ps.setString(1, townRoleName);
                 ps.setString(2, townTextChannelName);
@@ -49,22 +47,22 @@ public class TownTextChannels extends SQL {
     }
 
     public void deleteEntry(String searchValue, String searchColName) {
-        deleteEntry(searchValue, searchColName, TABLE);
+        deleteEntry(searchValue, searchColName, TABLE_TOWN_TEXT_CHANNELS);
     }
 
     public boolean entryExists(String searchValue, String searchColName) {
-        return entryExists(searchValue, searchColName, TABLE);
+        return entryExists(searchValue, searchColName, TABLE_TOWN_TEXT_CHANNELS);
     }
 
     public void updateEntry(String setValue, String setCol, String searchValue, String searchColName) {
-        updateEntry(setValue, setCol, searchValue, searchColName, TABLE);
+        updateEntry(setValue, setCol, searchValue, searchColName, TABLE_TOWN_TEXT_CHANNELS);
     }
 
     public @Nullable String getEntry(String selectCol, String searchValue, String searchColName) {
-        return  getEntry(selectCol, searchValue, searchColName, TABLE);
+        return  getEntry(selectCol, searchValue, searchColName, TABLE_TOWN_TEXT_CHANNELS);
     }
 
     public @Nullable List<String> getAllColumnEntries(String selectCol) {
-        return getAllColumnEntries(selectCol, TABLE);
+        return getAllColumnEntries(selectCol, TABLE_TOWN_TEXT_CHANNELS);
     }
 }

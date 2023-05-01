@@ -20,10 +20,14 @@ import static com.TownyDiscordChat.TownyDiscordChat.Main.plugin;
 
 public class SQL {
 
+    public static final String TABLE_LOG_CATEGORY = "tdc_log_category";
+    public static final String TABLE_LOG_TEXT_CHANNEL = "tdc_log_text_channel";
     public static final String TABLE_PLAYERS = "tdc_players";
-    public static final String TABLE_NATIONS = "tdc_nations";
-    public static final String TABLE_TOWNS = "tdc_towns";
+    public static final String TABLE_TOWN_ROLES = "tdc_town_roles";
+    public static final String TABLE_NATION_ROLES = "tdc_nation_roles";
     public static final String TABLE_QUEUED_TASKS = "tdc_queued_tasks";
+    public static final String TABLE_TOWN_CATEGORIES = "tdc_town_categories";
+    public static final String TABLE_NATION_CATEGORIES = "tdc_nation_categories";
     public static final String TABLE_TOWN_TEXT_CHANNELS = "tdc_town_text_channels";
     public static final String TABLE_NATION_TEXT_CHANNELS = "tdc_nation_text_channels";
     public static final String TABLE_TOWN_VOICE_CHANNELS = "tdc_town_voice_channels";
@@ -150,21 +154,36 @@ public class SQL {
         return null;
     }
 
-    public @Nullable List<String> getAllEntries(String selectCol, String TABLE) {
+    public static List<String> getAllEntriesWhereEqual(String selectCol, String searchCol, String searchValue, String TABLE) {
+        List<String> results = new ArrayList<>();
+            try {
+                PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("SELECT " + selectCol + " FROM " + TABLE + " WHERE " + searchCol + " = '" + searchValue + "'");
+
+                ResultSet resultSet = ps.executeQuery();
+
+                while (resultSet.next()) {
+                    results.add(resultSet.getString(selectCol));
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        return results;
+    }
+
+    public static List<String> getAllEntries(String selectCol, String TABLE) {
+        List<String> results = new ArrayList<>();
             try {
                 PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("SELECT " + selectCol + " FROM " + TABLE );
 
                 ResultSet resultSet = ps.executeQuery();
 
-                List<String> results = new ArrayList<>();
                 while (resultSet.next()) {
                     results.add(resultSet.getString(selectCol));
                 }
-                return results;
             } catch (SQLException e) {
                 e.printStackTrace();
             }
-        return null;
+        return results;
     }
 
     public @Nullable List<String> getAllColumnEntries(String selectCol, String TABLE) {

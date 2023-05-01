@@ -12,8 +12,6 @@ public class NationTextChannels extends SQL {
 
     private final Main plugin;
 
-    private final String TABLE = "tdc_nation_text_channels";
-
     public NationTextChannels(Main plugin) {
         this.plugin = plugin;
     }
@@ -21,7 +19,7 @@ public class NationTextChannels extends SQL {
     public void createTable() {
         PreparedStatement ps;
         try {
-            ps = plugin.SQL.getConnection().prepareStatement("CREATE TABLE IF NOT EXISTS " + TABLE + " "
+            ps = plugin.SQL.getConnection().prepareStatement("CREATE TABLE IF NOT EXISTS " + TABLE_NATION_TEXT_CHANNELS + " "
                     + "(nationRoleName VARCHAR(100),nationTextChannelName VARCHAR(100),nationTextChannelId VARCHAR(100), nationTextChannelParentCategoryName VARCHAR(100), nationTextChannelParentCategoryId VARCHAR(100), Expired VARCHAR(100),PRIMARY KEY (nationRoleName))");
             ps.executeUpdate();
         } catch (SQLException e) {
@@ -33,7 +31,7 @@ public class NationTextChannels extends SQL {
                             String nationTextChannelParentCategoryName, String nationTextChannelParentCategoryId) {
         try {
             if (!entryExists(nationRoleName, "townRoleName")) {
-                PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("INSERT IGNORE INTO " + TABLE + " "
+                PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("INSERT IGNORE INTO " + TABLE_NATION_TEXT_CHANNELS + " "
                         + "(nationRoleName,nationTextChannelName,nationTextChannelId,nationTextChannelParentCategoryName,nationTextChannelParentCategoryId,Expired) VALUES (?,?,?,?,?,?)");
                 ps.setString(1, nationRoleName);
                 ps.setString(2, nationTextChannelName);
@@ -49,22 +47,22 @@ public class NationTextChannels extends SQL {
     }
 
     public void deleteEntry(String searchValue, String searchColName) {
-        deleteEntry(searchValue, searchColName, TABLE);
+        deleteEntry(searchValue, searchColName, TABLE_NATION_TEXT_CHANNELS);
     }
 
     public boolean entryExists(String searchValue, String searchColName) {
-        return entryExists(searchValue, searchColName, TABLE);
+        return entryExists(searchValue, searchColName, TABLE_NATION_TEXT_CHANNELS);
     }
 
     public void updateEntry(String setValue, String setCol, String searchValue, String searchColName) {
-        updateEntry(setValue, setCol, searchValue, searchColName, TABLE);
+        updateEntry(setValue, setCol, searchValue, searchColName, TABLE_NATION_TEXT_CHANNELS);
     }
 
     public @Nullable String getEntry(String selectCol, String searchValue, String searchColName) {
-        return  getEntry(selectCol, searchValue, searchColName, TABLE);
+        return  getEntry(selectCol, searchValue, searchColName, TABLE_NATION_TEXT_CHANNELS);
     }
 
     public @Nullable List<String> getAllColumnEntries(String selectCol) {
-        return getAllColumnEntries(selectCol, TABLE);
+        return getAllColumnEntries(selectCol, TABLE_NATION_TEXT_CHANNELS);
     }
 }

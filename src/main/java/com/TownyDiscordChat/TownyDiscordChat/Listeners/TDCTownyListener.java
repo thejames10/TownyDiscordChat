@@ -110,7 +110,7 @@ public class TDCTownyListener implements Listener {
         Preconditions.checkNotNull(OLD_NAME);
         Preconditions.checkNotNull(NEW_NAME);
 
-        Main.plugin.townsDB.updateEntry(NEW_NAME, "townRoleName", OLD_NAME, "townRoleName");
+        Main.plugin.townRolesDB.updateEntry(NEW_NAME, "townRoleName", OLD_NAME, "townRoleName");
         Main.plugin.playersDB.updateEntry(NEW_NAME, "townRoleName", OLD_NAME, "townRoleName");
     }
 
@@ -124,7 +124,7 @@ public class TDCTownyListener implements Listener {
         Preconditions.checkNotNull(OLD_NAME);
         Preconditions.checkNotNull(NEW_NAME);
 
-        Main.plugin.nationsDB.updateEntry(NEW_NAME, "nationRoleName", OLD_NAME, "nationRoleName");
+        Main.plugin.nationRolesDB.updateEntry(NEW_NAME, "nationRoleName", OLD_NAME, "nationRoleName");
         Main.plugin.playersDB.updateEntry(NEW_NAME, "nationRoleName", OLD_NAME, "nationRoleName");
     }
 
@@ -142,7 +142,7 @@ public class TDCTownyListener implements Listener {
 
         TDCManager.createDiscordRole(town);
 
-        Main.plugin.townsDB.createEntry(townName, townUUID);
+        Main.plugin.townRolesDB.createEntry(townName, townUUID);
     }
 
     @EventHandler
@@ -159,7 +159,7 @@ public class TDCTownyListener implements Listener {
 
         TDCManager.createDiscordRole(nation);
 
-        Main.plugin.nationsDB.createEntry(nationName, nationUUID);
+        Main.plugin.nationRolesDB.createEntry(nationName, nationUUID);
     }
 
     @EventHandler
@@ -174,7 +174,7 @@ public class TDCTownyListener implements Listener {
 
         //TDCManager.deleteRole();
 
-        Main.plugin.townsDB.deleteEntry(townName, "townRoleName");
+        Main.plugin.townRolesDB.deleteEntry(townName, "townRoleName");
 
         Main.plugin.playersDB.updateEntry("EMPTY", "townRoleName", townName, "townRoleName");
     }
@@ -187,7 +187,7 @@ public class TDCTownyListener implements Listener {
 
         Preconditions.checkNotNull(nationName);
 
-        Main.plugin.townsDB.deleteEntry(nationName, "nationRoleName");
+        Main.plugin.nationRolesDB.deleteEntry(nationName, "nationRoleName");
 
         Main.plugin.playersDB.updateEntry("EMPTY", "nationRoleName", nationName, "nationRoleName");
     }

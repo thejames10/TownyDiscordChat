@@ -13,8 +13,6 @@ public class Players extends SQL {
 
     private final Main plugin;
 
-    public static final String TABLE = "tdc_players";
-
     public Players(Main plugin) {
         this.plugin = plugin;
     }
@@ -22,7 +20,7 @@ public class Players extends SQL {
     public void createTable() {
         PreparedStatement ps;
         try {
-            ps = plugin.SQL.getConnection().prepareStatement("CREATE TABLE IF NOT EXISTS " + TABLE + " "
+            ps = plugin.SQL.getConnection().prepareStatement("CREATE TABLE IF NOT EXISTS " + TABLE_PLAYERS + " "
                     + "(UUID VARCHAR(100),discordUserId VARCHAR(100),townRoleName VARCHAR(100),nationRoleName VARCHAR(100),isMayor VARCHAR(100),isKing VARCHAR(100),Expired VARCHAR(100),PRIMARY KEY (UUID))");
             ps.executeUpdate();
         } catch (SQLException e) {
@@ -39,7 +37,7 @@ public class Players extends SQL {
                             String nationRoleName, String isMayor, String isKing) {
         try {
             if (!entryExists(discordUserId, "discordUserId")) {
-                PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("INSERT IGNORE INTO " + TABLE + " "
+                PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("INSERT IGNORE INTO " + TABLE_PLAYERS + " "
                         + "(UUID,discordUserId,townRoleName,nationRoleName,isMayor,isKing,Expired) VALUES (?,?,?,?,?,?,?)");
                 ps.setString(1, UUID);
                 ps.setString(2, discordUserId);
@@ -56,22 +54,22 @@ public class Players extends SQL {
     }
 
     public void deleteEntry(String searchValue, String searchColName) {
-        deleteEntry(searchValue, searchColName, TABLE);
+        deleteEntry(searchValue, searchColName, TABLE_PLAYERS);
     }
 
     public boolean entryExists(String searchValue, String searchColName) {
-        return entryExists(searchValue, searchColName, TABLE);
+        return entryExists(searchValue, searchColName, TABLE_PLAYERS);
     }
 
     public void updateEntry(String setValue, String setCol, String searchValue, String searchColName) {
-        updateEntry(setValue, setCol, searchValue, searchColName, TABLE);
+        updateEntry(setValue, setCol, searchValue, searchColName, TABLE_PLAYERS);
     }
 
     public @Nullable String getEntry(String selectCol, String searchValue, String searchColName) {
-        return getEntry(selectCol, searchValue, searchColName, TABLE);
+        return getEntry(selectCol, searchValue, searchColName, TABLE_PLAYERS);
     }
 
     public @Nullable List<String> getAllColumnEntries(String selectCol) {
-        return getAllColumnEntries(selectCol, TABLE);
+        return getAllColumnEntries(selectCol, TABLE_PLAYERS);
     }
 }

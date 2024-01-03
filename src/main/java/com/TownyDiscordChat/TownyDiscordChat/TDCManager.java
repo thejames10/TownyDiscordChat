@@ -57,7 +57,12 @@ public class TDCManager {
             return;
         }
 
-        List<Role> memberRoles = DiscordUtil.getMemberById(discordId).getRoles();
+        Member member = DiscordUtil.getMemberById(discordId);
+        if (member == null) {
+            return;
+        }
+
+        List<Role> memberRoles = member.getRoles();
         List<Role> memberTownRoles = new ArrayList<>();
         List<Role> memberNationRoles = new ArrayList<>();
         for (Role role : memberRoles) {

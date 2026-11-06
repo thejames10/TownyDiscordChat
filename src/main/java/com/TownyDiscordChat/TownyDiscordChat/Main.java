@@ -103,6 +103,7 @@ public class Main extends JavaPlugin {
     @Override
     public void onEnable() {
         plugin = this;
+        boolean importedBackup = false;
 
         // Upgrade only when the active configuration is absent. Never let a
         // stale .bak overwrite an already-installed config.yml.
@@ -120,6 +121,7 @@ public class Main extends JavaPlugin {
                         getDataFolder(),new String(data.toByteArray(),
                                 java.nio.charset.StandardCharsets.UTF_8));
                 if (result.migrated) {
+                    importedBackup = true;
                     getLogger().info("[CONFIG UPGRADE] Created fresh config.yml from "
                             +result.copied.size()+" compatible settings in config.yml.bak. "
                             +"New defaults and comments were retained. "
@@ -130,9 +132,9 @@ public class Main extends JavaPlugin {
                                 +result.ignored
                                 +". Their values were not carried forward.");
                     }
-                    getLogger().warning("[CONFIG UPGRADE] Review config.yml and confirm "
-                            +"storage, Discord categories and role settings before "
-                            +"running synchronization; restart if edits are required.");
+                    getLogger().warning("[CONFIG UPGRADE] First startup will remain "
+                            +"in safe mode. Review the generated config.yml and "
+                            +"restart to enable Discord synchronization.");
                 }
             } catch (java.io.IOException | RuntimeException e) {
                 getLogger().severe("[CONFIG UPGRADE] Failed to migrate config.yml.bak: "
@@ -159,6 +161,17 @@ public class Main extends JavaPlugin {
                     : configCheck.errors().get(0);
             startupProblem="Invalid config.yml: "+firstError
                     +" Check console for all errors, correct the file, then restart.";
+        }
+
+        // Never start Discord reconciliation on the very first boot after
+        // importing unknown historical settings. The operator must inspect
+        // the generated config and explicitly restart once.
+        if (importedBackup) {
+            enterSafeMode(startupProblem!=null ? startupProblem
+                    : "Configuration imported from config.yml.bak. Review "
+                    +"config.yml (especially storage, categories and permissions), "
+                    +"then restart to enable Discord synchronization.");
+            return;
         }
 
         // Soft dependencies permit a visible, inert safe mode when outdated or

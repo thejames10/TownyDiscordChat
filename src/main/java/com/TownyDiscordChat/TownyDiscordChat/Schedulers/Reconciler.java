@@ -466,7 +466,7 @@ public final class Reconciler {
                     type.toLowerCase(java.util.Locale.ROOT) + ".CreateVoiceChannelForRole",true);
             if (createText) {
                 if (entity.textId != null && s.safeTextNamesById.containsKey(entity.textId)) {
-                    if (!name.equals(s.safeTextNamesById.get(entity.textId)))
+                    if (!name.equalsIgnoreCase(s.safeTextNamesById.get(entity.textId)))
                         resources.enqueue("RENAME_" + textKind,uuid);
                     else if (!eq(texts.get(name),entity.textId))
                         resources.enqueue(textKind,name);

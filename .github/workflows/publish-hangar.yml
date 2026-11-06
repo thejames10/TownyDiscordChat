@@ -5,6 +5,10 @@ name: Publish GitHub release to Hangar
 on:
   release:
     types: [published]
+  workflow_run:
+    workflows: ['Test Minecraft compatibility']
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       tag:
@@ -27,7 +31,11 @@ concurrency:
 jobs:
   publish:
     name: Upload the Minecraft 26.3 build
-    if: github.repository == 'thejames10/TownyDiscordChat'
+    if: >-
+      github.repository == 'thejames10/TownyDiscordChat' &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        startsWith(github.event.workflow_run.head_commit.message, 'release: TownyDiscordChat ')))
     runs-on: ubuntu-latest
     steps:
       - name: Select the existing GitHub release
@@ -38,14 +46,22 @@ jobs:
           EVENT_PRERELEASE: ${{ github.event.release.prerelease }}
           INPUT_PRERELEASE: ${{ inputs.prerelease }}
           EVENT_NAME: ${{ github.event_name }}
+          WORKFLOW_MESSAGE: ${{ github.event.workflow_run.head_commit.message }}
         shell: bash
         run: |
           set -euo pipefail
           tag="${EVENT_TAG:-${INPUT_TAG:-}}"
+          if [[ "$EVENT_NAME" == "workflow_run" ]]; then
+            [[ "$WORKFLOW_MESSAGE" =~ ^release:\ TownyDiscordChat\ ([0-9]+\.[0-9]+\.[0-9]+) ]] || { echo "Cannot determine release version"; exit 1; }
+            tag="v${BASH_REMATCH[1]}"
+          fi
           [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9.-]+)?$ ]] || { echo "Invalid release tag: $tag"; exit 1; }
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
-          if [[ "$EVENT_NAME" == 'release' ]]; then
+          if [[ "$EVENT_NAME" == 'workflow_run' ]]; then
+            # The current CI release job creates a GitHub pre-release.
+            channel=Beta
+          elif [[ "$EVENT_NAME" == 'release' ]]; then
             [[ "$EVENT_PRERELEASE" == 'true' ]] && channel=Beta || channel=Release
           else
             [[ "$INPUT_PRERELEASE" == 'true' ]] && channel=Beta || channel=Release

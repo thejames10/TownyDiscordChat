@@ -84,10 +84,8 @@ public final class Queue {
             if (intent == null) intent = memberStore.claim(false);
             if (intent == null) { memberBusy.set(false); return; }
             Set<String> owners = new HashSet<String>();
-            if (intent.desired) {
-                owners.addAll(stable.ownersOfId(intent.guildId,"TOWN_ROLE",intent.roleId));
-                owners.addAll(stable.ownersOfId(intent.guildId,"NATION_ROLE",intent.roleId));
-            }
+            owners.addAll(stable.ownersOfId(intent.guildId,"TOWN_ROLE",intent.roleId));
+            owners.addAll(stable.ownersOfId(intent.guildId,"NATION_ROLE",intent.roleId));
             scheduleMember(intent,owners);
         } catch (Exception e) {
             plugin.getLogger().severe("Could not claim membership intent: " + e.getMessage());
@@ -162,7 +160,8 @@ public final class Queue {
                 }
                 return;
             }
-            if (!intent.desired && (!role.getPermissions().isEmpty()
+            if (!intent.desired && owners.isEmpty()
+                    && (!role.getPermissions().isEmpty()
                     || !(role.getName().startsWith("town-")
                     || role.getName().startsWith("nation-")))) {
                 plugin.reportAdminWarning("Tracked role " + role.getId()

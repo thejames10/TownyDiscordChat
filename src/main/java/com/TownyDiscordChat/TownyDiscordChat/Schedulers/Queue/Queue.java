@@ -6,6 +6,7 @@ import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore.Job;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore.Intent;
+import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore.Grant;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Member;
 import github.scarsz.discordsrv.dependencies.jda.api.exceptions.ErrorResponseException;
 import com.palmergames.bukkit.towny.TownyUniverse;
@@ -21,6 +22,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitTask;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -122,7 +128,7 @@ public final class Queue {
                 return;
             }
             Member member = guild.getMemberById(intent.memberId);
-            if (member != null) {
+            if (member != null && intent.desired) {
                 applyMember(intent, guild, member, role);
             } else {
                 // Do not infer missing role membership from an incomplete JDA
@@ -210,6 +216,19 @@ public final class Queue {
                 return;
             }
             switch (job.kind) {
+                case "AUDIT_MEMBER": {
+                    // On a clean reinstall JDA's cache may omit linked users.
+                    // Fetch the member from Discord instead of trusting cache.
+                    guild.retrieveMemberById(job.name).queue(
+                        member -> Bukkit.getScheduler().runTask(plugin,
+                            () -> inspectLinkedMember(job, guild, member)),
+                        failure -> {
+                            if (isUnknownMember(failure)) discard(job);
+                            else fail(job, failure.getClass().getSimpleName()
+                                    + ": " + failure.getMessage());
+                        });
+                    break;
+                }
                 case "TOWN_ROLE": {
                     Town town = TownyUniverse.getInstance().getTown(job.name);
                     if (town == null) { discard(job); return; }
@@ -249,6 +268,84 @@ public final class Queue {
             }
         } catch (Exception e) {
             fail(job, e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
+    }
+
+
+    /**
+     * TDC-owned guild membership audit. Role IDs from historic SQL mappings
+     * and current Towny entities establish ownership; a prefix alone does not.
+     * Snapshot Towny on the main thread; persistence stays asynchronous.
+     */
+    private void inspectLinkedMember(Job job, Guild guild, Member member) {
+        try {
+            UUID uuid = DiscordSRV.getPlugin().getAccountLinkManager()
+                    .getLinkedAccounts().get(job.name);
+            if (uuid == null) { discard(job); return; }
+            com.palmergames.bukkit.towny.object.Resident resident =
+                    TownyUniverse.getInstance().getResident(uuid);
+            final Set<String> desired = new HashSet<String>();
+            if (resident != null && resident.hasTown()) {
+                try {
+                    Town town = resident.getTown();
+                    if (town != null) {
+                        Role r = first(guild.getRolesByName("town-" + town.getName(), true));
+                        if (r != null) desired.add(r.getId());
+                        if (town.hasNation()) {
+                            Nation nation = town.getNation();
+                            Role n = first(guild.getRolesByName("nation-" + nation.getName(), true));
+                            if (n != null) desired.add(n.getId());
+                        }
+                    }
+                } catch (com.palmergames.bukkit.towny.exceptions.NotRegisteredException ex) {
+                    defer(job, "Towny changed during membership audit");
+                    return;
+                }
+            }
+            final Set<String> actual = new HashSet<String>();
+            final Map<String,String> roleNames = new HashMap<String,String>();
+            final Set<String> townNames = new HashSet<String>();
+            final Set<String> nationNames = new HashSet<String>();
+            for (Town town : TownyUniverse.getInstance().getTowns()) townNames.add(town.getName());
+            for (Nation nation : TownyUniverse.getInstance().getNations()) nationNames.add(nation.getName());
+            for (Role role : member.getRoles()) {
+                actual.add(role.getId());
+                roleNames.put(role.getId(), role.getName());
+            }
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                try {
+                    Set<String> owned = new HashSet<String>(store.mappedIds("TOWN_ROLE").values());
+                    owned.addAll(store.mappedIds("NATION_ROLE").values());
+                    List<Grant> observed = new ArrayList<Grant>();
+                    for (String id : actual) {
+                        String name = roleNames.get(id);
+                        boolean recognized = owned.contains(id) ||
+                                (name.startsWith("town-") && townNames.contains(name.substring(5))) ||
+                                (name.startsWith("nation-") && nationNames.contains(name.substring(7)));
+                        if (!recognized) continue;
+                        observed.add(new Grant(job.name, id));
+                        if (!desired.contains(id))
+                            memberStore.desire(guild.getId(), job.name, id, false);
+                    }
+                    memberStore.observe(guild.getId(), observed);
+                    for (String id : desired) if (!actual.contains(id))
+                        memberStore.desire(guild.getId(), job.name, id, true);
+                    store.remove(job);
+                    plugin.getLogger().info("Audited linked Discord member " + job.name);
+                } catch (Exception e) {
+                    try { store.fail(job, "Member audit failed: " + e.getMessage()); }
+                    catch (SQLException db) {
+                        plugin.getLogger().severe("Member audit SQL error " + db.getMessage());
+                    }
+                } finally {
+                    if (current == job) {
+                        current = null;
+                        resourceBusy.set(false);
+                    }
+                }
+            });
+        } catch (Throwable error) {
+            fail(job, "Member audit dispatch error: " + error.getMessage());
         }
     }
 

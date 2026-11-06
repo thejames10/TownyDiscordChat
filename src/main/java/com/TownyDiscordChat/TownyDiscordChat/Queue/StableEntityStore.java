@@ -239,10 +239,17 @@ public final class StableEntityStore {
      */
     public String uniqueIdForName(String guild,String kind,String name,String component)
             throws SQLException {
+        try (Connection c=jobs.connect()) {
+            return uniqueIdForName(c,guild,kind,name,component);
+        }
+    }
+
+    static String uniqueIdForName(Connection c,String guild,String kind,
+                                  String name,String component) throws SQLException {
         if (!("ROLE".equals(component) || "TEXT".equals(component)
                 || "VOICE".equals(component)))
             throw new SQLException("Unknown Discord resource component "+component);
-        try (Connection c=jobs.connect(); PreparedStatement ps=c.prepareStatement(
+        try (PreparedStatement ps=c.prepareStatement(
                 "SELECT role_id,text_id,voice_id FROM " + TABLE
                 + " WHERE guild_id=? AND kind=? AND last_name=?")) {
             ps.setString(1,guild);

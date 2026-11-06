@@ -59,10 +59,13 @@ category:
   Admin:
     Name: "MINECRAFT-STAFF"
 
-# Legacy Discord log-channel names retained for configuration upgrades.
-# The SQL branch reports queue/API failures in the Minecraft server console;
-# the old Discord logging scheduler is deliberately not active.
+# Private Discord activity log. The SQL queue sends actual resource changes,
+# membership changes and failures to this existing channel, asynchronously.
+# The target category must deny @everyone View Channel; the bot must be able
+# to read and send messages there. No unsafe public channel is auto-created.
+# Console logging remains active even when this channel is missing/disabled.
 log:
+  Enabled: true
   Category:
     Name: "MINECRAFT-STAFF"
   Channel:
@@ -71,7 +74,8 @@ log:
 messages:
   TimeZone: "UTC"
   DateFormat: "dd/MM/yyyy - hh:mm a"
-  # Legacy optional setting. The SQL queue does not require a log channel ID.
+  # Legacy ID from pre-SQL releases (ignored). The active Discord log channel
+  # is located by log.Category.Name and log.Channel.Name.
   DiscordLogTextChannelId: 0
 
   Prefix: "&8[&2TDC Bot&8]"

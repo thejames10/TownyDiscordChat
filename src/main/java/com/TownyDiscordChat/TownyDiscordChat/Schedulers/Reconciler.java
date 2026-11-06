@@ -204,7 +204,7 @@ public final class Reconciler {
             boolean isLinked = linked.contains(member.getId());
             if (!isLinked && !scanUnlinked) continue;
             for (Role role : member.getRoles()) {
-                if (managed(role)) {
+                if (managed(role, state)) {
                     Grant grant = new Grant(member.getId(), role.getId());
                     state.observed.add(grant);
                     state.cachedPairs.add(pair(member.getId(), role.getId()));
@@ -220,8 +220,12 @@ public final class Reconciler {
 
     private static String pair(String member, String role) { return member + "|" + role; }
 
-    private static boolean managed(Role role) {
-        return role.getName().startsWith("town-") || role.getName().startsWith("nation-");
+    private static boolean managed(Role role, Snapshot state) {
+        String name = role.getName();
+        // Do not appropriate a similarly-prefixed role merely because its
+        // name looks like ours. Existing SQL-tracked grants remain revocable.
+        return (name.startsWith("town-") && state.towns.contains(name.substring(5)))
+                || (name.startsWith("nation-") && state.nations.contains(name.substring(7)));
     }
 
     private static <T> T first(List<T> entries) {

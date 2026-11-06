@@ -48,7 +48,7 @@ These are **intended test combinations**, not production certifications. Java re
 
 ### Which download should I use?
 
-Download **`TownyDiscordChat-MC-<your-version>.zip`** from a successful [SQL-branch build](https://github.com/thejames10/TownyDiscordChat/actions?query=branch%3ASQL). There is **one package per listed Minecraft version**; the ZIP contains the JAR, configuration example, setup instructions, and `BUILD-INFO.txt` with the exact APIs used to compile it.
+**Click your Minecraft version in the compatibility table** to open its matching GitHub Actions artifact. Download the `TownyDiscordChat-MC-<your-version>` ZIP. There is **one package per listed Minecraft version**; the ZIP contains the JAR, configuration example, setup instructions, and `BUILD-INFO.txt` with the exact APIs used to compile it.
 
 Earlier development builds offered a second `-modern` artifact. That suffix distinguished **compile-time** Towny/DiscordSRV APIs, not a feature edition or bundled dependencies. We now build the player-facing artifact against the intended version combination and run historical API checks separately, so users no longer need to choose between two packages.
 
@@ -78,7 +78,7 @@ Enable Discord's privileged **Server Members Intent** in the bot's Developer Por
 
 ### 3. Install the TownyDiscordChat build
 
-Download the ZIP matching your Minecraft version from a successful [SQL-branch GitHub Actions run](https://github.com/thejames10/TownyDiscordChat/actions?query=branch%3ASQL). Each ZIP includes `BUILD-INFO.txt` describing its compile-time dependency versions. Extract the ZIP, then copy **the plugin JAR, not the ZIP**, into `plugins/`.
+Use the **linked Minecraft version in the compatibility table above** to download its test ZIP directly from GitHub Actions. Each ZIP includes `BUILD-INFO.txt` describing its compile-time dependency versions. Extract the ZIP, then copy **the plugin JAR, not the ZIP**, into `plugins/`.
 
 Start the server once to generate `plugins/TownyDiscordChat/config.yml`, then stop it before editing MySQL credentials. **Do not delete your existing config when upgrading**; back it up and merge newer settings. See the versioned configuration template inside the artifact ZIP.
 

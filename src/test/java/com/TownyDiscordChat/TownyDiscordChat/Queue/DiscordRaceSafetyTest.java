@@ -40,6 +40,38 @@ class DiscordRaceSafetyTest {
         }
     }
 
+    @Test void deletedTownIdentityCannotRetireBeforeInflightCreateFinishes() throws Exception {
+        try (Connection c=Database.openSQLite(temp.resolve("retire.db").toFile());
+             Statement st=c.createStatement()) {
+            setup(c);
+            st.executeUpdate("INSERT INTO tdc_towny_identity "
+                    +"(guild_id,kind,towny_uuid,last_name) VALUES "
+                    +"('123456789012345678','TOWN',"
+                    +"'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','DeletedTown')");
+            st.executeUpdate("INSERT INTO tdc_discord_jobs "
+                    +"(id,job_key,kind,resource_name,status,attempts) VALUES "
+                    +"(1,'TOWN_ROLE:DeletedTown','TOWN_ROLE','DeletedTown','RUNNING',1)");
+            StableEntityStore.retireIfEmpty(c,"123456789012345678","TOWN",
+                    "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+            try (ResultSet rs=st.executeQuery("SELECT COUNT(*) FROM tdc_towny_identity")) {
+                assertTrue(rs.next());
+                assertEquals(1,rs.getInt(1),
+                        "Must retain stable ownership until late creation can be recorded");
+            }
+            st.executeUpdate("UPDATE tdc_discord_jobs SET status='PENDING' WHERE id=1");
+            StableEntityStore.retireIfEmpty(c,"123456789012345678","TOWN",
+                    "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+            try (ResultSet rs=st.executeQuery("SELECT COUNT(*) FROM tdc_towny_identity")) {
+                assertTrue(rs.next());
+                assertEquals(0,rs.getInt(1),"No remote ID and no running job: safe to retire");
+            }
+            try (ResultSet rs=st.executeQuery("SELECT COUNT(*) FROM tdc_discord_jobs")) {
+                assertTrue(rs.next());
+                assertEquals(0,rs.getInt(1),"Pending obsolete creations must be cancelled");
+            }
+        }
+    }
+
     @Test void immutableOwnershipRejectsAnotherTownWithTheSameName() throws Exception {
         try (Connection c=Database.openSQLite(temp.resolve("owners.db").toFile());
              Statement st=c.createStatement()) {

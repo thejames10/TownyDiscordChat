@@ -40,6 +40,7 @@ public class Main extends JavaPlugin {
     public NationTextChannels nationTextChannelsDB;
     public NationVoiceChannels nationVoiceChannelsDB;
     public Queue queueScheduler;
+    public DiscordActivityLog activityLog;
     public Reconciler reconciler;
     public CompatibilityGuard compatibility;
     public AccountChangeListener accountListener;
@@ -61,6 +62,8 @@ public class Main extends JavaPlugin {
         if (warning.equals(adminWarning)) return;
         adminWarning = warning;
         getLogger().warning("[ADMIN ACTION REQUIRED] " + warning);
+        if (activityLog!=null)
+            activityLog.publish("WARNING", "Administrator action required: "+warning,true);
         if (isEnabled()) {
             Bukkit.getScheduler().runTask(this, () -> {
                 for (Player player : Bukkit.getOnlinePlayers()) {
@@ -190,6 +193,7 @@ public class Main extends JavaPlugin {
         java.util.Objects.requireNonNull(getCommand("tdcqueue")).setExecutor(new TDCSQL());
 
         this.SQL = new Database(config,getDataFolder());
+        this.activityLog = new DiscordActivityLog(this);
         this.logCategoryDB = new LogCategory(this);
         this.logTextChannelDB = new LogTextChannel(this);
         this.playersDB = new com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.Players(this);

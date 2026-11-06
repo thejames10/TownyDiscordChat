@@ -4,6 +4,7 @@ import com.TownyDiscordChat.TownyDiscordChat.Core.TDCManager;
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.RoleSafety;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
+import com.TownyDiscordChat.TownyDiscordChat.Queue.QueueMessages;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.StableEntityStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore.Job;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
@@ -314,13 +315,15 @@ public final class Queue {
                 doneMember(intent);
                 return;
             }
+            String outcome=QueueMessages.member(intent.desired,member.getId(),
+                    role.getName()+" [role "+role.getId()+"]",intent.id,intent.attempts);
             if (intent.desired) {
                 guild.addRoleToMember(member, role).queue(
-                        success -> doneMember(intent),
+                        success -> doneMember(intent,outcome),
                         failure -> failMember(intent, failure));
             } else {
                 guild.removeRoleFromMember(member, role).queue(
-                        success -> doneMember(intent),
+                        success -> doneMember(intent,outcome),
                         failure -> failMember(intent, failure));
             }
         } catch (Throwable e) {
@@ -329,12 +332,16 @@ public final class Queue {
     }
 
     private void doneMember(Intent intent) {
+        doneMember(intent,"[QUEUE] VERIFIED membership already satisfied or role absent: "+intent);
+    }
+
+    private void doneMember(Intent intent,String message) {
         finalizeMemberAsync(intent, () -> {
             memberStore.succeed(intent);
             // Verify the eventual remote result, including after a lease
             // expired and an older asynchronous grant arrived too late.
             if (intent.desired) store.enqueue("AUDIT_MEMBER", intent.memberId);
-        }, "Completed " + intent);
+        }, message);
     }
 
     private void deferMember(Intent intent, String reason) {
@@ -346,7 +353,8 @@ public final class Queue {
     }
 
     private void failMember(Intent intent, String reason) {
-        finalizeMemberAsync(intent, () -> memberStore.fail(intent, reason), "Failed " + intent + ": " + reason);
+        finalizeMemberAsync(intent, () -> memberStore.fail(intent, reason),
+                "[QUEUE] FAILED membership " + intent + ": " + reason);
     }
 
     private void finalizeMemberAsync(Intent intent, SQLAction action, String message) {
@@ -354,8 +362,18 @@ public final class Queue {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 action.run();
-                if (!intent.desired && message.startsWith("Failed")) plugin.getLogger().severe(message);
+                if (!intent.desired && message.startsWith("[QUEUE] FAILED"))
+                    plugin.getLogger().severe(message);
+                else if (message.startsWith("[QUEUE] FAILED"))
+                    plugin.getLogger().warning(message);
                 else plugin.getLogger().info(message);
+                if (plugin.activityLog!=null &&
+                        (message.startsWith("[QUEUE] GRANTED")
+                        || message.startsWith("[QUEUE] REVOKED")
+                        || message.startsWith("[QUEUE] FAILED"))) {
+                    plugin.activityLog.publish(message.startsWith("[QUEUE] FAILED")
+                            ? "ERROR" : "CHANGE",message,true);
+                }
             } catch (SQLException e) {
                 plugin.getLogger().severe("Could not persist membership intent " + intent
                         + ": " + e.getMessage());
@@ -542,7 +560,7 @@ public final class Queue {
         finalizeAsync(job, () -> {
             store.succeed(job,remoteId,parentId);
             if (plugin.reconciler!=null) plugin.reconciler.requestSoon();
-        }, "Recovered resource belonging to deleted Towny identity: "+job);
+        }, QueueMessages.resource("RECOVERED",job,job.name,remoteId),false);
     }
 
     private static boolean safeExistingText(Guild guild,TextChannel channel,Role role) {
@@ -787,7 +805,7 @@ public final class Queue {
             }
             if (job.kind.endsWith("ROLE")) {
                 Role role = guild.getRoleById(mappedId);
-                if (role == null) { deleted(job, mappedId); return; }
+                if (role == null) { deleted(job, mappedId,false); return; }
                 String expected = (town ? "town-" : "nation-") + job.name;
                 if (!RoleSafety.safeForMembership(role) || !role.getName().equalsIgnoreCase(expected)) {
                     fail(job, "Role " + mappedId + " repurposed/mismatched; refusing automatic deletion");
@@ -799,7 +817,7 @@ public final class Queue {
             }
             if (job.kind.endsWith("TEXT")) {
                 TextChannel channel = guild.getTextChannelById(mappedId);
-                if (channel == null) { deleted(job,mappedId); return; }
+                if (channel == null) { deleted(job,mappedId,false); return; }
                 String category = plugin.getConfig().getString(
                         "category." + (town ? "Town" : "Nation") + ".Name", "");
                 if (!channel.getName().equalsIgnoreCase(job.name) ||
@@ -818,7 +836,7 @@ public final class Queue {
             }
             if (job.kind.endsWith("VOICE")) {
                 VoiceChannel channel = guild.getVoiceChannelById(mappedId);
-                if (channel == null) { deleted(job,mappedId); return; }
+                if (channel == null) { deleted(job,mappedId,false); return; }
                 String category = plugin.getConfig().getString(
                         "category." + (town ? "Town" : "Nation") + ".Name", "");
                 if (!channel.getName().equalsIgnoreCase(job.name) ||
@@ -841,8 +859,13 @@ public final class Queue {
         }
     }
 
-    private void deleted(Job job, String remoteId) {
-        finalizeAsync(job, () -> store.succeedDeletion(job,remoteId), "Deleted " + job);
+    private void deleted(Job job, String remoteId) { deleted(job,remoteId,true); }
+
+    private void deleted(Job job, String remoteId, boolean remoteDeleted) {
+        finalizeAsync(job, () -> store.succeedDeletion(job,remoteId),
+                QueueMessages.resource(remoteDeleted?"DELETED":"CLEANED UP",job,job.name,remoteId)
+                        +(remoteDeleted?"":" (Discord resource was already absent)"),
+                remoteDeleted);
     }
 
     /**
@@ -1078,35 +1101,59 @@ public final class Queue {
 
     private void result(Job job, String id, String parent) {
         if (id == null || id.trim().isEmpty()) fail(job, "Discord REST action failed; see DiscordSRV logs");
-        else success(job, id, parent);
+        else finalizeAsync(job, () -> store.succeed(job,id,parent),
+                QueueMessages.resource("CREATED",job,job.name,id),true);
     }
 
     private void success(Job job, String id, String parent) {
-        finalizeAsync(job, () -> store.succeed(job, id, parent), "Completed " + job);
+        finalizeAsync(job, () -> store.succeed(job,id,parent),
+                QueueMessages.resource("ADOPTED",job,job.name,id),false);
+    }
+
+    private void renamed(Job job,String resourceName,String id) {
+        finalizeAsync(job, () -> store.remove(job),
+                QueueMessages.resource("RENAMED",job,resourceName,id),true);
     }
 
     private void discard(Job job) {
-        // A deleted Towny entity must never cause an unbounded retry loop.
-        finalizeAsync(job, () -> store.remove(job), "Discarded missing Towny entity " + job);
+        skip(job,"obsolete or already satisfied; no Discord change");
+    }
+
+    private void skip(Job job,String reason) {
+        // Stale jobs must be acknowledged, not retried indefinitely.
+        finalizeAsync(job, () -> store.remove(job),
+                QueueMessages.resource("SKIPPED",job,job.name,null)+": "+reason,false);
     }
 
     private void defer(Job job, String reason) {
-        finalizeAsync(job, () -> store.defer(job, reason), "Deferred " + job + ": " + reason);
+        finalizeAsync(job, () -> store.defer(job, reason),
+                QueueMessages.resource("WAITING",job,job.name,null)+": "+reason,false);
     }
 
     private void fail(Job job, String reason) {
-        finalizeAsync(job, () -> store.fail(job, reason), "Failed " + job + ": " + reason);
+        finalizeAsync(job, () -> store.fail(job, reason),
+                QueueMessages.resource("FAILED",job,job.name,null)+": "+reason,true);
     }
 
     private interface SQLAction { void run() throws SQLException; }
 
     private void finalizeAsync(final Job job, final SQLAction action, final String message) {
+        finalizeAsync(job,action,message,false);
+    }
+
+    private void finalizeAsync(final Job job, final SQLAction action,
+                               final String message, final boolean toDiscord) {
         if (!plugin.isEnabled()) return; // lease will be recovered after restart
         Bukkit.getScheduler().runTaskAsynchronously(plugin, new Runnable() {
             @Override public void run() {
                 try {
                     action.run();
-                    plugin.getLogger().info(message);
+                    if (message.startsWith("[QUEUE] FAILED"))
+                        plugin.getLogger().warning(message);
+                    else plugin.getLogger().info(message);
+                    if (toDiscord && plugin.activityLog!=null)
+                        plugin.activityLog.publish(message.startsWith("[QUEUE] FAILED")
+                                ? "ERROR" : "CHANGE",message,true);
                 } catch (SQLException e) {
                     plugin.getLogger().severe("Could not persist Discord job " + job
                             + ": " + e.getMessage() + "; lease will be retried");

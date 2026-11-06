@@ -47,9 +47,10 @@ public final class CompatibilityGuard implements Listener {
             return false;
         }
         if (compare(townyVersion, "0.102.0.0") >= 0
-                && serverName.contains("spigot")) {
-            problem = "Towny 0.102.0.0+ requires Paper/Purpur/Folia; Spigot is not supported. "
-                    + "Use Paper or Purpur for this plugin build.";
+                && !serverName.contains("paper") && !serverName.contains("purpur")) {
+            problem = "Towny 0.102.0.0+ requires Paper or Purpur with this plugin. "
+                    + "Spigot/CraftBukkit and unknown server types are unsupported. "
+                    + "Detected server: " + plugin.getServer().getName();
             return false;
         }
         if (compare(discordVersion, "1.31.0") >= 0) {

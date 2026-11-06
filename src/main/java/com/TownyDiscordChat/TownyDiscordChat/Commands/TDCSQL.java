@@ -40,7 +40,7 @@ public class TDCSQL implements CommandExecutor {
                     if (audit) {
                         if (guildId == null) message = "Discord guild is not connected; cannot audit yet.";
                         else {
-                            jobs.enqueue("AUDIT_GUILD",guildId);
+                            jobs.requestFullAudit(guildId);
                             message = "Queued full-guild member audit (requires Server Members Intent).";
                         }
                     } else if (retry) {

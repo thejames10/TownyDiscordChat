@@ -186,7 +186,7 @@ public final class ConfigUpgrade {
      */
     static String mergeWithComments(String defaults,Map<String,Object> overrides)
             throws IOException {
-        String[] lines=defaults.split("\\n",-1);
+        // Git checkouts on Windows may use CRLF. Match YAML keys without\n        // trailing carriage returns, then retain the template newline style.\n        String lineEnding=defaults.contains("\r\n") ? "\r\n"\n                : (defaults.contains("\n") ? "\n" : "\r");\n        String[] lines=defaults.split("\\r\\n|\\n|\\r",-1);
         List<String> parents=new ArrayList<String>();
         List<Integer> levels=new ArrayList<Integer>();
         Set<String> seen=new HashSet<String>();
@@ -214,7 +214,7 @@ public final class ConfigUpgrade {
         if (seen.size()!=overrides.size())
             throw new IOException("Current config template lacks migrated setting(s): "
                     + difference(overrides.keySet(),seen));
-        return String.join("\n",lines);
+        return String.join(lineEnding,lines);
     }
 
     private static Set<String> difference(Set<String> expected,Set<String> actual) {

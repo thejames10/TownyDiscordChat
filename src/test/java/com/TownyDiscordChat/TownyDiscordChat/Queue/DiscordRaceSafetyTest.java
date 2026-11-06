@@ -60,6 +60,36 @@ class DiscordRaceSafetyTest {
         }
     }
 
+    @Test void orphanCleanupUsesStableIdWhenLegacyRowIsMissing() throws Exception {
+        try (Connection c=Database.openSQLite(temp.resolve("orphan.db").toFile());
+             Statement st=c.createStatement()) {
+            setup(c);
+            st.executeUpdate("INSERT INTO tdc_towny_identity "
+                    +"(guild_id,kind,towny_uuid,last_name,role_id,text_id,voice_id) VALUES "
+                    +"('123456789012345678','TOWN','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',"
+                    +"'OldTown','111111111111111111','222222222222222222','333333333333333333')");
+            assertEquals("111111111111111111",
+                    StableEntityStore.uniqueIdForName(c,
+                            "123456789012345678","TOWN","OldTown","ROLE"));
+            assertEquals("222222222222222222",
+                    StableEntityStore.uniqueIdForName(c,
+                            "123456789012345678","TOWN","OldTown","TEXT"));
+            assertEquals("333333333333333333",
+                    StableEntityStore.uniqueIdForName(c,
+                            "123456789012345678","TOWN","OldTown","VOICE"));
+            assertNull(StableEntityStore.uniqueIdForName(c,
+                    "123456789012345678","TOWN","Unknown","ROLE"));
+            st.executeUpdate("INSERT INTO tdc_towny_identity "
+                    +"(guild_id,kind,towny_uuid,last_name,role_id) VALUES "
+                    +"('123456789012345678','TOWN','bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',"
+                    +"'OldTown','444444444444444444')");
+            assertThrows(java.sql.SQLException.class, () ->
+                    StableEntityStore.uniqueIdForName(c,
+                            "123456789012345678","TOWN","OldTown","ROLE"),
+                    "Conflicting UUID owners cannot be picked by first-row order");
+        }
+    }
+
     @Test void delayedCreateCallbackCannotOverwriteNewerAttemptOrRequeuedJob() throws Exception {
         try (Connection c=Database.openSQLite(temp.resolve("leases.db").toFile());
              Statement st=c.createStatement()) {

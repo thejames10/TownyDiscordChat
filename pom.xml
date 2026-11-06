@@ -36,6 +36,12 @@
     </repository>
   </repositories>
   <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.11.4</version>
+      <scope>test</scope>
+    </dependency>
     <!-- Modern Towny exposes Paper Adventure types in its public API.
          These are supplied by the compatible Paper/Purpur server, not bundled. -->
     <dependency>
@@ -92,6 +98,11 @@
   <build>
     <finalName>TownyDiscordChat-${project.version}</finalName>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.2</version>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>

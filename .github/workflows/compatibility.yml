@@ -29,7 +29,10 @@ jobs:
         run: |
           mkdir -p staging
           cp target/TownyDiscordChat-*.jar staging/TownyDiscordChat-MC-${{ matrix.minecraft }}.jar
+          cp README.md staging/README.md
           cp COMPATIBILITY.md staging/README-DEPENDENCIES.md
+          cp SYNC-MIGRATION.md TEST-PLAN.md staging/
+          cp src/main/resources/config.yml staging/config.example.yml
           (cd staging && zip -r ../TownyDiscordChat-MC-${{ matrix.minecraft }}.zip .)
       - uses: actions/upload-artifact@v4
         with:

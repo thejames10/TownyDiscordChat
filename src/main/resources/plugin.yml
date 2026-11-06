@@ -1,7 +1,7 @@
 main: com.TownyDiscordChat.TownyDiscordChat.Main
 name: TownyDiscordChat
-version: 1.0.8
-api-version: 1.18
+version: 1.1.0-SNAPSHOT
+api-version: '1.16'
 authors: 
 - thejames10
 - Hugo5000
@@ -13,11 +13,13 @@ commands:
     description: Link Discord and Towny Data
     aliases: [tdc]
     usage: /TownyDiscordChat
-  SQL:
-    description: SQL Testing
-    usage: /SQL
+  tdcqueue:
+    description: View or retry the durable Discord task queue
+    aliases: [tdcsql]
+    usage: /tdcqueue [status|retry-dead]
+    permission: TownyDiscordChat.Admin
 
-  permissions:
+permissions:
     TownyDiscordChat.Admin:
       description: Gives access to all TownyDiscordChat commands
       children:

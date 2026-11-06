@@ -7,6 +7,7 @@ import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.*;
 import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Log.Log;
 import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Players.Players;
 import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Queue.Queue;
+import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Reconciler;
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Guild;
 import org.bstats.bukkit.Metrics;
@@ -42,6 +43,7 @@ public class Main extends JavaPlugin {
     public com.TownyDiscordChat.TownyDiscordChat.Schedulers.Channels.Voice.Towns townVoiceChannelsScheduler;
     public com.TownyDiscordChat.TownyDiscordChat.Schedulers.Channels.Voice.Nations nationVoiceChannelsScheduler;
     public Queue queueScheduler;
+    public Reconciler reconciler;
 
     public static Main plugin;
 
@@ -57,7 +59,7 @@ public class Main extends JavaPlugin {
         config = getConfig();
 
         Objects.requireNonNull(getCommand("TownyDiscordChat")).setExecutor(new TDCCommand());
-        Objects.requireNonNull(getCommand("SQL")).setExecutor(new TDCSQL());
+        Objects.requireNonNull(getCommand("tdcqueue")).setExecutor(new TDCSQL());
         plugin = this;
 
         this.SQL = new MySQL();
@@ -77,11 +79,13 @@ public class Main extends JavaPlugin {
         try {
             SQL.connect();
         } catch (ClassNotFoundException | SQLException e) {
-            getLogger().info("Database not connected");
+            getLogger().severe("Database not connected: " + e.getMessage());
+            getServer().getPluginManager().disablePlugin(this);
+            return;
         }
 
         try {
-            if (SQL.isConnected()) {
+            if (SQL != null && SQL.isConnected()) {
                 getLogger().info("Database is connected!");
                 logCategoryDB.createTable();
                 logTextChannelDB.createTable();
@@ -96,47 +100,29 @@ public class Main extends JavaPlugin {
                 nationVoiceChannelsDB.createTable();
                 queuedTaskDB.createTable();
 
-                Guild guild = null;
-                do {
-                    try {
-                        guild = DiscordSRV.getPlugin().getMainGuild();
-                    } catch (Exception e) { }
-                } while (guild == null);
-
-                this.logScheduler = new Log(this);
-                this.playersScheduler = new Players(this);
-
-                this.townRolesScheduler = new com.TownyDiscordChat.TownyDiscordChat.Schedulers.Roles.Towns(15, 60, this);
-                this.nationRolesScheduler = new com.TownyDiscordChat.TownyDiscordChat.Schedulers.Roles.Nations(15, 60, this);
-                this.townCategoriesScheduler = new com.TownyDiscordChat.TownyDiscordChat.Schedulers.Categories.Towns(30, 75, this);
-                this.nationCategoriesScheduler = new com.TownyDiscordChat.TownyDiscordChat.Schedulers.Categories.Nations(30, 75, this);
-                this.townTextChannelsScheduler = new com.TownyDiscordChat.TownyDiscordChat.Schedulers.Channels.Text.Towns(45, 90, this);
-                this.nationTextChannelsScheduler = new com.TownyDiscordChat.TownyDiscordChat.Schedulers.Channels.Text.Nations(45, 90, this);
-                this.townVoiceChannelsScheduler = new com.TownyDiscordChat.TownyDiscordChat.Schedulers.Channels.Voice.Towns(60, 105, this);
-                this.nationVoiceChannelsScheduler = new com.TownyDiscordChat.TownyDiscordChat.Schedulers.Channels.Voice.Nations(60, 105, this);
-
-                this.queueScheduler = new Queue(75, 120, this);
+                // Do not wait synchronously for DiscordSRV to connect.
+                // Reconciler will start once the guild is available.
+                this.reconciler = new Reconciler(this);
+                this.queueScheduler = new Queue(
+                        config.getLong("queue.startDelaySeconds", 10L),
+                        config.getLong("queue.pollSeconds", 5L), this);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            getLogger().severe("Failed to initialize queue: " + e.getMessage());
+            getServer().getPluginManager().disablePlugin(this);
+            return;
         }
 
-        //new TDCTownyListener(plugin); // Disabling Towny Listener for now
-        //DiscordSRV.api.subscribe(new TDCDiscordSRVListener()); // Disabling DiscordSRV Listener for now
+        // Legacy listeners issue direct Discord calls outside the queue; keep disabled
+        // until their mutations have been converted into durable job types.
+        //DiscordSRV.api.subscribe(new TDCDiscordSRVListener());
         getLogger().info("TownyDiscordChat has been Enabled!");
     }
 
     public void onDisable() {
 
-        this.queueScheduler.cancel();
-        this.nationVoiceChannelsScheduler.cancel();
-        this.townVoiceChannelsScheduler.cancel();
-        this.nationTextChannelsScheduler.cancel();
-        this.townTextChannelsScheduler.cancel();
-        this.nationCategoriesScheduler.cancel();
-        this.townCategoriesScheduler.cancel();
-        this.nationRolesScheduler.cancel();
-        this.townRolesScheduler.cancel();
+        if (queueScheduler != null) queueScheduler.cancel();
+        if (reconciler != null) reconciler.cancel();
 
         try {
             if (SQL.isConnected()) {

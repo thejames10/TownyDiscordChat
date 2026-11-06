@@ -1,6 +1,6 @@
 SQL:
-  host: "blank"
-  port: "blank"
+  host: "localhost"
+  port: "3306"
   database: "blank"
   username: "blank"
   password: "blank"
@@ -142,3 +142,12 @@ messages:
     Rename:
       Success: "&7Renamed VoiceChannel!"
       Failure: "&7Failed to rename VoiceChannel!"
+# MySQL-backed Discord reconciliation / dispatch. All delays are in seconds.
+queue:
+  startDelaySeconds: 10
+  pollSeconds: 5
+  reconcileSeconds: 180
+  leaseSeconds: 300
+  maxAttempts: 10
+  retryBaseSeconds: 30
+  retryMaxSeconds: 900

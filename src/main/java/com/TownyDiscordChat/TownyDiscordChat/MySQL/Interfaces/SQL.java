@@ -45,7 +45,7 @@ public class SQL {
 
                 StringBuilder columns = new StringBuilder();
                 int i = 1;
-                for (var value : ColNameValuePair.entrySet()) {
+                for (Map.Entry<String, String> value : ColNameValuePair.entrySet()) {
                     if (i < ColNameValuePair.size()) {
                         columns.append(value.getKey()).append(",");
                     } else {
@@ -58,7 +58,7 @@ public class SQL {
                         + "(" + columns + ") VALUES (" + values + ")");
 
                 i = 1;
-                for (var value : ColNameValuePair.entrySet()) {
+                for (Map.Entry<String, String> value : ColNameValuePair.entrySet()) {
                     ps.setString(i, value.getValue());
                     i++;
                 }
@@ -67,7 +67,7 @@ public class SQL {
 
                 StringBuilder values = new StringBuilder();
                 int i = 1;
-                for (var value : ColNameValuePair.entrySet()) {
+                for (Map.Entry<String, String> value : ColNameValuePair.entrySet()) {
                     if (i < ColNameValuePair.size()) {
                         values.append(value.getKey()).append(" = '").append(value.getValue()).append("', ");
                     } else {

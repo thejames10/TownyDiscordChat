@@ -1,52 +1,56 @@
 package com.TownyDiscordChat.TownyDiscordChat.Commands;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
+import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
-
 import java.sql.SQLException;
+import java.util.Map;
 
 public class TDCSQL implements CommandExecutor {
     @Override
-    public boolean onCommand(@NotNull final CommandSender commandSender, @NotNull final Command command, @NotNull final String label,
+    public boolean onCommand(@NotNull final CommandSender sender,
+                             @NotNull final Command command, @NotNull final String label,
                              @NotNull final String[] args) {
-
-        Player player = (Player) commandSender;
-
-        if (args.length == 0) {
-
-            boolean isConnected = false;
-            try {
-                Main.plugin.SQL.checkSQLConnection();
-                isConnected = Main.plugin.SQL.isConnected();
-            } catch (SQLException | ClassNotFoundException e) {
-                e.printStackTrace();
+        if (!sender.hasPermission("TownyDiscordChat.Admin")) {
+            sender.sendMessage("No permission (TownyDiscordChat.Admin).");
+            return true;
+        }
+        if (args.length > 0 && !args[0].equalsIgnoreCase("status")
+                && !args[0].equalsIgnoreCase("retry-dead")) {
+            sender.sendMessage("Usage: /tdcqueue [status|retry-dead]");
+            return true;
+        }
+        final boolean retry = args.length > 0 && args[0].equalsIgnoreCase("retry-dead");
+        final Main plugin = Main.plugin;
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+            @Override public void run() {
+                final String message;
+                try {
+                    DiscordJobStore jobs = new DiscordJobStore(plugin);
+                    if (retry) {
+                        message = "Requeued " + jobs.retryDead() + " dead Discord jobs.";
+                    } else {
+                        Map<String, Integer> counts = jobs.statusCounts();
+                        message = "Discord jobs: pending=" + counts.getOrDefault("PENDING", 0)
+                                + ", running=" + counts.getOrDefault("RUNNING", 0)
+                                + ", dead=" + counts.getOrDefault("DEAD", 0);
+                    }
+                } catch (SQLException e) {
+                    plugin.getLogger().warning("Queue admin request failed: " + e.getMessage());
+                    sendOnMain(plugin, sender, "Could not query MySQL queue. See server log.");
+                    return;
+                }
+                sendOnMain(plugin, sender, message);
             }
-
-            player.sendMessage("isConnected? " + isConnected);
-
-            //Main.plugin.playersDB.deleteEntry("Testing", "discordUserId");
-
-            /*Main.plugin.playersDB.createEntry("Testing","Testing",
-                    "Testing", "Testing","Testing",
-                    "Testing", "Testing","Testing","false","false");*/
-
-        }
-
-        if (args.length == 1) {
-
-            //Main.plugin.queuedTaskDB.queueTownTask(args[0], "11111111", "false");
-            //player.sendMessage("Queuing TownTask: " + args[0]);
-
-            //String oldValue = Main.plugin.playersDB.getEntry("UUID", "Testing", "discordUserId");
-            //Main.plugin.playersDB.updateEntry(args[0], "UUID", "Testing", "discordUserId");
-
-            //player.sendMessage("Changed " + oldValue + " to " + args[0] + " !");
-        }
-
+        });
         return true;
+    }
+
+    private static void sendOnMain(Main plugin, CommandSender sender, String message) {
+        if (plugin.isEnabled()) Bukkit.getScheduler().runTask(plugin, () -> sender.sendMessage(message));
     }
 }

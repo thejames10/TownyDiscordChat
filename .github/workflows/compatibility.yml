@@ -1,0 +1,37 @@
+name: Test Minecraft compatibility
+on:
+  push:
+    branches: [SQL]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    name: Minecraft ${{ matrix.minecraft }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        minecraft: ['1.16.5', '1.17.1', '1.18.2', '1.19.4', '1.20.1', '1.20.6', '1.21.1', '1.21.4', '1.21.8', '1.21.10']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Package against Spigot API
+        run: mvn --batch-mode --no-transfer-progress -Dspigot.version=${{ matrix.minecraft }}-R0.1-SNAPSHOT clean verify
+      - name: Package test deployment with dependency instructions
+        run: |
+          mkdir -p staging
+          cp target/TownyDiscordChat-*.jar staging/TownyDiscordChat-MC-${{ matrix.minecraft }}.jar
+          cp COMPATIBILITY.md staging/README-DEPENDENCIES.md
+          (cd staging && zip -r ../TownyDiscordChat-MC-${{ matrix.minecraft }}.zip .)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TownyDiscordChat-MC-${{ matrix.minecraft }}
+          path: TownyDiscordChat-MC-${{ matrix.minecraft }}.zip
+          if-no-files-found: error

@@ -52,6 +52,14 @@ public final class Queue {
     private volatile Intent currentIntent;
     private volatile boolean warnedResourceLease;
     private volatile boolean warnedMemberLease;
+    // Expired database leases may still have an unfinished REST request.
+    // Quarantine only those job IDs; cap uncertainty to avoid flooding.
+    private static final int MAX_UNRESOLVED_MEMBERS = 16;
+    private static final int MAX_UNRESOLVED_RESOURCES = 4;
+    private final java.util.concurrent.ConcurrentMap<Long,Intent> unresolvedMembers =
+            new java.util.concurrent.ConcurrentHashMap<Long,Intent>();
+    private final java.util.concurrent.ConcurrentMap<Long,Job> unresolvedResources =
+            new java.util.concurrent.ConcurrentHashMap<Long,Job>();
 
     public Queue(long startDelaySeconds, long intervalDelaySeconds, Main plugin) {
         this.plugin = plugin;
@@ -77,20 +85,26 @@ public final class Queue {
     private void tickMembers() {
         Intent active = currentIntent;
         if (active != null && System.currentTimeMillis() >= active.leaseUntil) {
-            // Never overlap two REST calls for the same member: the callback
-            // may still complete well after the database lease expires.
-            if (!warnedMemberLease) {
-                warnedMemberLease = true;
-                plugin.reportAdminWarning("Membership REST operation exceeded its lease. "
-                        + "Membership processing remains paused until its callback "
-                        + "finishes or the plugin restarts.");
+            if (unresolvedMembers.size()>=MAX_UNRESOLVED_MEMBERS) {
+                plugin.reportAdminWarning("Too many unresolved Discord membership callbacks. "
+                        + "Pause new requests and inspect DiscordSRV before restarting.");
+                return;
             }
-            return;
+            unresolvedMembers.putIfAbsent(active.id,active);
+            currentIntent = null;
+            memberBusy.set(false);
+            if (!warnedMemberLease) {
+                warnedMemberLease=true;
+                plugin.reportAdminWarning("A membership REST callback exceeded its lease. "
+                        + "Only that job ID is quarantined; unrelated revocations continue.");
+            }
         }
+        if (unresolvedMembers.size()>=MAX_UNRESOLVED_MEMBERS) return;
         if (!memberBusy.compareAndSet(false, true)) return;
         try {
-            Intent intent = memberStore.claim(true);
-            if (intent == null) intent = memberStore.claim(false);
+            Set<Long> excluded=new HashSet<Long>(unresolvedMembers.keySet());
+            Intent intent = memberStore.claim(true,excluded);
+            if (intent == null) intent = memberStore.claim(false,excluded);
             if (intent == null) { memberBusy.set(false); return; }
             Set<String> owners = new HashSet<String>();
             owners.addAll(stable.ownersOfId(intent.guildId,"TOWN_ROLE",intent.roleId));
@@ -106,19 +120,24 @@ public final class Queue {
     private void tickResources() {
         Job active = current;
         if (active != null && System.currentTimeMillis() >= active.leaseUntil) {
-            // An unresolved create can succeed after its nominal lease:
-            // don't create a duplicate object from this process.
-            if (!warnedResourceLease) {
-                warnedResourceLease = true;
-                plugin.reportAdminWarning("Resource REST operation exceeded its lease. "
-                        + "Resource processing remains paused until its callback "
-                        + "finishes or the plugin restarts. Review Discord state.");
+            if (unresolvedResources.size()>=MAX_UNRESOLVED_RESOURCES) {
+                plugin.reportAdminWarning("Too many unresolved Discord resource callbacks. "
+                        + "Pause new requests and inspect Discord before restarting.");
+                return;
             }
-            return;
+            unresolvedResources.putIfAbsent(active.id,active);
+            current = null;
+            resourceBusy.set(false);
+            if (!warnedResourceLease) {
+                warnedResourceLease=true;
+                plugin.reportAdminWarning("A resource REST callback exceeded its lease. "
+                        + "Only that job ID is quarantined; other deletions can proceed.");
+            }
         }
+        if (unresolvedResources.size()>=MAX_UNRESOLVED_RESOURCES) return;
         if (!resourceBusy.compareAndSet(false, true)) return;
         try {
-            final Job job = store.claim();
+            final Job job = store.claim(new HashSet<Long>(unresolvedResources.keySet()));
             if (job == null) { resourceBusy.set(false); return; }
             current = job;
             final Set<String> categoryIds = job.kind.endsWith("CATEGORY")
@@ -327,11 +346,12 @@ public final class Queue {
                 plugin.getLogger().severe("Could not persist membership intent " + intent
                         + ": " + e.getMessage());
             } finally {
+                unresolvedMembers.remove(intent.id,intent);
                 if (currentIntent == intent) {
                     currentIntent = null;
-                    warnedMemberLease = false;
                     memberBusy.set(false);
                 }
+                if (unresolvedMembers.isEmpty()) warnedMemberLease=false;
             }
         });
     }
@@ -607,11 +627,12 @@ public final class Queue {
                     } catch (SQLException e) {
                         plugin.getLogger().severe("Could not checkpoint guild audit: " + e.getMessage());
                     } finally {
+                        unresolvedResources.remove(job.id,job);
                         if (current == job) {
                             current = null;
-                            warnedResourceLease = false;
                             resourceBusy.set(false);
                         }
+                        if (unresolvedResources.isEmpty()) warnedResourceLease=false;
                     }
                 });
             }).onError(error -> {
@@ -905,11 +926,12 @@ public final class Queue {
                         plugin.getLogger().severe("Member audit SQL error " + db.getMessage());
                     }
                 } finally {
+                    unresolvedResources.remove(job.id,job);
                     if (current == job) {
                         current = null;
-                        warnedResourceLease = false;
                         resourceBusy.set(false);
                     }
+                    if (unresolvedResources.isEmpty()) warnedResourceLease=false;
                 }
             });
         } catch (Throwable error) {
@@ -1070,11 +1092,12 @@ public final class Queue {
                             + ": " + e.getMessage() + "; lease will be retried");
                 } finally {
                     // A callback may arrive after a newer attempt has started.
+                    unresolvedResources.remove(job.id,job);
                     if (current == job) {
                         current = null;
-                        warnedResourceLease = false;
                         resourceBusy.set(false);
                     }
+                    if (unresolvedResources.isEmpty()) warnedResourceLease=false;
                 }
             }
         });

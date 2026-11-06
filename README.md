@@ -29,30 +29,30 @@
 
 ## Compatibility
 
-**TownyDiscordChat `1.1.0-SNAPSHOT`** — [SQL branch test builds](https://github.com/thejames10/TownyDiscordChat/tree/SQL). Select a Minecraft version below to open **its exact CI build**.
+**Development version:** `TownyDiscordChat 1.1.0-SNAPSHOT` ([SQL branch](https://github.com/thejames10/TownyDiscordChat/tree/SQL)).
 
-| Minecraft / download | Server software | Towny | DiscordSRV | Status |
-| --- | --- | --- | --- | --- |
-| [1.16.5](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478605771) · [1.17.1](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13477554348) · [1.18.2](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478021490) | Spigot / Paper / Purpur | `0.100.3.0` | `1.30.5` | 🧪 Test |
-| [1.19.4](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478416459) | Paper / Purpur | `0.103.2.0` | `1.30.5` | 🧪 Test |
-| [1.20.1](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478655506) · [1.20.6](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478476239) | Paper / Purpur | `0.103.2.0` | `1.30.5` | 🧪 Test |
-| [1.21.1](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478221252) · [1.21.4](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478246762) · [1.21.8](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478261798) · [1.21.10](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478001565) | Paper / Purpur | `0.103.2.0` | `1.30.5` | 🧪 Test |
-| `1.19+` with Towny `0.102+` | Spigot / CraftBukkit | `0.102+` | — | ⛔ No |
-| Any | Folia | — | — | ⛔ No |
+| Minecraft version | Server software | Towny version | DiscordSRV version |
+| --- | --- | --- | --- |
+| `1.16.5`, `1.17.1`, `1.18.2` | Spigot / Paper / Purpur | `0.100.3.0` | `1.30.5` |
+| `1.19.4` | Paper / Purpur | `0.103.2.0` | `1.30.5` |
+| `1.20.1`, `1.20.6` | Paper / Purpur | `0.103.2.0` | `1.30.5` |
+| `1.21.1`, `1.21.4`, `1.21.8`, `1.21.10` | Paper / Purpur | `0.103.2.0` | `1.30.5` |
 
-**🧪 Test** = compiled and packaged; live Minecraft/Discord testing is still required. **⛔ No** = unsupported configuration. TownyDiscordChat `1.1.0-SNAPSHOT` applies to all test-build rows.
+🧪 **Test builds:** These combinations have passed compilation, automated tests, and packaging checks. **Live server, MySQL, and Discord permission testing is still required** before production support can be confirmed.
 
-**Download notes:** These links point to the verified successful [November 6, 2026 CI run](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179). GitHub may require signing in to download artifacts, and these particular artifacts are scheduled to expire on **February 4, 2027**. After that, use the [latest successful SQL workflow](https://github.com/thejames10/TownyDiscordChat/actions?query=branch%3ASQL) until a tagged release provides permanent download URLs. The artifact ZIP contains the plugin JAR and its matching setup documentation.
+**Unsupported configurations:** Folia, and Spigot/CraftBukkit with Towny `0.102+`. These are not supported by the current plugin/server scheduler combination.
 
-These are **intended test combinations**, not production certifications. Java requirements depend on the server and Towny release (Towny `0.103.x` requires Java 17+). See [Towny releases](https://github.com/TownyAdvanced/Towny/releases), [DiscordSRV releases](https://github.com/DiscordSRV/DiscordSRV/releases) and [detailed compatibility notes](COMPATIBILITY.md).
+The table lists intended test configurations, not certified production support. Java requirements depend on the server and Towny release (`0.103.x` requires Java 17+). See [Towny releases](https://github.com/TownyAdvanced/Towny/releases), [DiscordSRV releases](https://github.com/DiscordSRV/DiscordSRV/releases), and [detailed compatibility notes](COMPATIBILITY.md).
 
-### Which download should I use?
+### Downloading a test build
 
-**Click your Minecraft version in the compatibility table** to open its matching GitHub Actions artifact. Download the `TownyDiscordChat-MC-<your-version>` ZIP. There is **one package per listed Minecraft version**; the ZIP contains the JAR, configuration example, setup instructions, and `BUILD-INFO.txt` with the exact APIs used to compile it.
+Open the [SQL branch builds on GitHub Actions](https://github.com/thejames10/TownyDiscordChat/actions?query=branch%3ASQL), select the latest **successful** compatibility workflow, and download the artifact named `TownyDiscordChat-MC-<your-version>`. Each ZIP contains the plugin JAR, configuration example, setup instructions, and `BUILD-INFO.txt` recording the exact compile-time dependencies.
 
-Earlier development builds offered a second `-modern` artifact. That suffix distinguished **compile-time** Towny/DiscordSRV APIs, not a feature edition or bundled dependencies. We now build the player-facing artifact against the intended version combination and run historical API checks separately, so users no longer need to choose between two packages.
+**GitHub Actions artifacts are temporary**, so the README does not link to individual expiring artifact downloads. Once the test builds are ready for public release, [GitHub Releases](https://github.com/thejames10/TownyDiscordChat/releases) will provide permanent versioned downloads.
 
-Older TownyDiscordChat `1.0.x` releases use the previous implementation and do not include the SQL queue or migrations. Consult the README at the relevant Git tag for historical instructions.
+Earlier development runs included a separate `-modern` artifact. That suffix described compile-time APIs, not extra functionality. There is now one user-facing test package per Minecraft version. Towny and DiscordSRV are installed separately on the server.
+
+Older TownyDiscordChat `1.0.x` releases do not include the SQL queue or migrations. Refer to each historical Git tag for the matching README.
 
 ## Installation
 
@@ -78,7 +78,7 @@ Enable Discord's privileged **Server Members Intent** in the bot's Developer Por
 
 ### 3. Install the TownyDiscordChat build
 
-Use the **linked Minecraft version in the compatibility table above** to download its test ZIP directly from GitHub Actions. Each ZIP includes `BUILD-INFO.txt` describing its compile-time dependency versions. Extract the ZIP, then copy **the plugin JAR, not the ZIP**, into `plugins/`.
+Follow **Downloading a test build** above to locate the correct Minecraft-version ZIP in the latest successful SQL-branch workflow. Each ZIP includes `BUILD-INFO.txt` describing its compile-time dependency versions. Extract the ZIP, then copy **the plugin JAR, not the ZIP**, into `plugins/`.
 
 Start the server once to generate `plugins/TownyDiscordChat/config.yml`, then stop it before editing MySQL credentials. **Do not delete your existing config when upgrading**; back it up and merge newer settings. See the versioned configuration template inside the artifact ZIP.
 

@@ -155,7 +155,7 @@ public final class StableEntityStore {
         }
     }
 
-    private Entity findForUpdate(Connection c, String guild, String kind, String uuid)
+    private static Entity findForUpdate(Connection c, String guild, String kind, String uuid)
             throws SQLException {
         try (PreparedStatement ps = c.prepareStatement(
                 "SELECT last_name,role_id,text_id,voice_id FROM " + TABLE
@@ -296,6 +296,12 @@ public final class StableEntityStore {
      */
     public void retireIfEmpty(String guild,String kind,String uuid) throws SQLException {
         try (Connection c=jobs.connect()) {
+            retireIfEmpty(c,guild,kind,uuid);
+        }
+    }
+
+    static void retireIfEmpty(Connection c,String guild,String kind,String uuid)
+            throws SQLException {
             c.setAutoCommit(false);
             try {
                 Entity existing=findForUpdate(c,guild,kind,uuid);
@@ -327,7 +333,6 @@ public final class StableEntityStore {
                 c.rollback();
                 throw e;
             }
-        }
     }
 
     void clearDeleted(Connection c, String kind, String name, String deletedId)

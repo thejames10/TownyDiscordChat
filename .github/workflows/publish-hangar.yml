@@ -89,39 +89,60 @@ jobs:
           fi
           printf '\nOther Minecraft-specific builds: https://github.com/%s/releases/tag/%s\n' "$GITHUB_REPOSITORY" "$RELEASE_TAG" >> hangar-changelog.md
 
-      - name: Register the Paper 26.3 GitHub download on Hangar
-        uses: milkdrinkers/Hangar-Publish@v2
-        with:
-          api_token: ${{ secrets.HANGAR_API_TOKEN }}
-          slug: TownyDiscordChat
-          version: ${{ steps.release.outputs.version }}
-          channel: ${{ steps.release.outputs.channel }}
-          description: >-
-            ${{ github.event.release.body || format('Minecraft 26.3 release. Other version-specific builds: https://github.com/{0}/releases/tag/{1}', github.repository, steps.release.outputs.tag) }}
-          files: |
-            [
-              {
-                "platforms": ["PAPER"],
-                "url": true,
-                "externalUrl": "https://github.com/thejames10/TownyDiscordChat/releases/download/${{ steps.release.outputs.tag }}/TownyDiscordChat-MC-26.3.jar"
-              }
-            ]
-          platform_dependencies: |
-            {
-              "PAPER": ["26.3"]
-            }
-          plugin_dependencies: |
-            {
-              "PAPER": [
-                {
-                  "name": "Towny",
-                  "required": true,
-                  "externalUrl": "https://github.com/TownyAdvanced/Towny"
-                },
-                {
-                  "name": "DiscordSRV",
-                  "required": true,
-                  "externalUrl": "https://github.com/DiscordSRV/DiscordSRV"
-                }
-              ]
-            }
+      # Bypass Hangar-Publish@v2's version-pattern resolver, which currently
+      # drops Minecraft 26.3 and submits an empty PAPER compatibility list.
+      # External GitHub release links avoid uploading oversized JAR payloads.
+      - name: Publish GitHub JAR URL through the Hangar API
+        env:
+          HANGAR_API_TOKEN: ${{ secrets.HANGAR_API_TOKEN }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_CHANNEL: ${{ steps.release.outputs.channel }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://hangar.papermc.io/api/v1"
+          echo "::add-mask::$HANGAR_API_TOKEN"
+          auth_status=$(curl --silent --show-error --location --output auth-response.json \
+            --write-out '%{http_code}' --request POST \
+            --get --data-urlencode "apiKey=$HANGAR_API_TOKEN" \
+            "$base/authenticate" \
+            --header 'User-Agent: TownyDiscordChat-GitHub-Actions')
+          if [[ "$auth_status" != "200" ]]; then
+            echo "::error::Hangar authentication returned HTTP $auth_status"
+            exit 1
+          fi
+          token=$(jq -er '.token' auth-response.json)
+          echo "::add-mask::$token"
+          rm -f auth-response.json
+          download_url="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/TownyDiscordChat-MC-26.3.jar"
+          jq -n \
+            --arg version "$RELEASE_VERSION" \
+            --arg channel "$RELEASE_CHANNEL" \
+            --rawfile description hangar-changelog.md \
+            --arg url "$download_url" \
+            '{
+              version: $version,
+              channel: $channel,
+              description: $description,
+              files: [{platforms: ["PAPER"], url: true, externalUrl: $url}],
+              platformDependencies: {PAPER: ["26.3"]},
+              pluginDependencies: {PAPER: [
+                {name: "Towny", required: true, externalUrl: "https://github.com/TownyAdvanced/Towny"},
+                {name: "DiscordSRV", required: true, externalUrl: "https://github.com/DiscordSRV/DiscordSRV"}
+              ]}
+            }' > hangar-upload.json
+          jq -e '.platformDependencies.PAPER == ["26.3"] and (.files | length) == 1' hangar-upload.json > /dev/null
+          status=$(curl --silent --show-error --location --output upload-response.json \
+            --write-out '%{http_code}' --request POST \
+            --header "Authorization: $token" \
+            --header 'User-Agent: TownyDiscordChat-GitHub-Actions' \
+            --form 'versionUpload=@hangar-upload.json;type=application/json' \
+            "$base/projects/TownyDiscordChat/upload")
+          if [[ "$status" != "200" && "$status" != "201" ]]; then
+            echo "::error::Hangar rejected release $RELEASE_VERSION (HTTP $status)."
+            jq -r 'if type == "object" then (.message // .error // tostring) else tostring end' upload-response.json || cat upload-response.json
+            exit 1
+          fi
+          echo "Hangar version published:"
+          jq -r '.url // tostring' upload-response.json

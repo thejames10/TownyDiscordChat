@@ -45,7 +45,7 @@ public final class DiscordJobStore {
         this.plugin = plugin;
     }
 
-    private Connection connect() throws SQLException {
+    Connection connect() throws SQLException {
         String host = plugin.getConfig().getString("SQL.host", "localhost");
         String port = plugin.getConfig().getString("SQL.port", "3306");
         String database = plugin.getConfig().getString("SQL.database", "");
@@ -98,41 +98,49 @@ public final class DiscordJobStore {
     }
 
     /**
-     * Upgrades in-flight tasks from the 2023 SQL branch without dropping the old
-     * table. A successfully imported legacy row is removed; other tables remain.
+     * Non-destructive migration from the 2023 SQL branch. Legacy tables are
+     * never dropped or emptied: a transactional migration marker makes this
+     * idempotent even after multiple restarts. Back up MySQL before upgrading.
      */
     private void migrateLegacyRows() throws SQLException {
-        try (Connection c = connect()) {
-            boolean legacyExists;
-            try (ResultSet tables = c.getMetaData().getTables(c.getCatalog(), null, "tdc_queued_tasks", null)) {
-                legacyExists = tables.next();
-            }
-            if (!legacyExists) return;
-
+        try (Connection c = connect(); Statement statement = c.createStatement()) {
+            statement.executeUpdate("CREATE TABLE IF NOT EXISTS tdc_schema_migrations ("
+                    + "version INT PRIMARY KEY, applied_at BIGINT NOT NULL,"
+                    + "description VARCHAR(190) NOT NULL) ENGINE=InnoDB");
             c.setAutoCommit(false);
-            try (PreparedStatement read = c.prepareStatement(
-                    "SELECT Time,townRoleName,nationRoleName,townCategoryName,nationCategoryName,"
-                            + "townTextChannelName,nationTextChannelName,townVoiceChannelName,nationVoiceChannelName "
-                            + "FROM tdc_queued_tasks WHERE Expired IS NULL");
-                 ResultSet rows = read.executeQuery();
-                 PreparedStatement delete = c.prepareStatement("DELETE FROM tdc_queued_tasks WHERE Time=?")) {
-                String[] kinds = {"TOWN_ROLE", "NATION_ROLE", "TOWN_CATEGORY", "NATION_CATEGORY",
-                        "TOWN_TEXT", "NATION_TEXT", "TOWN_VOICE", "NATION_VOICE"};
-                while (rows.next()) {
-                    for (int i = 0; i < kinds.length; i++) {
-                        String name = rows.getString(i + 2);
-                        if (name != null && !name.equalsIgnoreCase("null") && !name.isEmpty()) {
-                            enqueue(c, kinds[i], name);
+            try (PreparedStatement check = c.prepareStatement(
+                    "SELECT version FROM tdc_schema_migrations WHERE version=2 FOR UPDATE");
+                    ResultSet exists = check.executeQuery()) {
+                if (exists.next()) { c.commit(); return; }
+            }
+            boolean legacyExists;
+            try (ResultSet tables = c.getMetaData().getTables(c.getCatalog(), null,
+                    "tdc_queued_tasks", null)) { legacyExists = tables.next(); }
+            if (legacyExists) {
+                try (PreparedStatement read = c.prepareStatement(
+                        "SELECT Time,townRoleName,nationRoleName,townCategoryName,nationCategoryName,"
+                        + "townTextChannelName,nationTextChannelName,townVoiceChannelName,nationVoiceChannelName"
+                        + " FROM tdc_queued_tasks WHERE Expired IS NULL");
+                     ResultSet rows = read.executeQuery()) {
+                    String[] kinds = {"TOWN_ROLE","NATION_ROLE","TOWN_CATEGORY","NATION_CATEGORY",
+                            "TOWN_TEXT","NATION_TEXT","TOWN_VOICE","NATION_VOICE"};
+                    while (rows.next()) {
+                        for (int i = 0; i < kinds.length; i++) {
+                            String name = rows.getString(i+2);
+                            if (name != null && !name.isEmpty() && !name.equalsIgnoreCase("null")
+                                    && name.length() <= 128) enqueue(c, kinds[i], name);
                         }
                     }
-                    delete.setString(1, rows.getString(1));
-                    delete.executeUpdate();
                 }
-                c.commit();
-            } catch (SQLException e) {
-                c.rollback();
-                throw e;
             }
+            try (PreparedStatement marker = c.prepareStatement(
+                    "INSERT IGNORE INTO tdc_schema_migrations(version,applied_at,description)"
+                    + " VALUES (2,?,'Import legacy queue; leave legacy SQL tables intact')")) {
+                marker.setLong(1, System.currentTimeMillis());
+                marker.executeUpdate();
+            }
+            try { c.commit(); }
+            catch (SQLException e) { c.rollback(); throw e; }
         }
     }
 
@@ -222,6 +230,57 @@ public final class DiscordJobStore {
         return names;
     }
 
+
+    /** Read the authoritative resource IDs previously recorded in MySQL. */
+    public java.util.Map<String,String> mappedIds(String kind) throws SQLException {
+        String table;
+        String nameColumn;
+        String idColumn;
+        switch (kind) {
+            case "TOWN_ROLE":
+                table = "tdc_town_roles"; nameColumn = "townRoleName"; idColumn = "townRoleId"; break;
+            case "NATION_ROLE":
+                table = "tdc_nation_roles"; nameColumn = "nationRoleName"; idColumn = "nationRoleId"; break;
+            case "TOWN_TEXT":
+                table = "tdc_town_text_channels"; nameColumn = "townTextChannelName"; idColumn = "townTextChannelId"; break;
+            case "NATION_TEXT":
+                table = "tdc_nation_text_channels"; nameColumn = "nationTextChannelName"; idColumn = "nationTextChannelId"; break;
+            case "TOWN_VOICE":
+                table = "tdc_town_voice_channels"; nameColumn = "townVoiceChannelName"; idColumn = "townVoiceChannelId"; break;
+            case "NATION_VOICE":
+                table = "tdc_nation_voice_channels"; nameColumn = "nationVoiceChannelName"; idColumn = "nationVoiceChannelId"; break;
+            default: return java.util.Collections.emptyMap();
+        }
+        java.util.Map<String,String> result = new java.util.HashMap<String,String>();
+        try (Connection c = connect(); PreparedStatement ps = c.prepareStatement(
+                "SELECT " + nameColumn + "," + idColumn + " FROM " + table + " WHERE Expired IS NULL");
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) result.put(rs.getString(1), rs.getString(2));
+        }
+        return result;
+    }
+
+    /**
+     * Adopt verified categories found in Discord, even when this MySQL schema
+     * is empty. Never delete or overwrite a different category ID.
+     */
+    public void adoptCategory(String kind, String name, String id) throws SQLException {
+        String table, nameColumn, idColumn;
+        if ("TOWN_CATEGORY".equals(kind)) {
+            table = "tdc_town_categories"; nameColumn = "townCategoryName"; idColumn = "townCategoryId";
+        } else if ("NATION_CATEGORY".equals(kind)) {
+            table = "tdc_nation_categories"; nameColumn = "nationCategoryName"; idColumn = "nationCategoryId";
+        } else {
+            throw new SQLException("Unexpected category kind " + kind);
+        }
+        try (Connection c = connect(); PreparedStatement ps = c.prepareStatement(
+                "INSERT INTO " + table + " (" + nameColumn + "," + idColumn + ") VALUES (?,?)"
+                        + " ON DUPLICATE KEY UPDATE " + nameColumn + "=VALUES(" + nameColumn + "),Expired=NULL")) {
+            ps.setString(1, name);
+            ps.setString(2, id);
+            ps.executeUpdate();
+        }
+    }
     public int pendingCount(String kind, String name) throws SQLException {
         try (Connection c = connect(); PreparedStatement ps = c.prepareStatement(
                 "SELECT COUNT(*) FROM " + TABLE + " WHERE job_key=? AND status!='DEAD'")) {

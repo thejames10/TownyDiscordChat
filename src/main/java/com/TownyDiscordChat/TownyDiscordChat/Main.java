@@ -2,6 +2,9 @@ package com.TownyDiscordChat.TownyDiscordChat;
 
 import com.TownyDiscordChat.TownyDiscordChat.Commands.TDCCommand;
 import com.TownyDiscordChat.TownyDiscordChat.Commands.TDCSQL;
+import com.TownyDiscordChat.TownyDiscordChat.Listeners.MembershipChangeListener;
+import com.TownyDiscordChat.TownyDiscordChat.Listeners.AccountChangeListener;
+import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
 import com.TownyDiscordChat.TownyDiscordChat.MySQL.MySQL;
 import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.*;
 import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Log.Log;
@@ -44,23 +47,46 @@ public class Main extends JavaPlugin {
     public com.TownyDiscordChat.TownyDiscordChat.Schedulers.Channels.Voice.Nations nationVoiceChannelsScheduler;
     public Queue queueScheduler;
     public Reconciler reconciler;
+    public CompatibilityGuard compatibility;
+    public AccountChangeListener accountListener;
+    private boolean operational;
+
+    public boolean isOperational() { return operational; }
+    public String getSafeModeReason() { return compatibility == null ? "Not initialized" : compatibility.problem(); }
 
     public static Main plugin;
 
     public FileConfiguration config = getConfig();
 
+    @Override
     public void onEnable() {
-        int pluginId = 10980;
-        new Metrics(this, pluginId);
-
+        plugin = this;
         saveDefaultConfig();
         reloadConfig();
-        saveConfig();
         config = getConfig();
 
-        Objects.requireNonNull(getCommand("TownyDiscordChat")).setExecutor(new TDCCommand());
-        Objects.requireNonNull(getCommand("tdcqueue")).setExecutor(new TDCSQL());
-        plugin = this;
+        // Soft dependencies permit a visible, inert safe mode when outdated or
+        // missing plugins would otherwise prevent TownyDiscordChat loading.
+        this.compatibility = new CompatibilityGuard(this);
+        getServer().getPluginManager().registerEvents(compatibility, this);
+        if (!compatibility.check()) {
+            compatibility.warnConsole();
+            java.util.Objects.requireNonNull(getCommand("TownyDiscordChat"))
+                    .setExecutor((sender,command,label,args) -> {
+                        sender.sendMessage("[TownyDiscordChat] SAFE MODE: " + getSafeModeReason());
+                        return true;
+                    });
+            java.util.Objects.requireNonNull(getCommand("tdcqueue"))
+                    .setExecutor((sender,command,label,args) -> {
+                        sender.sendMessage("[TownyDiscordChat] SAFE MODE: " + getSafeModeReason());
+                        return true;
+                    });
+            return;
+        }
+
+        new Metrics(this, 10980);
+        java.util.Objects.requireNonNull(getCommand("TownyDiscordChat")).setExecutor(new TDCCommand());
+        java.util.Objects.requireNonNull(getCommand("tdcqueue")).setExecutor(new TDCSQL());
 
         this.SQL = new MySQL();
         this.logCategoryDB = new LogCategory(this);
@@ -99,13 +125,18 @@ public class Main extends JavaPlugin {
                 nationTextChannelsDB.createTable();
                 nationVoiceChannelsDB.createTable();
                 queuedTaskDB.createTable();
+                new MemberIntentStore(this).initialize();
 
                 // Do not wait synchronously for DiscordSRV to connect.
                 // Reconciler will start once the guild is available.
                 this.reconciler = new Reconciler(this);
                 this.queueScheduler = new Queue(
                         config.getLong("queue.startDelaySeconds", 10L),
-                        config.getLong("queue.pollSeconds", 5L), this);
+                        config.getLong("queue.pollSeconds", 1L), this);
+                getServer().getPluginManager().registerEvents(new MembershipChangeListener(this), this);
+                this.accountListener = new AccountChangeListener(this);
+                DiscordSRV.api.subscribe(accountListener);
+                this.operational = true;
             }
         } catch (SQLException e) {
             getLogger().severe("Failed to initialize queue: " + e.getMessage());
@@ -113,19 +144,23 @@ public class Main extends JavaPlugin {
             return;
         }
 
-        // Legacy listeners issue direct Discord calls outside the queue; keep disabled
-        // until their mutations have been converted into durable job types.
-        //DiscordSRV.api.subscribe(new TDCDiscordSRVListener());
+        // No legacy listeners are active: every membership mutation goes via
+        // the durable desired-state queue, never directly to JDA.
         getLogger().info("TownyDiscordChat has been Enabled!");
     }
 
+    @Override
     public void onDisable() {
-
+        operational = false;
+        if (accountListener != null) {
+            try { DiscordSRV.api.unsubscribe(accountListener); }
+            catch (Throwable e) { getLogger().warning("Could not unsubscribe DiscordSRV listener: " + e); }
+        }
         if (queueScheduler != null) queueScheduler.cancel();
         if (reconciler != null) reconciler.cancel();
 
         try {
-            if (SQL.isConnected()) {
+            if (SQL != null && SQL.isConnected()) {
                 SQL.disconnect();
                 getLogger().info("Database is disconnected!");
             }

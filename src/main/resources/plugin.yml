@@ -6,7 +6,7 @@ authors:
 - thejames10
 - Hugo5000
 
-depend: [DiscordSRV, Towny]
+softdepend: [DiscordSRV, Towny]
 
 commands:
   TownyDiscordChat:
@@ -21,6 +21,7 @@ commands:
 
 permissions:
     TownyDiscordChat.Admin:
+      default: op
       description: Gives access to all TownyDiscordChat commands
       children:
         TownyDiscordChat.Check.Role.AllLinked: true

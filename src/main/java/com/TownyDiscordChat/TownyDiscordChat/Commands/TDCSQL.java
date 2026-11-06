@@ -2,6 +2,7 @@ package com.TownyDiscordChat.TownyDiscordChat.Commands;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
+import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -32,12 +33,17 @@ public class TDCSQL implements CommandExecutor {
                 try {
                     DiscordJobStore jobs = new DiscordJobStore(plugin);
                     if (retry) {
-                        message = "Requeued " + jobs.retryDead() + " dead Discord jobs.";
+                        message = "Requeued " + jobs.retryDead() + " resource jobs and "
+                                + new MemberIntentStore(plugin).retryDead() + " membership intents.";
                     } else {
                         Map<String, Integer> counts = jobs.statusCounts();
-                        message = "Discord jobs: pending=" + counts.getOrDefault("PENDING", 0)
+                        Map<String,Integer> members = new MemberIntentStore(plugin).statusCounts();
+                        message = "Resource jobs: pending=" + counts.getOrDefault("PENDING", 0)
                                 + ", running=" + counts.getOrDefault("RUNNING", 0)
-                                + ", dead=" + counts.getOrDefault("DEAD", 0);
+                                + ", dead=" + counts.getOrDefault("DEAD", 0)
+                                + " | Member intents: pending=" + members.getOrDefault("PENDING",0)
+                                + ", running=" + members.getOrDefault("RUNNING",0)
+                                + ", dead=" + members.getOrDefault("DEAD",0);
                     }
                 } catch (SQLException e) {
                     plugin.getLogger().warning("Queue admin request failed: " + e.getMessage());

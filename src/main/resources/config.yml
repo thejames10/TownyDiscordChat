@@ -145,9 +145,16 @@ messages:
 # MySQL-backed Discord reconciliation / dispatch. All delays are in seconds.
 queue:
   startDelaySeconds: 10
-  pollSeconds: 5
+  pollSeconds: 1
   reconcileSeconds: 180
   leaseSeconds: 300
   maxAttempts: 10
   retryBaseSeconds: 30
   retryMaxSeconds: 900
+
+# A linked member who leaves a town is always reconciled for revocation.
+# Opt in to revoking TDC-prefixed roles from unlinked Discord members too.
+# This only scans members visible in DiscordSRV's member cache; old grants are
+# also remembered in MySQL for revocation after an unlink.
+security:
+  revokeUnlinkedAccounts: false

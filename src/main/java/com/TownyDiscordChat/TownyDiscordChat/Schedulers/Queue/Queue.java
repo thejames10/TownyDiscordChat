@@ -4,6 +4,10 @@ import com.TownyDiscordChat.TownyDiscordChat.Core.TDCManager;
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore.Job;
+import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
+import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore.Intent;
+import github.scarsz.discordsrv.dependencies.jda.api.entities.Member;
+import github.scarsz.discordsrv.dependencies.jda.api.exceptions.ErrorResponseException;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Town;
@@ -30,13 +34,16 @@ import java.util.function.Consumer;
 public final class Queue {
     private final Main plugin;
     private final DiscordJobStore store;
+    private final MemberIntentStore memberStore;
     private final BukkitTask scheduler;
     private final AtomicBoolean busy = new AtomicBoolean(false);
     private volatile Job current;
+    private volatile Intent currentIntent;
 
     public Queue(long startDelaySeconds, long intervalDelaySeconds, Main plugin) {
         this.plugin = plugin;
         this.store = new DiscordJobStore(plugin);
+        this.memberStore = new MemberIntentStore(plugin);
         long delay = Math.max(1, startDelaySeconds);
         long period = Math.max(1, intervalDelaySeconds);
         this.scheduler = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin,
@@ -46,32 +53,147 @@ public final class Queue {
     }
 
     private void tick() {
+        long now = System.currentTimeMillis();
         Job active = current;
-        if (active != null && System.currentTimeMillis() >= active.leaseUntil) {
-            plugin.getLogger().warning("Discord job lease timed out: " + active
-                    + "; releasing worker. A late callback will be ignored by SQL.");
+        Intent activeIntent = currentIntent;
+        if (active != null && now >= active.leaseUntil) {
+            plugin.getLogger().severe("Discord resource job timed out: " + active);
             current = null;
+            busy.set(false);
+        }
+        if (activeIntent != null && now >= activeIntent.leaseUntil) {
+            plugin.getLogger().severe("Discord membership job timed out: " + activeIntent);
+            currentIntent = null;
             busy.set(false);
         }
         if (!busy.compareAndSet(false, true)) return;
-
         try {
-            final Job job = store.claim();
-            if (job == null) {
-                busy.set(false);
+            // Security revocations always precede resource creation and grants.
+            Intent revocation = memberStore.claim(true);
+            if (revocation != null) {
+                scheduleMember(revocation);
                 return;
             }
-            current = job;
-            final Set<String> categoryIds = job.kind.endsWith("CATEGORY")
-                    ? store.trackedCategoryIds(job.kind) : Collections.<String>emptySet();
-            Bukkit.getScheduler().runTask(plugin, new Runnable() {
-                @Override public void run() { dispatch(job, categoryIds); }
-            });
+            final Job job = store.claim();
+            if (job != null) {
+                current = job;
+                final Set<String> categoryIds = job.kind.endsWith("CATEGORY")
+                        ? store.trackedCategoryIds(job.kind) : Collections.<String>emptySet();
+                Bukkit.getScheduler().runTask(plugin, () -> dispatch(job, categoryIds));
+                return;
+            }
+            Intent grant = memberStore.claim(false);
+            if (grant != null) {
+                scheduleMember(grant);
+                return;
+            }
+            busy.set(false);
         } catch (Exception e) {
             plugin.getLogger().warning("Queue poll failed: " + e.getMessage());
+            // Claimed resource jobs retain their lease and can be retried.
             current = null;
+            currentIntent = null;
             busy.set(false);
         }
+    }
+
+    private void scheduleMember(Intent intent) {
+        currentIntent = intent;
+        Bukkit.getScheduler().runTask(plugin, () -> dispatchMember(intent));
+    }
+
+    private void dispatchMember(Intent intent) {
+        try {
+            Guild guild = DiscordSRV.getPlugin().getMainGuild();
+            if (guild == null || !guild.getId().equals(intent.guildId)) {
+                deferMember(intent, "Discord guild is unavailable or changed");
+                return;
+            }
+            Role role = guild.getRoleById(intent.roleId);
+            if (role == null) {
+                // Superseded role ID (the resource reconciler will adopt/recreate).
+                doneMember(intent);
+                return;
+            }
+            Member member = guild.getMemberById(intent.memberId);
+            if (member != null) {
+                applyMember(intent, guild, member, role);
+            } else {
+                // Do not infer missing role membership from an incomplete JDA
+                // member cache; check the API instead.
+                guild.retrieveMemberById(intent.memberId).queue(
+                    found -> applyMember(intent, guild, found, role),
+                    failure -> {
+                        if (!intent.desired && isUnknownMember(failure)) doneMember(intent);
+                        else if (intent.desired && isUnknownMember(failure))
+                            deferMember(intent, "Member not yet in Discord guild");
+                        else failMember(intent, failure);
+                    });
+            }
+        } catch (Throwable e) {
+            failMember(intent, e);
+        }
+    }
+
+    private static boolean isUnknownMember(Throwable failure) {
+        return failure instanceof ErrorResponseException
+                && ((ErrorResponseException) failure).getErrorCode() == 10007;
+    }
+
+    private void applyMember(Intent intent, Guild guild, Member member, Role role) {
+        try {
+            boolean hasRole = member.getRoles().contains(role);
+            if (hasRole == intent.desired) {
+                doneMember(intent);
+                return;
+            }
+            if (intent.desired) {
+                guild.addRoleToMember(member, role).queue(
+                        success -> doneMember(intent),
+                        failure -> failMember(intent, failure));
+            } else {
+                guild.removeRoleFromMember(member, role).queue(
+                        success -> doneMember(intent),
+                        failure -> failMember(intent, failure));
+            }
+        } catch (Throwable e) {
+            failMember(intent, e);
+        }
+    }
+
+    private void doneMember(Intent intent) {
+        finalizeMemberAsync(intent, () -> memberStore.succeed(intent), "Completed " + intent);
+    }
+
+    private void deferMember(Intent intent, String reason) {
+        finalizeMemberAsync(intent, () -> memberStore.defer(intent, reason), "Deferred " + intent + ": " + reason);
+    }
+
+    private void failMember(Intent intent, Throwable error) {
+        failMember(intent, error.getClass().getSimpleName() + ": " + error.getMessage());
+    }
+
+    private void failMember(Intent intent, String reason) {
+        finalizeMemberAsync(intent, () -> memberStore.fail(intent, reason), "Failed " + intent + ": " + reason);
+    }
+
+    private void finalizeMemberAsync(Intent intent, SQLAction action, String message) {
+        if (!plugin.isEnabled()) return;
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                action.run();
+                if (!intent.desired && message.startsWith("Failed")) plugin.getLogger().severe(message);
+                else plugin.getLogger().info(message);
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Could not persist membership intent " + intent
+                        + ": " + e.getMessage());
+            } finally {
+                if (currentIntent == intent) {
+                    currentIntent = null;
+                    busy.set(false);
+                }
+            }
+        });
     }
 
     private void dispatch(final Job job, Set<String> categoryIds) {

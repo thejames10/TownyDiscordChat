@@ -34,10 +34,27 @@ public final class CompatibilityGuard implements Listener {
             return false;
         }
         String discordVersion = discord.getDescription().getVersion();
+        String serverName = plugin.getServer().getName().toLowerCase(java.util.Locale.ROOT);
         String townyVersion = towny.getDescription().getVersion();
         if (compare(discordVersion, "1.24.0") < 0) {
             problem = "Outdated DiscordSRV " + discordVersion
                     + ": TownyDiscordChat requires 1.24.0+ with the legacy JDA API.";
+            return false;
+        }
+        if (serverName.contains("folia")) {
+            problem = "Folia requires a region-aware scheduler, which this test build does not yet provide. "
+                    + "Use supported Paper/Purpur for now.";
+            return false;
+        }
+        if (compare(townyVersion, "0.102.0.0") >= 0
+                && serverName.contains("spigot")) {
+            problem = "Towny 0.102.0.0+ requires Paper/Purpur/Folia; Spigot is not supported. "
+                    + "Use Paper or Purpur for this plugin build.";
+            return false;
+        }
+        if (compare(discordVersion, "1.31.0") >= 0) {
+            problem = "DiscordSRV " + discordVersion + " is newer than the verified 1.30.x API family. "
+                    + "Use 1.30.5 for testing until compatibility is checked.";
             return false;
         }
         if (compare(townyVersion, "0.97.5.0") < 0) {
@@ -55,6 +72,7 @@ public final class CompatibilityGuard implements Listener {
             guild.getMethod("getRolesByName", String.class, boolean.class);
             guild.getMethod("createRole");
             guild.getMethod("retrieveMemberById", String.class);
+            guild.getMethod("loadMembers", java.util.function.Consumer.class);
         } catch (ReflectiveOperationException | LinkageError e) {
             problem = "DiscordSRV " + discordVersion + " does not expose the legacy JDA API"
                     + " required by this build. Install a compatible TownyDiscordChat/DiscordSRV"
@@ -85,11 +103,13 @@ public final class CompatibilityGuard implements Listener {
 
     @EventHandler
     public void adminJoin(PlayerJoinEvent event) {
-        if (problem != null) {
-            Player player = event.getPlayer();
-            if (player.isOp() || player.hasPermission("TownyDiscordChat.Admin")) {
+        Player player = event.getPlayer();
+        if (player.isOp() || player.hasPermission("TownyDiscordChat.Admin")) {
+            if (problem != null)
                 player.sendMessage(ChatColor.RED + "[TownyDiscordChat] SAFE MODE: " + problem);
-            }
+            if (plugin.getAdminWarning() != null)
+                player.sendMessage(ChatColor.RED + "[TownyDiscordChat] "
+                        + plugin.getAdminWarning());
         }
     }
 }

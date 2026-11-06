@@ -109,3 +109,27 @@ Towny channels. For custom manual access policies, review that setting
 before starting the plugin. It only targets verified managed roles,
 not arbitrary Discord roles. This cannot recover uncached, unlinked
 accounts that were never recorded in SQL without a complete guild audit.
+
+## Stable identity and full member audit
+Towny town/nation UUIDs are stored in `tdc_towny_identity`; names remain
+mutable. On a rename the existing SQL mapping keys are migrated, pending
+old-name creation/deletion jobs are cancelled and Discord role/channel names
+are changed **in-place** while keeping their original snowflake IDs.
+Previously unknown legacy rows with no provable UUID are NOT automatically
+deleted. After a real town/nation deletion, only IDs previously associated
+with a Towny UUID are eligible for delayed cleanup. The configurable
+`queue.deletionGraceSeconds` defaults to 120 to avoid rename races.
+
+A startup and periodic full-guild member audit uses JDA's gateway member
+chunking, not `Guild.getMembers()`. **Server Members Intent must be enabled
+in the Discord Developer Portal and requested by DiscordSRV/JDA.** If it is
+missing, the queue records the failure and alerts online/joining admins; it
+continues targeted linked-account audits. Use `/tdcqueue audit` to request
+another full scan after enabling the intent. Audit results are recorded in
+`tdc_audit_runs` and all observed TDC-managed roles are compared against
+current Towny membership by the regular reconciler; unlinked stale access
+is revoked. Config `queue.fullAudit.intervalSeconds` defaults to 21600.
+
+**Release qualification:** every matrix build compiles the same codebase,
+but binary/API compatibility and Discord REST behavior must be validated
+on actual server/DiscordSRV/Towny combinations before a public release.

@@ -3,12 +3,14 @@ package com.TownyDiscordChat.TownyDiscordChat.Schedulers.Queue;
 import com.TownyDiscordChat.TownyDiscordChat.Core.TDCManager;
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
+import com.TownyDiscordChat.TownyDiscordChat.Queue.StableEntityStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore.Job;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore.Intent;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore.Grant;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Member;
 import github.scarsz.discordsrv.dependencies.jda.api.Permission;
+import github.scarsz.discordsrv.dependencies.jda.api.requests.GatewayIntent;
 import github.scarsz.discordsrv.dependencies.jda.api.exceptions.ErrorResponseException;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.Nation;
@@ -41,6 +43,7 @@ import java.util.function.Consumer;
 public final class Queue {
     private final Main plugin;
     private final DiscordJobStore store;
+    private final StableEntityStore stable;
     private final MemberIntentStore memberStore;
     private final BukkitTask scheduler;
     private final AtomicBoolean resourceBusy = new AtomicBoolean(false);
@@ -51,6 +54,7 @@ public final class Queue {
     public Queue(long startDelaySeconds, long intervalDelaySeconds, Main plugin) {
         this.plugin = plugin;
         this.store = new DiscordJobStore(plugin);
+        this.stable = new StableEntityStore(plugin);
         this.memberStore = new MemberIntentStore(plugin);
         long delay = Math.max(1, startDelaySeconds);
         long period = Math.max(1, intervalDelaySeconds);
@@ -103,7 +107,17 @@ public final class Queue {
                     ? store.trackedCategoryIds(job.kind) : Collections.<String>emptySet();
             final String mappedId = job.kind.startsWith("DELETE_")
                     ? store.mappedId(job.kind, job.name) : null;
-            Bukkit.getScheduler().runTask(plugin, () -> dispatch(job, categoryIds, mappedId));
+            final Guild guild = DiscordSRV.getPlugin().getMainGuild();
+            final Set<String> stableOwners = job.kind.startsWith("DELETE_") && guild != null
+                    ? stable.ownersOfId(guild.getId(),job.kind,mappedId)
+                    : Collections.<String>emptySet();
+            final StableEntityStore.Entity identity = job.kind.startsWith("RENAME_") && guild != null
+                    ? stable.find(guild.getId(),job.kind.contains("_TOWN_") ? "TOWN" : "NATION",job.name)
+                    : null;
+            final Set<String> auditIds = "AUDIT_GUILD".equals(job.kind)
+                    ? mappedRolesForAudit() : Collections.<String>emptySet();
+            Bukkit.getScheduler().runTask(plugin, () -> dispatch(job, categoryIds, mappedId,
+                    stableOwners,identity,auditIds));
         } catch (Exception e) {
             plugin.getLogger().warning("Could not claim resource job: " + e.getMessage());
             // SQL lease safely recovers a claim if the callback never started.
@@ -220,7 +234,9 @@ public final class Queue {
         });
     }
 
-    private void dispatch(final Job job, Set<String> categoryIds, String mappedId) {
+    private void dispatch(final Job job, Set<String> categoryIds, String mappedId,
+                          Set<String> stableOwners, StableEntityStore.Entity identity,
+                          Set<String> auditIds) {
         try {
             Guild guild = DiscordSRV.getPlugin().getMainGuild();
             if (guild == null) {
@@ -228,10 +244,18 @@ public final class Queue {
                 return;
             }
             if (job.kind.startsWith("DELETE_")) {
-                dispatchDeletion(job, guild, mappedId);
+                dispatchDeletion(job, guild, mappedId, stableOwners);
+                return;
+            }
+            if (job.kind.startsWith("RENAME_")) {
+                dispatchRename(job,guild,identity);
                 return;
             }
             switch (job.kind) {
+                case "AUDIT_GUILD": {
+                    dispatchFullGuildAudit(job,guild,auditIds);
+                    break;
+                }
                 case "AUDIT_MEMBER": {
                     // On a clean reinstall JDA's cache may omit linked users.
                     // Fetch the member from Discord instead of trusting cache.
@@ -290,7 +314,165 @@ public final class Queue {
 
 
 
-    private void dispatchDeletion(Job job, Guild guild, String mappedId) {
+    private Set<String> mappedRolesForAudit() throws SQLException {
+        Set<String> roles = new HashSet<String>();
+        roles.addAll(store.mappedIds("TOWN_ROLE").values());
+        roles.addAll(store.mappedIds("NATION_ROLE").values());
+        roles.remove(null);
+        return roles;
+    }
+
+    /**
+     * Guild member chunking is the only complete supported enumeration of
+     * uncached users. It requires Discord's privileged GUILD_MEMBERS intent.
+     * Never confuse Guild#getMembers() with a full guild snapshot.
+     */
+    private void dispatchFullGuildAudit(Job job, Guild guild, Set<String> recordedIds) {
+        if (!guild.getId().equals(job.name)) {
+            discard(job);
+            return;
+        }
+        if (!guild.getJDA().getGatewayIntents().contains(GatewayIntent.GUILD_MEMBERS)) {
+            String warning = "Complete Discord membership audit requires Server Members Intent "
+                    + "enabled for the bot AND GUILD_MEMBERS intent enabled in DiscordSRV. "
+                    + "Linked accounts continue to receive individual audits.";
+            plugin.reportAdminWarning(warning);
+            fail(job,warning);
+            return;
+        }
+        try {
+            final Set<String> owned = new HashSet<String>(recordedIds);
+            // A first-time installation has no SQL mappings. Only explicitly
+            // named, non-privileged town/nation roles may be auto-adopted.
+            Set<String> townNames = new HashSet<String>();
+            Set<String> nationNames = new HashSet<String>();
+            for (Town town : TownyUniverse.getInstance().getTowns()) townNames.add(town.getName());
+            for (Nation nation : TownyUniverse.getInstance().getNations()) nationNames.add(nation.getName());
+            for (Role role : guild.getRoles()) {
+                if (!role.getPermissions().isEmpty()) continue;
+                String name = role.getName();
+                if ((name.startsWith("town-") && townNames.contains(name.substring(5)))
+                        || (name.startsWith("nation-") && nationNames.contains(name.substring(7))))
+                    owned.add(role.getId());
+            }
+            final List<Grant> observed = Collections.synchronizedList(new ArrayList<Grant>());
+            guild.loadMembers(member -> {
+                for (Role role : member.getRoles()) {
+                    if (owned.contains(role.getId()))
+                        observed.add(new Grant(member.getId(),role.getId()));
+                }
+            }).onSuccess(complete -> {
+                if (!plugin.isEnabled()) return;
+                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                    try {
+                        memberStore.observe(guild.getId(),observed);
+                        store.finishFullAudit(job);
+                        plugin.getLogger().info("Complete guild audit recorded "
+                                + observed.size() + " managed grants. Reconciliation will revoke stale access.");
+                        Bukkit.getScheduler().runTask(plugin, () -> {
+                            if (plugin.reconciler != null) plugin.reconciler.requestSoon();
+                        });
+                    } catch (SQLException e) {
+                        plugin.getLogger().severe("Could not checkpoint guild audit: " + e.getMessage());
+                    } finally {
+                        if (current == job) {
+                            current = null;
+                            resourceBusy.set(false);
+                        }
+                    }
+                });
+            }).onError(error -> {
+                plugin.reportAdminWarning("Full Discord guild member audit failed: "
+                        + error.getMessage());
+                fail(job,"Guild chunking failed: " + error.getMessage());
+            });
+        } catch (Throwable error) {
+            plugin.reportAdminWarning("Full guild audit unavailable: " + error.getMessage());
+            fail(job,"Guild audit unavailable: " + error.getMessage());
+        }
+    }
+
+    /**
+     * Rename the existing Discord resource in-place. Towny UUID, not the
+     * mutable name, is the job key; role/channel Discord IDs remain unchanged.
+     */
+    private void dispatchRename(Job job, Guild guild, StableEntityStore.Entity entity) {
+        if (entity == null) { discard(job); return; }
+        String kind = job.kind.contains("_TOWN_") ? "TOWN" : "NATION";
+        String component = job.kind.endsWith("ROLE") ? "ROLE"
+                : job.kind.endsWith("TEXT") ? "TEXT" : "VOICE";
+        String prefix = "TOWN".equals(kind) ? "town-" : "nation-";
+        boolean valid = false;
+        if ("TOWN".equals(kind)) {
+            for (Town town : TownyUniverse.getInstance().getTowns()) {
+                if (job.name.equals(town.getUUID().toString())
+                        && entity.name.equals(town.getName())) { valid=true; break; }
+            }
+        } else {
+            for (Nation nation : TownyUniverse.getInstance().getNations()) {
+                if (job.name.equals(nation.getUUID().toString())
+                        && entity.name.equals(nation.getName())) { valid=true; break; }
+            }
+        }
+        if (!valid) { discard(job); return; }
+        String id=entity.idFor(component);
+        if (id==null) { discard(job); return; }
+        try {
+            if ("ROLE".equals(component)) {
+                Role role=guild.getRoleById(id);
+                if (role==null) { discard(job); return; }
+                if (!role.getPermissions().isEmpty() || !role.getName().startsWith(prefix)) {
+                    fail(job,"Refusing unsafe role rename: " + id); return;
+                }
+                String desired=prefix+entity.name;
+                if (role.getName().equals(desired)) { discard(job); return; }
+                role.getManager().setName(desired).queue(done -> discard(job),
+                        error -> fail(job,"Discord role rename: " + error.getMessage()));
+            } else {
+                Category expected=null;
+                String categoryName=plugin.getConfig().getString(
+                        "category." + ("TOWN".equals(kind) ? "Town" : "Nation") + ".Name","");
+                if ("TEXT".equals(component)) {
+                    TextChannel channel=guild.getTextChannelById(id);
+                    if (channel==null) { discard(job); return; }
+                    expected=channel.getParent();
+                    if (!safeRenameChannel(guild,expected,categoryName,
+                            channel.getPermissionOverride(guild.getPublicRole())!=null
+                            && channel.getPermissionOverride(guild.getPublicRole())
+                                .getDenied().contains(Permission.VIEW_CHANNEL))) {
+                        fail(job,"Unsafe text channel rename: " + id); return;
+                    }
+                    if (channel.getName().equals(entity.name)) { discard(job); return; }
+                    channel.getManager().setName(entity.name).queue(done -> discard(job),
+                            error -> fail(job,"Discord text rename: " + error.getMessage()));
+                } else {
+                    VoiceChannel channel=guild.getVoiceChannelById(id);
+                    if (channel==null) { discard(job); return; }
+                    expected=channel.getParent();
+                    if (!safeRenameChannel(guild,expected,categoryName,
+                            channel.getPermissionOverride(guild.getPublicRole())!=null
+                            && channel.getPermissionOverride(guild.getPublicRole())
+                                .getDenied().contains(Permission.VIEW_CHANNEL))) {
+                        fail(job,"Unsafe voice channel rename: " + id); return;
+                    }
+                    if (channel.getName().equals(entity.name)) { discard(job); return; }
+                    channel.getManager().setName(entity.name).queue(done -> discard(job),
+                            error -> fail(job,"Discord voice rename: " + error.getMessage()));
+                }
+            }
+        } catch (Throwable e) {
+            fail(job,"Rename dispatch failed: " + e.getMessage());
+        }
+    }
+
+    private static boolean safeRenameChannel(Guild guild,Category parent,
+                                             String expectedCategory,boolean publicDenied) {
+        return publicDenied && parent!=null
+                && parent.getName().equalsIgnoreCase(expectedCategory)
+                && privateCategory(guild,parent);
+    }
+
+    private void dispatchDeletion(Job job, Guild guild, String mappedId, Set<String> stableOwners) {
         try {
             boolean town = job.kind.startsWith("DELETE_TOWN");
             boolean nation = job.kind.startsWith("DELETE_NATION");
@@ -306,6 +488,23 @@ public final class Queue {
             if (mappedId == null || !mappedId.matches("[0-9]{1,24}")) {
                 discard(job); // No confirmed SQL ownership mapping.
                 return;
+            }
+            if (stableOwners.isEmpty()) {
+                fail(job, "No stable Towny UUID owns " + mappedId + "; manual cleanup required");
+                return;
+            }
+            for (String owner : stableOwners) {
+                if (town) {
+                    for (Town existing : TownyUniverse.getInstance().getTowns())
+                        if (owner.equals(existing.getUUID().toString())) {
+                            discard(job); return; // Renamed town, NEVER delete.
+                        }
+                } else {
+                    for (Nation existing : TownyUniverse.getInstance().getNations())
+                        if (owner.equals(existing.getUUID().toString())) {
+                            discard(job); return; // Renamed nation, NEVER delete.
+                        }
+                }
             }
             if (job.kind.endsWith("ROLE")) {
                 Role role = guild.getRoleById(mappedId);

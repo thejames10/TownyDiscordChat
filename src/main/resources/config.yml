@@ -151,6 +151,10 @@ queue:
   maxAttempts: 10
   retryBaseSeconds: 30
   retryMaxSeconds: 900
+  deletionGraceSeconds: 120
+  fullAudit:
+    enabled: true
+    intervalSeconds: 21600
 
 # A linked member who leaves a town is always reconciled for revocation.
 # Opt in to revoking TDC-prefixed roles from unlinked Discord members too.
@@ -158,3 +162,7 @@ queue:
 # also remembered in MySQL for revocation after an unlink.
 security:
   revokeUnlinkedAccounts: true
+
+# Allow queued deletions to be cancelled by a quick rename/recreation.
+# New persistent sync features. Back up the DB before enabling on production.
+# Deletion grace protects against changes/reinstalls in flight.

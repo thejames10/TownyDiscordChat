@@ -16,7 +16,7 @@ commands:
   tdcqueue:
     description: View or retry the durable Discord task queue
     aliases: [tdcsql]
-    usage: /tdcqueue [status|retry-dead]
+    usage: /tdcqueue [status|retry-dead|audit]
     permission: TownyDiscordChat.Admin
 
 permissions:

@@ -70,6 +70,9 @@ public final class DiscordJobStore {
                     + "last_error VARCHAR(512) NULL,"
                     + "INDEX idx_ready (status,available_at,lease_until)"
                     + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            s.executeUpdate("CREATE TABLE IF NOT EXISTS tdc_audit_runs ("
+                    + "guild_id VARCHAR(24) PRIMARY KEY,last_success_at BIGINT NOT NULL"
+                    + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         }
         ensurePriorityColumn();
         migrateLegacyRows();
@@ -107,11 +110,15 @@ public final class DiscordJobStore {
     private void enqueue(Connection c, String kind, String name) throws SQLException {
         try (PreparedStatement ps = c.prepareStatement(
                 "INSERT IGNORE INTO " + TABLE
-                        + " (job_key,kind,resource_name,status,available_at,priority) VALUES (?,?,?,'PENDING',0,?)")) {
+                        + " (job_key,kind,resource_name,status,available_at,priority) VALUES (?,?,?,'PENDING',?,?)")) {
             ps.setString(1, key(kind, name));
             ps.setString(2, kind);
             ps.setString(3, name);
-            ps.setInt(4, kind.startsWith("DELETE_") ? 10 : 100);
+            long delay = kind.startsWith("DELETE_")
+                    ? Math.max(30L,plugin.getConfig().getLong("queue.deletionGraceSeconds",120L))*1000L : 0L;
+            ps.setLong(4,System.currentTimeMillis()+delay);
+            ps.setInt(5, kind.startsWith("DELETE_") ? 10
+                    : kind.startsWith("RENAME_") ? 20 : "AUDIT_GUILD".equals(kind) ? 150 : 100);
             ps.executeUpdate();
         }
     }
@@ -242,6 +249,7 @@ public final class DiscordJobStore {
                     ps.setString(2,remoteId);
                     ps.executeUpdate();
                 }
+                new StableEntityStore(plugin).clearDeleted(c,job.kind,job.name,remoteId);
                 try (PreparedStatement ps = c.prepareStatement(
                         "DELETE FROM " + TABLE + " WHERE id=? AND attempts=?")) {
                     ps.setLong(1,job.id);
@@ -381,6 +389,7 @@ public final class DiscordJobStore {
                     return; // stale JDA callback from an expired lease
                 }
                 record(c, job, discordId, parentId);
+                new StableEntityStore(plugin).recordCreated(c,job.kind,job.name,discordId);
                 try (PreparedStatement ps = c.prepareStatement(
                         "DELETE FROM " + TABLE + " WHERE id=? AND attempts=?")) {
                     ps.setLong(1, job.id);
@@ -511,6 +520,44 @@ public final class DiscordJobStore {
             while (rs.next()) counts.put(rs.getString(1), rs.getInt(2));
         }
         return counts;
+    }
+
+    /** Durable audit cadence; a successful full-guild scan is not repeated on every poll. */
+    public void enqueueFullAuditIfDue(String guildId, long intervalSeconds) throws SQLException {
+        long cutoff = System.currentTimeMillis() - Math.max(900L,intervalSeconds)*1000L;
+        try (Connection c=connect(); PreparedStatement check=c.prepareStatement(
+                "SELECT last_success_at FROM tdc_audit_runs WHERE guild_id=?")) {
+            check.setString(1,guildId);
+            try (ResultSet rs=check.executeQuery()) {
+                if (rs.next() && rs.getLong(1) >= cutoff) return;
+            }
+        }
+        enqueue("AUDIT_GUILD",guildId);
+    }
+
+    /** Persist a complete guild audit checkpoint and acknowledge atomically. */
+    public void finishFullAudit(Job job) throws SQLException {
+        if (!"AUDIT_GUILD".equals(job.kind)) throw new SQLException("Not a guild audit");
+        try (Connection c=connect()) {
+            c.setAutoCommit(false);
+            try {
+                if (!stillOwned(c,job)) { c.rollback(); return; }
+                try (PreparedStatement ps=c.prepareStatement(
+                        "INSERT INTO tdc_audit_runs(guild_id,last_success_at) VALUES (?,?)"
+                        + " ON DUPLICATE KEY UPDATE last_success_at=VALUES(last_success_at)")) {
+                    ps.setString(1,job.name);
+                    ps.setLong(2,System.currentTimeMillis());
+                    ps.executeUpdate();
+                }
+                try (PreparedStatement ps=c.prepareStatement(
+                        "DELETE FROM " + TABLE + " WHERE id=? AND attempts=?")) {
+                    ps.setLong(1,job.id);
+                    ps.setInt(2,job.attempts);
+                    ps.executeUpdate();
+                }
+                c.commit();
+            } catch (SQLException e) { c.rollback(); throw e; }
+        }
     }
 
     /** Allows recovery from a DEAD job without duplicating healthy work. */

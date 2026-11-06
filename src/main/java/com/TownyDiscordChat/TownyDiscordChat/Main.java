@@ -5,6 +5,7 @@ import com.TownyDiscordChat.TownyDiscordChat.Commands.TDCSQL;
 import com.TownyDiscordChat.TownyDiscordChat.Listeners.MembershipChangeListener;
 import com.TownyDiscordChat.TownyDiscordChat.Listeners.AccountChangeListener;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
+import com.TownyDiscordChat.TownyDiscordChat.Queue.StableEntityStore;
 import com.TownyDiscordChat.TownyDiscordChat.MySQL.MySQL;
 import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.*;
 import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Log.Log;
@@ -15,6 +16,9 @@ import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Guild;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.sql.SQLException;
@@ -50,6 +54,27 @@ public class Main extends JavaPlugin {
     public CompatibilityGuard compatibility;
     public AccountChangeListener accountListener;
     private boolean operational;
+    private volatile String adminWarning;
+
+    /** Persistent operator-visible status for recoverable audit failures. */
+    public String getAdminWarning() { return adminWarning; }
+
+    public void reportAdminWarning(String warning) {
+        if (warning == null || warning.trim().isEmpty()) return;
+        if (warning.equals(adminWarning)) return;
+        adminWarning = warning;
+        getLogger().warning("[ADMIN ACTION REQUIRED] " + warning);
+        if (isEnabled()) {
+            Bukkit.getScheduler().runTask(this, () -> {
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    if (player.isOp() || player.hasPermission("TownyDiscordChat.Admin"))
+                        player.sendMessage(ChatColor.RED + "[TownyDiscordChat] " + warning);
+                }
+            });
+        }
+    }
+
+    public void clearAdminWarning() { adminWarning = null; }
 
     public boolean isOperational() { return operational; }
     public String getSafeModeReason() { return compatibility == null ? "Not initialized" : compatibility.problem(); }
@@ -126,6 +151,7 @@ public class Main extends JavaPlugin {
                 nationVoiceChannelsDB.createTable();
                 queuedTaskDB.createTable();
                 new MemberIntentStore(this).initialize();
+                new StableEntityStore(this).initialize();
 
                 // Do not wait synchronously for DiscordSRV to connect.
                 // Reconciler will start once the guild is available.

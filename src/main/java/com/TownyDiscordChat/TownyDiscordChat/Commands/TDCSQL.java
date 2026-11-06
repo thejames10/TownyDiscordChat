@@ -3,6 +3,7 @@ package com.TownyDiscordChat.TownyDiscordChat.Commands;
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
+import github.scarsz.discordsrv.DiscordSRV;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -21,18 +22,28 @@ public class TDCSQL implements CommandExecutor {
             return true;
         }
         if (args.length > 0 && !args[0].equalsIgnoreCase("status")
-                && !args[0].equalsIgnoreCase("retry-dead")) {
-            sender.sendMessage("Usage: /tdcqueue [status|retry-dead]");
+                && !args[0].equalsIgnoreCase("retry-dead")
+                && !args[0].equalsIgnoreCase("audit")) {
+            sender.sendMessage("Usage: /tdcqueue [status|retry-dead|audit]");
             return true;
         }
         final boolean retry = args.length > 0 && args[0].equalsIgnoreCase("retry-dead");
+        final boolean audit = args.length > 0 && args[0].equalsIgnoreCase("audit");
+        final String guildId = audit && DiscordSRV.getPlugin().getMainGuild() != null
+                ? DiscordSRV.getPlugin().getMainGuild().getId() : null;
         final Main plugin = Main.plugin;
         Bukkit.getScheduler().runTaskAsynchronously(plugin, new Runnable() {
             @Override public void run() {
                 final String message;
                 try {
                     DiscordJobStore jobs = new DiscordJobStore(plugin);
-                    if (retry) {
+                    if (audit) {
+                        if (guildId == null) message = "Discord guild is not connected; cannot audit yet.";
+                        else {
+                            jobs.enqueue("AUDIT_GUILD",guildId);
+                            message = "Queued full-guild member audit (requires Server Members Intent).";
+                        }
+                    } else if (retry) {
                         message = "Requeued " + jobs.retryDead() + " resource jobs and "
                                 + new MemberIntentStore(plugin).retryDead() + " membership intents.";
                     } else {

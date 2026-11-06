@@ -2,6 +2,7 @@ package com.TownyDiscordChat.TownyDiscordChat.Schedulers;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
+import com.TownyDiscordChat.TownyDiscordChat.Queue.StableEntityStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore.Grant;
 import com.palmergames.bukkit.towny.TownyUniverse;
@@ -39,6 +40,7 @@ public final class Reconciler {
     private final Main plugin;
     private final DiscordJobStore resources;
     private final MemberIntentStore membership;
+    private final StableEntityStore stable;
     private final BukkitTask periodic;
     private final AtomicBoolean reconciling = new AtomicBoolean(false);
     private final AtomicBoolean scheduled = new AtomicBoolean(false);
@@ -56,6 +58,11 @@ public final class Reconciler {
         String guildId, townCategory, nationCategory;
         final List<String> towns = new ArrayList<String>();
         final List<String> nations = new ArrayList<String>();
+        final Map<String,String> townUuids = new HashMap<String,String>();
+        final Map<String,String> nationUuids = new HashMap<String,String>();
+        final Map<String,String> safeRoleNamesById = new HashMap<String,String>();
+        final Map<String,String> safeTextNamesById = new HashMap<String,String>();
+        final Map<String,String> safeVoiceNamesById = new HashMap<String,String>();
         final Map<String, String> roleIds = new HashMap<String,String>();
         final Set<String> ambiguousRoleNames = new HashSet<String>();
         final Map<String,String> channelIds = new HashMap<String,String>();
@@ -72,6 +79,7 @@ public final class Reconciler {
         this.plugin = plugin;
         this.resources = new DiscordJobStore(plugin);
         this.membership = new MemberIntentStore(plugin);
+        this.stable = new StableEntityStore(plugin);
         long seconds = Math.max(30, plugin.getConfig().getLong("queue.reconcileSeconds", 180));
         periodic = Bukkit.getScheduler().runTaskTimer(plugin, () -> snapshot(),
                 100L, seconds * 20L);
@@ -124,10 +132,17 @@ public final class Reconciler {
         state.guildId = guild.getId();
         state.townCategory = plugin.getConfig().getString("category.Town.Name", "MINECRAFT-TOWN-CHAT");
         state.nationCategory = plugin.getConfig().getString("category.Nation.Name", "MINECRAFT-NATION-CHAT");
-        for (Town town : TownyUniverse.getInstance().getTowns()) state.towns.add(town.getName());
-        for (Nation nation : TownyUniverse.getInstance().getNations()) state.nations.add(nation.getName());
+        for (Town town : TownyUniverse.getInstance().getTowns()) {
+            state.towns.add(town.getName());
+            state.townUuids.put(town.getUUID().toString(),town.getName());
+        }
+        for (Nation nation : TownyUniverse.getInstance().getNations()) {
+            state.nations.add(nation.getName());
+            state.nationUuids.put(nation.getUUID().toString(),nation.getName());
+        }
         for (Role role : guild.getRoles()) {
             if (!role.getPermissions().isEmpty()) continue;
+            state.safeRoleNamesById.put(role.getId(),role.getName());
             if (state.roleIds.containsKey(role.getName())) {
                 state.ambiguousRoleNames.add(role.getName());
                 state.roleIds.remove(role.getName());
@@ -148,9 +163,30 @@ public final class Reconciler {
                 state.categories.add(new CategoryInfo("NATION_CATEGORY", state.nationCategory, cat.getId(), free));
         }
 
+        for (TextChannel channel : guild.getTextChannels()) {
+            if (privateChannel(guild, channel.getParent(),
+                    channel.getPermissionOverride(guild.getPublicRole()) != null
+                    && channel.getPermissionOverride(guild.getPublicRole())
+                        .getDenied().contains(Permission.VIEW_CHANNEL)))
+                state.safeTextNamesById.put(channel.getId(),channel.getName());
+        }
+        for (VoiceChannel channel : guild.getVoiceChannels()) {
+            if (privateChannel(guild, channel.getParent(),
+                    channel.getPermissionOverride(guild.getPublicRole()) != null
+                    && channel.getPermissionOverride(guild.getPublicRole())
+                        .getDenied().contains(Permission.VIEW_CHANNEL)))
+                state.safeVoiceNamesById.put(channel.getId(),channel.getName());
+        }
         snapshotChannels(guild, state);
         snapshotMembership(guild, state);
         return state;
+    }
+
+    private boolean privateChannel(Guild guild, Category parent, boolean restricted) {
+        return restricted && parent != null
+                && parent.getPermissionOverride(guild.getPublicRole()) != null
+                && parent.getPermissionOverride(guild.getPublicRole()).getDenied()
+                        .contains(Permission.VIEW_CHANNEL);
     }
 
     private void snapshotChannels(Guild guild, Snapshot state) {
@@ -260,49 +296,10 @@ public final class Reconciler {
         Map<String,String> townVoice = resources.mappedIds("TOWN_VOICE");
         Map<String,String> nationVoice = resources.mappedIds("NATION_VOICE");
 
-        // Delete only resources with an existing SQL-managed mapping. The
-        // worker verifies the recorded Discord ID and name before deleting.
-        for (String name : townRoles.keySet()) if (!s.towns.contains(name))
-            resources.enqueue("DELETE_TOWN_ROLE",name);
-        for (String name : nationRoles.keySet()) if (!s.nations.contains(name))
-            resources.enqueue("DELETE_NATION_ROLE",name);
-        for (String name : townText.keySet()) if (!s.towns.contains(name))
-            resources.enqueue("DELETE_TOWN_TEXT",name);
-        for (String name : nationText.keySet()) if (!s.nations.contains(name))
-            resources.enqueue("DELETE_NATION_TEXT",name);
-        for (String name : townVoice.keySet()) if (!s.towns.contains(name))
-            resources.enqueue("DELETE_TOWN_VOICE",name);
-        for (String name : nationVoice.keySet()) if (!s.nations.contains(name))
-            resources.enqueue("DELETE_NATION_VOICE",name);
-
-        for (String name : s.towns) {
-            if (!eq(s.roleIds.get("town-"+name), townRoles.get(name)))
-                resources.enqueue("TOWN_ROLE", name);
-            if (plugin.getConfig().getBoolean("town.CreateTextChannelForRole", true)) {
-                if (!eq(s.channelIds.get("TOWN_TEXT:"+name),townText.get(name)))
-                    resources.enqueue("TOWN_TEXT", name);
-                if (!s.channelIds.containsKey("TOWN_TEXT:"+name)) s.neededTownChannels++;
-            }
-            if (plugin.getConfig().getBoolean("town.CreateVoiceChannelForRole", true)) {
-                if (!eq(s.channelIds.get("TOWN_VOICE:"+name),townVoice.get(name)))
-                    resources.enqueue("TOWN_VOICE", name);
-                if (!s.channelIds.containsKey("TOWN_VOICE:"+name)) s.neededTownChannels++;
-            }
-        }
-        for (String name : s.nations) {
-            if (!eq(s.roleIds.get("nation-"+name), nationRoles.get(name)))
-                resources.enqueue("NATION_ROLE", name);
-            if (plugin.getConfig().getBoolean("nation.CreateTextChannelForRole", true)) {
-                if (!eq(s.channelIds.get("NATION_TEXT:"+name),nationText.get(name)))
-                    resources.enqueue("NATION_TEXT", name);
-                if (!s.channelIds.containsKey("NATION_TEXT:"+name)) s.neededNationChannels++;
-            }
-            if (plugin.getConfig().getBoolean("nation.CreateVoiceChannelForRole", true)) {
-                if (!eq(s.channelIds.get("NATION_VOICE:"+name),nationVoice.get(name)))
-                    resources.enqueue("NATION_VOICE", name);
-                if (!s.channelIds.containsKey("NATION_VOICE:"+name)) s.neededNationChannels++;
-            }
-        }
+        // Reconcile by immutable Towny UUID before deciding anything by name.
+        // This prevents a rename from being interpreted as a delete+create.
+        reconcileStable(s,"TOWN",s.townUuids,townRoles,townText,townVoice);
+        reconcileStable(s,"NATION",s.nationUuids,nationRoles,nationText,nationVoice);
 
         int townSlots = 0, nationSlots = 0;
         for (CategoryInfo cat : s.categories) {
@@ -321,6 +318,10 @@ public final class Reconciler {
                 resources.enqueue("AUDIT_MEMBER", member);
         }
         firstMemberAudit.set(false);
+        if (plugin.getConfig().getBoolean("queue.fullAudit.enabled",true)) {
+            resources.enqueueFullAuditIfDue(s.guildId,
+                    plugin.getConfig().getLong("queue.fullAudit.intervalSeconds",21600L));
+        }
 
         // Record pre-existing granted roles, including when SQL was wiped.
         membership.observe(s.guildId, s.observed);
@@ -345,6 +346,90 @@ public final class Reconciler {
                 membership.supersedeExisting(s.guildId,ids[0],ids[1],true);
             }
         }
+    }
+
+    private void reconcileStable(Snapshot s, String type, Map<String,String> live,
+                                 Map<String,String> roles, Map<String,String> texts,
+                                 Map<String,String> voices) throws SQLException {
+        String prefix = type.toLowerCase(java.util.Locale.ROOT) + "-";
+        for (Map.Entry<String,String> entry : live.entrySet()) {
+            String uuid = entry.getKey(), name = entry.getValue();
+            String roleKind = type + "_ROLE";
+            String textKind = type + "_TEXT";
+            String voiceKind = type + "_VOICE";
+            String remoteRole = s.roleIds.get(prefix + name);
+            String remoteText = s.channelIds.get(textKind + ":" + name);
+            String remoteVoice = s.channelIds.get(voiceKind + ":" + name);
+
+            // Backfill stable identities from verified guild resources or
+            // existing SQL IDs still present with safe channel permissions.
+            String roleCandidate = remoteRole != null ? remoteRole :
+                    verifiedId(s.safeRoleNamesById,roles.get(name));
+            String textCandidate = remoteText != null ? remoteText :
+                    verifiedId(s.safeTextNamesById,texts.get(name));
+            String voiceCandidate = remoteVoice != null ? remoteVoice :
+                    verifiedId(s.safeVoiceNamesById,voices.get(name));
+            StableEntityStore.Entity entity = stable.sync(s.guildId,type,uuid,name,
+                    roleCandidate,textCandidate,voiceCandidate);
+
+            // In-place rename by immutable ID. Missing Discord resources are
+            // recreated; existing renamed resources are NEVER duplicated.
+            if (entity.roleId != null && s.safeRoleNamesById.containsKey(entity.roleId)) {
+                if (!(prefix + name).equals(s.safeRoleNamesById.get(entity.roleId)))
+                    resources.enqueue("RENAME_" + roleKind,uuid);
+                else if (!eq(roles.get(name),entity.roleId))
+                    resources.enqueue(roleKind,name); // repair legacy mapping
+            } else {
+                resources.enqueue(roleKind,name);
+            }
+            boolean createText = plugin.getConfig().getBoolean(
+                    type.toLowerCase(java.util.Locale.ROOT) + ".CreateTextChannelForRole",true);
+            boolean createVoice = plugin.getConfig().getBoolean(
+                    type.toLowerCase(java.util.Locale.ROOT) + ".CreateVoiceChannelForRole",true);
+            if (createText) {
+                if (entity.textId != null && s.safeTextNamesById.containsKey(entity.textId)) {
+                    if (!name.equals(s.safeTextNamesById.get(entity.textId)))
+                        resources.enqueue("RENAME_" + textKind,uuid);
+                    else if (!eq(texts.get(name),entity.textId))
+                        resources.enqueue(textKind,name);
+                } else {
+                    resources.enqueue(textKind,name);
+                    if (type.equals("TOWN")) s.neededTownChannels++;
+                    else s.neededNationChannels++;
+                }
+            }
+            if (createVoice) {
+                if (entity.voiceId != null && s.safeVoiceNamesById.containsKey(entity.voiceId)) {
+                    if (!name.equals(s.safeVoiceNamesById.get(entity.voiceId)))
+                        resources.enqueue("RENAME_" + voiceKind,uuid);
+                    else if (!eq(voices.get(name),entity.voiceId))
+                        resources.enqueue(voiceKind,name);
+                } else {
+                    resources.enqueue(voiceKind,name);
+                    if (type.equals("TOWN")) s.neededTownChannels++;
+                    else s.neededNationChannels++;
+                }
+            }
+        }
+
+        // Deletions require a UUID known BEFORE the entity disappeared.
+        // Unmapped legacy rows could represent a historical rename; never
+        // delete them automatically without stable identity evidence.
+        for (StableEntityStore.Entity previous : stable.all(s.guildId,type)) {
+            if (live.containsKey(previous.uuid)) continue;
+            if (previous.roleId != null && eq(previous.roleId, roles.get(previous.name)))
+                resources.enqueue("DELETE_" + type + "_ROLE",previous.name);
+            if (previous.textId != null && eq(previous.textId, texts.get(previous.name)))
+                resources.enqueue("DELETE_" + type + "_TEXT",previous.name);
+            if (previous.voiceId != null && eq(previous.voiceId, voices.get(previous.name)))
+                resources.enqueue("DELETE_" + type + "_VOICE",previous.name);
+            if (previous.roleId == null && previous.textId == null && previous.voiceId == null)
+                stable.retireIfEmpty(s.guildId,type,previous.uuid);
+        }
+    }
+
+    private static String verifiedId(Map<String,String> safeNames, String recordedId) {
+        return recordedId != null && safeNames.containsKey(recordedId) ? recordedId : null;
     }
 
     private static boolean eq(String a, String b) {

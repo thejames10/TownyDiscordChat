@@ -12,7 +12,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Durable, deduplicated MySQL work queue. All methods must be called off the Bukkit
+ * Durable, deduplicated JDBC work queue (SQLite or MySQL). All methods must be called off the Bukkit
  * server thread. Each operation owns its JDBC connection (legacy SQL uses a
  * different connection), so Discord's callbacks never share a JDBC statement.
  */
@@ -72,6 +72,9 @@ public final class DiscordJobStore {
         ensurePriorityColumn();
         migrateLegacyRows();
         migrateLegacyFalseRows();
+        try (Connection c = connect()) {
+            LegacyExpiryMigration.migrate(c);
+        }
     }
 
     private void ensurePriorityColumn() throws SQLException {

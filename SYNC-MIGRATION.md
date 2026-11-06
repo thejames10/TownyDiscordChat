@@ -40,9 +40,12 @@ are deleted when the corresponding Towny entity disappears. Categories
 are deliberately NOT deleted automatically, as they may contain unrelated
 channels. Renames currently take the delete-and-create path, which can
 cause temporary access loss; stable Towny UUID identity will improve this.
-There is no full-guild audit for unlinked users without SQL history.
+There is no full-guild REST audit for unlinked users without SQL history.
+Cached unlinked members and individually rechecked former members have
+TDC-owned access revoked by default (configurable).
 The plugin performs rate-limited REST audits for linked members on
-startup and when JDA's member cache is missing entries. Newer DiscordSRV
+startup and when JDA's member cache is missing entries. Completed grants
+also trigger a REST audit to catch late HTTP responses. Newer DiscordSRV
 integrations using unshaded JDA require a separate adapter.
 
 ## Non-destructive database migration
@@ -98,3 +101,11 @@ The guard also checks for specific shaded JDA methods. A modern
 DiscordSRV version may expose an incompatible JDA package and trigger
 safe mode despite passing the numeric version test. Use an integration
 adapter and tested per-version dependency matrix for official releases.
+
+## Security migration note
+The default `security.revokeUnlinkedAccounts: true` is intentionally
+strict: an unlinked Discord account should not retain access to private
+Towny channels. For custom manual access policies, review that setting
+before starting the plugin. It only targets verified managed roles,
+not arbitrary Discord roles. This cannot recover uncached, unlinked
+accounts that were never recorded in SQL without a complete guild audit.

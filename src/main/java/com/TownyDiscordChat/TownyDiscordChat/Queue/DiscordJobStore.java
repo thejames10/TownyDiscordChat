@@ -63,6 +63,7 @@ public final class DiscordJobStore {
                     + "kind VARCHAR(40) NOT NULL,"
                     + "resource_name VARCHAR(128) NOT NULL,"
                     + "status VARCHAR(16) NOT NULL DEFAULT 'PENDING',"
+                    + "priority SMALLINT NOT NULL DEFAULT 100,"
                     + "attempts INT NOT NULL DEFAULT 0,"
                     + "available_at BIGINT NOT NULL DEFAULT 0,"
                     + "lease_until BIGINT NOT NULL DEFAULT 0,"
@@ -70,7 +71,24 @@ public final class DiscordJobStore {
                     + "INDEX idx_ready (status,available_at,lease_until)"
                     + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         }
+        ensurePriorityColumn();
         migrateLegacyRows();
+    }
+
+    private void ensurePriorityColumn() throws SQLException {
+        try (Connection c = connect()) {
+            boolean existing;
+            try (ResultSet columns = c.getMetaData().getColumns(
+                    c.getCatalog(), null, TABLE, "priority")) {
+                existing = columns.next();
+            }
+            if (!existing) {
+                try (Statement statement = c.createStatement()) {
+                    statement.executeUpdate("ALTER TABLE " + TABLE
+                            + " ADD COLUMN priority SMALLINT NOT NULL DEFAULT 100");
+                }
+            }
+        }
     }
 
     private static String key(String kind, String name) {
@@ -89,10 +107,11 @@ public final class DiscordJobStore {
     private void enqueue(Connection c, String kind, String name) throws SQLException {
         try (PreparedStatement ps = c.prepareStatement(
                 "INSERT IGNORE INTO " + TABLE
-                        + " (job_key,kind,resource_name,status,available_at) VALUES (?,?,?,'PENDING',0)")) {
+                        + " (job_key,kind,resource_name,status,available_at,priority) VALUES (?,?,?,'PENDING',0,?)")) {
             ps.setString(1, key(kind, name));
             ps.setString(2, kind);
             ps.setString(3, name);
+            ps.setInt(4, kind.startsWith("DELETE_") ? 10 : 100);
             ps.executeUpdate();
         }
     }
@@ -156,7 +175,7 @@ public final class DiscordJobStore {
             try (PreparedStatement ps = c.prepareStatement(
                     "SELECT id,kind,resource_name,attempts FROM " + TABLE + " WHERE "
                     + "(status='PENDING' AND available_at<=?) OR "
-                    + "(status='RUNNING' AND lease_until<=?) ORDER BY available_at,id LIMIT 1 FOR UPDATE")) {
+                    + "(status='RUNNING' AND lease_until<=?) ORDER BY priority,available_at,id LIMIT 1 FOR UPDATE")) {
                 ps.setLong(1, now);
                 ps.setLong(2, now);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -182,6 +201,55 @@ public final class DiscordJobStore {
                 c.rollback();
                 throw ex;
             }
+        }
+    }
+
+    /**
+     * Only SQL-mapped IDs are eligible for automated resource deletion. A stale
+     * name is never sufficient proof that a Discord role/channel belongs to TDC.
+     */
+    public String mappedId(String kind, String name) throws SQLException {
+        String original = kind.startsWith("DELETE_") ? kind.substring("DELETE_".length()) : kind;
+        return mappedIds(original).get(name);
+    }
+
+    public void succeedDeletion(Job job, String remoteId) throws SQLException {
+        if (!job.kind.startsWith("DELETE_")) throw new SQLException("Unexpected delete kind");
+        String original = job.kind.substring("DELETE_".length());
+        final String table, nameColumn, idColumn;
+        switch (original) {
+            case "TOWN_ROLE":
+                table="tdc_town_roles"; nameColumn="townRoleName"; idColumn="townRoleId"; break;
+            case "NATION_ROLE":
+                table="tdc_nation_roles"; nameColumn="nationRoleName"; idColumn="nationRoleId"; break;
+            case "TOWN_TEXT":
+                table="tdc_town_text_channels"; nameColumn="townTextChannelName"; idColumn="townTextChannelId"; break;
+            case "NATION_TEXT":
+                table="tdc_nation_text_channels"; nameColumn="nationTextChannelName"; idColumn="nationTextChannelId"; break;
+            case "TOWN_VOICE":
+                table="tdc_town_voice_channels"; nameColumn="townVoiceChannelName"; idColumn="townVoiceChannelId"; break;
+            case "NATION_VOICE":
+                table="tdc_nation_voice_channels"; nameColumn="nationVoiceChannelName"; idColumn="nationVoiceChannelId"; break;
+            default: throw new SQLException("Unknown deletion type " + original);
+        }
+        try (Connection c = connect()) {
+            c.setAutoCommit(false);
+            try {
+                if (!stillOwned(c, job)) { c.rollback(); return; }
+                try (PreparedStatement ps = c.prepareStatement(
+                        "DELETE FROM " + table + " WHERE " + nameColumn + "=? AND " + idColumn + "=?")) {
+                    ps.setString(1,job.name);
+                    ps.setString(2,remoteId);
+                    ps.executeUpdate();
+                }
+                try (PreparedStatement ps = c.prepareStatement(
+                        "DELETE FROM " + TABLE + " WHERE id=? AND attempts=?")) {
+                    ps.setLong(1,job.id);
+                    ps.setInt(2,job.attempts);
+                    ps.executeUpdate();
+                }
+                c.commit();
+            } catch (SQLException ex) { c.rollback(); throw ex; }
         }
     }
 

@@ -250,19 +250,16 @@ public class TDCManager {
     /**
      * Creates Discord ROLE for TOWN
      */
+    /**
+     * Legacy synchronous entrypoint retained for binary/source compatibility.
+     * Discord role creation is asynchronous; no ID can be returned here.
+     * Request the durable reconciler instead of making an unqueued REST call.
+     */
+    @Deprecated
     public static @Nullable String createDiscordRole(Town town) {
-        Guild guild = DiscordSRV.getPlugin().getMainGuild();
-
-        AtomicReference<String> roleId = null;
-
-        RoleAction role = guild.createRole().setName("town-" + town.getName()).setColor(Color.decode(Main.plugin.config.getString("town.RoleCreateColorCode")));
-        role.queue(success -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateSuccess() + " town-" + town.getName() + " [1023]");
-            roleId.set(success.getId());
-        }, failure -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateFailure() + " town-" + town.getName() + " [1023]");
-        });
-        return roleId.get();
+        if (Main.plugin != null && Main.plugin.reconciler != null)
+            Main.plugin.reconciler.requestSoon();
+        return null;
     }
 
     public static void createDiscordRole(Town town, Consumer<String> callback) {
@@ -285,15 +282,13 @@ public class TDCManager {
     /**
      * Creates Discord ROLE for NATION
      */
+    /**
+     * Legacy entrypoint: route through the durable reconciliation queue.
+     */
+    @Deprecated
     public static void createDiscordRole(Nation nation) {
-        Guild guild = DiscordSRV.getPlugin().getMainGuild();
-
-        RoleAction role = guild.createRole().setName("nation-" + nation.getName()).setColor(Color.decode(Main.plugin.config.getString("nation.RoleCreateColorCode")));
-        role.queue(success -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateSuccess() + " nation-" + nation.getName() + " [1024]");
-        }, failure -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateFailure() + " town-" + nation.getName() + " [1024]");
-        });
+        if (Main.plugin != null && Main.plugin.reconciler != null)
+            Main.plugin.reconciler.requestSoon();
     }
 
     public static void createDiscordRole(Nation nation, Consumer<String> callback) {

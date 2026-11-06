@@ -224,7 +224,9 @@ public final class Reconciler {
 
     private void checkChannel(Guild guild, Snapshot state, String kind, String name,
                               String category, String roleName) {
-        Role role = first(guild.getRolesByName(roleName, true));
+        // Never attach a channel to an arbitrarily selected duplicate role.
+        String uniqueId = state.roleIds.get(roleName);
+        Role role = uniqueId == null ? null : guild.getRoleById(uniqueId);
         if (role == null) return;
         String id = null;
         if (kind.endsWith("TEXT")) {
@@ -235,7 +237,8 @@ public final class Reconciler {
                         && channel.getPermissionOverride(role).getAllowed().contains(Permission.VIEW_CHANNEL)
                         && channel.getPermissionOverride(guild.getPublicRole()) != null
                         && channel.getPermissionOverride(guild.getPublicRole()).getDenied()
-                            .contains(Permission.VIEW_CHANNEL)) {
+                            .contains(Permission.VIEW_CHANNEL)
+                        && privateChannel(guild, channel.getParent(), true)) {
                     id = channel.getId(); break;
                 }
             }
@@ -244,7 +247,11 @@ public final class Reconciler {
                 if (channel.getParent() != null
                         && channel.getParent().getName().equalsIgnoreCase(category)
                         && channel.getPermissionOverride(role) != null
-                        && channel.getPermissionOverride(role).getAllowed().contains(Permission.VIEW_CHANNEL)) {
+                        && channel.getPermissionOverride(role).getAllowed().contains(Permission.VIEW_CHANNEL)
+                        && channel.getPermissionOverride(guild.getPublicRole()) != null
+                        && channel.getPermissionOverride(guild.getPublicRole()).getDenied()
+                            .contains(Permission.VIEW_CHANNEL)
+                        && privateChannel(guild, channel.getParent(), true)) {
                     id = channel.getId(); break;
                 }
             }

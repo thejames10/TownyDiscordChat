@@ -1,39 +1,37 @@
-# TownyDiscordChat 1.1.0 — pre-release deployment
+# TownyDiscordChat 1.1.1 — compatibility and deployment
 
 **Status: public pre-release.** Do not deploy to a production
 guild until you have tested the queue, database migrations and role revocation.
 
-## Intended test combinations
+## Compatibility matrix
 
-Each Minecraft API version gets an individual JAR and an optional documentation ZIP; no `-modern` edition is needed.
+Each listed Minecraft version has a separately compiled JAR and a matching optional setup ZIP.
 
-| Minecraft API | Server implementation | Towny compile API | DiscordSRV compile API | Status |
-| --- | --- | --- | --- | --- |
-| 1.16.5, 1.17.1, 1.18.2 | Spigot / Paper / Purpur | 0.100.3.0 | 1.30.5 | 🧪 Pre-release |
-| 1.19.4 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 🧪 Pre-release |
-| 1.20.1, 1.20.6 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 🧪 Pre-release |
-| 1.21.1, 1.21.4, 1.21.8, 1.21.10 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 🧪 Pre-release |
+| Minecraft | Server | Towny | DiscordSRV | Java | Validation |
+| --- | --- | --- | --- | --- | --- |
+| 1.16.5, 1.17.1, 1.18.2 | Spigot / Paper / Purpur | 0.100.3.0 | 1.30.5 | Server-dependent | CI |
+| 1.19.4 | Paper / Purpur | 0.103.2.0 | 1.30.5 | Server-dependent | CI |
+| 1.20.1, 1.20.6 | Paper / Purpur | 0.103.2.0 | 1.30.5 | Server-dependent | CI |
+| 1.21.1, 1.21.4, 1.21.8, 1.21.10, 1.21.11 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 21+ | CI |
+| 26.1.2, 26.2 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 25+ | CI |
+| 26.3 | Paper / Purpur | 0.103.2.15 (pre-release) | 1.30.5 | 25+ | CI |
 
-The `legacy-api-check` workflow job still compiles the source against
-DiscordSRV 1.24.0 and Towny 0.97.5.0 to detect historical API regressions.
-It does **not** produce an alternative installer. The old `-modern`
-suffix indicated compile-time dependencies only: Towny, DiscordSRV and
-JDA are provided by the server and are never shaded inside our JAR.
+**CI** confirms compilation, automated tests and packaging; it is not live-server certification. Java runtime requirements for older versions follow the selected Minecraft server and Towny/DiscordSRV installation.
 
-These checks establish compilation, tests, and packaging; **not**
-runtime compatibility with an actual Discord guild or production server.
-The `BUILD-INFO.txt` file in each ZIP records the exact compile
-API versions. See [README.md](README.md#compatibility) for an at-a-glance
-status table.
+Minecraft 26.x uses Java 25 and Paper's build-qualified API versions. Minecraft 26.1.0 has no Paper build, and 26.1.1 is obsolete (alpha-only); use 26.1.2 instead. Folia and modern Towny on Spigot/CraftBukkit are not supported.
+
+For 26.3, Towny 0.103.2.15 is a **pre-release**. Check the corresponding Paper/Purpur server build carefully before updating a production server. The matching ZIP's `BUILD-INFO.txt` records the exact Paper/Spigot, Towny and DiscordSRV compile APIs.
 
 ## Required server plugins
 
 - [DiscordSRV 1.30.5](https://github.com/DiscordSRV/DiscordSRV/releases/tag/v1.30.5)
-  is the DiscordSRV API version used by current CI test packages. DiscordSRV
+  is the DiscordSRV API version used for all release packages. DiscordSRV
   must be loaded and linked to the intended Discord guild.
 - [Towny 0.103.2.0](https://github.com/TownyAdvanced/Towny/releases/tag/0.103.2.0)
-  is the modern Towny API version used by current CI packages; supports MC
-  1.19 and newer, requires Java 17+, and Paper/Purpur (not Spigot).
+  is the Towny API used by the 1.19–26.2 builds. It requires Java 17+
+  and Paper/Purpur (not Spigot).
+- [Towny 0.103.2.15](https://github.com/TownyAdvanced/Towny/releases/tag/0.103.2.15)
+  is the 26.3-compatible pre-release required by the 26.3 build.
 - [Towny 0.100.3.0](https://github.com/TownyAdvanced/Towny/releases/tag/0.100.3.0)
   is the historical branch recommended by Towny for 1.16–1.18.
   Verify its own Java/server requirements for the selected release.
@@ -45,9 +43,9 @@ Towny, DiscordSRV and their bundled JDA are **provided by the server**,
 not bundled with TownyDiscordChat. Install each from its official site.
 SQLite JDBC, MySQL Connector/J, and relocated bStats are packaged in the plugin JAR.
 
-## Installing the 1.1.0 pre-release
+## Installing the 1.1.1 pre-release
 
-1. Open the [v1.1.0 release](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.0).
+1. Open the [v1.1.0 release](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.1).
 2. Download `TownyDiscordChat-MC-<version>.jar` for your exact
    Minecraft version, or the matching ZIP with configuration and guides.
 3. Install only the JAR in `plugins/`. Before starting a new
@@ -71,8 +69,7 @@ or an isolated Discord guild before deploying to production.
 
 The plugin is compiled to Java 8 bytecode. The **server and installed
 Towny/DiscordSRV versions determine the actual minimum Java version**.
-Towny 0.103.2.0 requires Java 17+. Newer Minecraft 1.21 servers may
-require Java 21. CompatibilityGuard checks the plugin versions and
+Towny 0.103.x requires Java 17+. Minecraft 1.21 uses Java 21; 26.x uses Java 25. CompatibilityGuard checks the plugin versions and
 selected shaded-JDA methods. The live guild preflight also verifies
 Manage Roles, Manage Channels, private category permissions, and the
 bot's role hierarchy above current town/nation roles. If incompatible it starts in an inert
@@ -150,9 +147,8 @@ See [TEST-PLAN.md](TEST-PLAN.md) for deployment and recovery tests.
 
 ## Release policy
 
-The GitHub Actions matrix generates **one** test ZIP per Minecraft version. A tagged `v*`
-build can publish ZIPs. CI now checks the Markdown compatibility matrix,
-local links, Maven version and packaged artifact contents; a release
-tag must match the checked-in README and POM versions, but **do not tag a public release** until actual
-Paper/Purpur + Towny + DiscordSRV combinations have been tested for
-Discord permissions, SQLite/MySQL rollback, restarts and rate limits.
+A versioned GitHub Release provides **one standalone JAR and one setup ZIP
+per listed Minecraft version**. Automated checks verify API compilation,
+database migration tests, version metadata, and documentation links before
+publishing the artifacts. Live Paper/Purpur, Towny and DiscordSRV
+integration testing remains necessary before production certification.

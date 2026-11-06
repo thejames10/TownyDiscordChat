@@ -46,8 +46,8 @@ matrix = re.findall(
     r"minecraft:\s*'([0-9.]+)'\s*,\s*towny:\s*'([0-9.]+)'",
     matrix_section,
 )
-require(len(matrix) == 10 and len(set(mc for mc, _ in matrix)) == len(matrix),
-        "CI: expected exactly 10 unique Minecraft-version builds")
+require(len(matrix) == 14 and len(set(mc for mc, _ in matrix)) == len(matrix),
+        "CI: expected exactly 14 unique Minecraft-version builds")
 
 readme_rows = [
     line for line in compat_section.splitlines()
@@ -71,7 +71,7 @@ build_dep = re.search(r"-Ddiscordsrv\.version=([0-9.]+)", matrix_section)
 require(build_dep is not None and build_dep.group(1) == "1.30.5",
         "CI: user-facing builds must use documented DiscordSRV 1.30.5")
 for key, expected in [
-    ("spigot.version", "1.20.1-R0.1-SNAPSHOT"),
+    ("server.api.version", "1.20.1-R0.1-SNAPSHOT"),
     ("towny.version", "0.103.2.0"),
     ("discordsrv.version", "1.30.5"),
 ]:
@@ -88,6 +88,14 @@ if pom_version:
             "README release version must match the Maven project version")
 require("version: '${project.version}'" in plugin,
         "plugin.yml must obtain its version from Maven resource filtering")
+
+require("api-version: '${bukkit.api.version}'" in plugin,
+        "plugin.yml must use the per-Minecraft API version property")
+require("io.papermc.paper" in matrix_section and "java-version: ${{ matrix.jdk }}" in workflow,
+        "Paper 26.x builds must use the Paper API and Java 25 matrix")
+for latest in ("1.21.11", "26.1.2", "26.2", "26.3"):
+    require(latest in {mc for mc, _ in matrix},
+            f"Compatibility matrix missing modern Minecraft {latest}")
 
 for item in ("storage:", "  type: auto", "  migrateToMySQL: false",
              "queue:", "  deletionGraceSeconds:", "onboarding:",
@@ -156,13 +164,13 @@ for file in javaRoot.rglob("*.java"):
                 f"{file.relative_to(ROOT)} issues Discord REST mutations outside the queue")
 
 # Release assets, documentation and version must remain coupled.
-require((ROOT / ".github/release-notes/v1.1.0.md").is_file(),
-        "Missing release notes for version 1.1.0")
-require("tag_name: v1.1.0" in workflow,
-        "Release workflow must publish permanent v1.1.0 tag")
+require((ROOT / ".github/release-notes/v1.1.1.md").is_file(),
+        "Missing release notes for version 1.1.1")
+require("tag_name: v1.1.1" in workflow,
+        "Release workflow must publish permanent v1.1.1 tag")
 require("packages/TownyDiscordChat-MC-*.jar" in workflow
         and "packages/TownyDiscordChat-MC-*.zip" in workflow,
-        "Release workflow must publish ten JARs and ten setup ZIPs")
+        "Release workflow must publish 14 JARs and 14 setup ZIPs")
 
 # Git tags provide permanent, version-specific documents. Fail fast if a
 # release tag was cut while the checked-in README still says SNAPSHOT.

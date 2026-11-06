@@ -100,7 +100,9 @@ public final class Queue {
             current = job;
             final Set<String> categoryIds = job.kind.endsWith("CATEGORY")
                     ? store.trackedCategoryIds(job.kind) : Collections.<String>emptySet();
-            Bukkit.getScheduler().runTask(plugin, () -> dispatch(job, categoryIds));
+            final String mappedId = job.kind.startsWith("DELETE_")
+                    ? store.mappedId(job.kind, job.name) : null;
+            Bukkit.getScheduler().runTask(plugin, () -> dispatch(job, categoryIds, mappedId));
         } catch (Exception e) {
             plugin.getLogger().warning("Could not claim resource job: " + e.getMessage());
             // SQL lease safely recovers a claim if the callback never started.
@@ -208,11 +210,15 @@ public final class Queue {
         });
     }
 
-    private void dispatch(final Job job, Set<String> categoryIds) {
+    private void dispatch(final Job job, Set<String> categoryIds, String mappedId) {
         try {
             Guild guild = DiscordSRV.getPlugin().getMainGuild();
             if (guild == null) {
                 defer(job, "DiscordSRV guild is not ready");
+                return;
+            }
+            if (job.kind.startsWith("DELETE_")) {
+                dispatchDeletion(job, guild, mappedId);
                 return;
             }
             switch (job.kind) {
@@ -271,6 +277,76 @@ public final class Queue {
         }
     }
 
+
+
+    private void dispatchDeletion(Job job, Guild guild, String mappedId) {
+        try {
+            boolean town = job.kind.startsWith("DELETE_TOWN");
+            boolean nation = job.kind.startsWith("DELETE_NATION");
+            if (!town && !nation) { fail(job, "Unknown deletion task"); return; }
+
+            // A deleted name may have been recreated or a rename rolled back.
+            if (town && TownyUniverse.getInstance().getTown(job.name) != null) {
+                discard(job); return;
+            }
+            if (nation && TownyUniverse.getInstance().getNation(job.name) != null) {
+                discard(job); return;
+            }
+            if (mappedId == null || !mappedId.matches("[0-9]{1,24}")) {
+                discard(job); // No confirmed SQL ownership mapping.
+                return;
+            }
+            if (job.kind.endsWith("ROLE")) {
+                Role role = guild.getRoleById(mappedId);
+                if (role == null) { deleted(job, mappedId); return; }
+                String expected = (town ? "town-" : "nation-") + job.name;
+                if (!role.getName().equalsIgnoreCase(expected)) {
+                    fail(job, "Role " + mappedId + " renamed/mismatched; refusing automatic deletion");
+                    return;
+                }
+                role.delete().queue(ok -> deleted(job,mappedId), error -> fail(job,
+                        "Discord role deletion error: " + error.getMessage()));
+                return;
+            }
+            if (job.kind.endsWith("TEXT")) {
+                TextChannel channel = guild.getTextChannelById(mappedId);
+                if (channel == null) { deleted(job,mappedId); return; }
+                String category = plugin.getConfig().getString(
+                        "category." + (town ? "Town" : "Nation") + ".Name", "");
+                if (!channel.getName().equalsIgnoreCase(job.name) ||
+                        channel.getParent() == null ||
+                        !channel.getParent().getName().equalsIgnoreCase(category)) {
+                    fail(job, "Text channel " + mappedId + " was repurposed; refusing deletion");
+                    return;
+                }
+                channel.delete().queue(ok -> deleted(job,mappedId), error -> fail(job,
+                        "Discord channel deletion error: " + error.getMessage()));
+                return;
+            }
+            if (job.kind.endsWith("VOICE")) {
+                VoiceChannel channel = guild.getVoiceChannelById(mappedId);
+                if (channel == null) { deleted(job,mappedId); return; }
+                String category = plugin.getConfig().getString(
+                        "category." + (town ? "Town" : "Nation") + ".Name", "");
+                if (!channel.getName().equalsIgnoreCase(job.name) ||
+                        channel.getParent() == null ||
+                        !channel.getParent().getName().equalsIgnoreCase(category)) {
+                    fail(job, "Voice channel " + mappedId + " was repurposed; refusing deletion");
+                    return;
+                }
+                channel.delete().queue(ok -> deleted(job,mappedId), error -> fail(job,
+                        "Discord channel deletion error: " + error.getMessage()));
+                return;
+            }
+            fail(job,"Unsupported deletion kind " + job.kind);
+        } catch (Throwable error) {
+            fail(job,"Deletion dispatch error: " + error.getMessage());
+        }
+    }
+
+    private void deleted(Job job, String remoteId) {
+        finalizeAsync(job, () -> store.succeedDeletion(job,remoteId), "Deleted " + job);
+    }
 
     /**
      * TDC-owned guild membership audit. Role IDs from historic SQL mappings

@@ -276,7 +276,8 @@ public class TDCManager {
             roleId.set(success.getId());
             callback.accept(roleId.get());
         }, failure -> {
-
+            Main.plugin.getLogger().warning("Discord API creation failed: "
+                    + failure.getClass().getSimpleName() + ": " + failure.getMessage());
             callback.accept(null);
         });
     }
@@ -306,7 +307,8 @@ public class TDCManager {
             roleId.set(success.getId());
             callback.accept(roleId.get());
         }, failure -> {
-
+            Main.plugin.getLogger().warning("Discord API creation failed: "
+                    + failure.getClass().getSimpleName() + ": " + failure.getMessage());
             callback.accept(null);
         });
     }
@@ -952,7 +954,8 @@ public class TDCManager {
 
             callback.accept(success.getId());
         }, failure -> {
-
+            Main.plugin.getLogger().warning("Discord API creation failed: "
+                    + failure.getClass().getSimpleName() + ": " + failure.getMessage());
             callback.accept(null);
         });
     }
@@ -983,7 +986,8 @@ public class TDCManager {
 
             callback.accept(success.getId());
         }, failure -> {
-
+            Main.plugin.getLogger().warning("Discord API creation failed: "
+                    + failure.getClass().getSimpleName() + ": " + failure.getMessage());
             callback.accept(null);
         });
     }
@@ -1016,7 +1020,8 @@ public class TDCManager {
 
             callback.accept(success.getId());
         }, failure -> {
-
+            Main.plugin.getLogger().warning("Discord API creation failed: "
+                    + failure.getClass().getSimpleName() + ": " + failure.getMessage());
             callback.accept(null);
         });
     }
@@ -1049,7 +1054,8 @@ public class TDCManager {
 
             callback.accept(success.getId());
         }, failure -> {
-
+            Main.plugin.getLogger().warning("Discord API creation failed: "
+                    + failure.getClass().getSimpleName() + ": " + failure.getMessage());
             callback.accept(null);
         });
     }
@@ -1082,7 +1088,8 @@ public class TDCManager {
 
             callback.accept(success.getId());
         }, failure -> {
-
+            Main.plugin.getLogger().warning("Discord API creation failed: "
+                    + failure.getClass().getSimpleName() + ": " + failure.getMessage());
             callback.accept(null);
         });
     }
@@ -1115,7 +1122,8 @@ public class TDCManager {
 
             callback.accept(success.getId());
         }, failure -> {
-
+            Main.plugin.getLogger().warning("Discord API creation failed: "
+                    + failure.getClass().getSimpleName() + ": " + failure.getMessage());
             callback.accept(null);
         });
     }

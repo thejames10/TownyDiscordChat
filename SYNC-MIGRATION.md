@@ -114,6 +114,10 @@ acknowledge a newer intent. Before sending a grant, the dispatcher
 rechecks the member's current Towny membership *and* the immutable
 Towny UUID ownership of the target Discord role. A new town that
 reuses a deleted town's name cannot inherit the old Discord role.
+Targeted member REST audits also resolve the expected role through the
+**stable Towny UUID**, preventing transient revocation when Discord's
+role rename has not completed. A delayed member lookup returns to
+Bukkit's main thread and revalidates Towny membership before granting.
 
 Fast Towny and DiscordSRV events request a coalesced reconciliation.
 Revocations remain prioritized independently of slow category

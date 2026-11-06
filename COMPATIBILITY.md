@@ -79,7 +79,9 @@ The plugin is compiled to Java 8 bytecode. The **server and installed
 Towny/DiscordSRV versions determine the actual minimum Java version**.
 Towny 0.103.2.0 requires Java 17+. Newer Minecraft 1.21 servers may
 require Java 21. CompatibilityGuard checks the plugin versions and
-selected shaded-JDA methods. If incompatible it starts in an inert
+selected shaded-JDA methods. The live guild preflight also verifies
+Manage Roles, Manage Channels, private category permissions, and the
+bot's role hierarchy above current town/nation roles. If incompatible it starts in an inert
 safe mode and notifies the console and joining admins.
 
 ## Queuing, migration and security
@@ -113,6 +115,8 @@ See [TEST-PLAN.md](TEST-PLAN.md) for deployment and recovery tests.
 ## Release policy
 
 The GitHub Actions matrix generates **one** test ZIP per Minecraft version. A tagged `v*`
-build can publish ZIPs, but **do not tag a public release** until actual
+build can publish ZIPs. CI now checks the Markdown compatibility matrix,
+local links, Maven version and packaged artifact contents; a release
+tag must match the checked-in README and POM versions, but **do not tag a public release** until actual
 Paper/Purpur + Towny + DiscordSRV combinations have been tested for
 Discord permissions, SQLite/MySQL rollback, restarts and rate limits.

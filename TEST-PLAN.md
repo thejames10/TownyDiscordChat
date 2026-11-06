@@ -79,6 +79,30 @@ of any prior TownyDiscordChat tables before migration.
    verify `tdc_schema_migrations` versions 2, 3, 4 and 5 and the preserved
    `tdc_queued_tasks` legacy table.
 
+## Cross-module regression checks
+
+- Rename a town while a linked member's targeted REST audit is pending.
+  Verify the audit uses the original **Towny UUID and Discord role ID**,
+  and does not revoke access solely because the Discord role still has
+  its pre-rename name.
+- Delay a Discord member lookup while kicking/unlinking the player.
+  Verify the grant is **revalidated on the Bukkit thread after the
+  REST lookup** and no stale membership permission is granted.
+- Create a voice channel with the expected name and role override
+  but allow `@everyone` to view it. Confirm it is NOT adopted,
+  renamed, or deleted automatically, and the violation is reported.
+  Repeat with a matching text channel and a public parent category.
+- Duplicate a `town-...` role name. Verify the synchronizer refuses
+  ambiguous adoption rather than choosing the first role.
+- Move the bot's highest role below a managed Towny role. Guild preflight
+  should reject synchronization until its role hierarchy is corrected.
+- Verify legacy `Expired='false'` or `Expired='0'` mapping rows
+  normalize to active NULL (migration 5), while `Expired='true'`
+  records and original queued-task history remain unchanged.
+- Verify the unpacked plugin JAR's `plugin.yml` version matches the
+  Maven version. The documentation consistency workflow must fail
+  if its compatibility matrix or local Markdown links are stale.
+
 ## Stable identity / deletion
 
 6. Record all town role/text/voice Discord snowflake IDs, rename the

@@ -19,7 +19,7 @@ DiscordSRV's relocated JDA still handles Discord HTTP 429 rate limits.
 Migration 2 imports the legacy `tdc_queued_tasks` entries into
 `tdc_discord_jobs`, leaving the old table in place and recording
 completion in `tdc_schema_migrations`. The migration is idempotent.
-Migration 3 adds `tdc_towny_identity` with primary key
+Migration 4 also imports older unexpired queue rows where the legacy\n`Expired` column contains the string `false`, `0` or empty instead of SQL\nNULL. No historical rows are removed. Migration 3 adds `tdc_towny_identity` with primary key
 `(guild_id,kind,towny_uuid)`, storing the last-known name plus
 role/text/voice Discord IDs. The original legacy SQL mapping tables
 are preserved. During a rename, their name-based keys are updated

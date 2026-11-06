@@ -27,7 +27,7 @@ of any prior TownyDiscordChat tables before migration.
 4. Stale SQL references: delete a mapped Discord role and channel after
    taking a backup. Check new Discord IDs are recorded after repair.
 5. Old SQL branch schema: restore a 2023 backup, start this build,
-   verify `tdc_schema_migrations` versions 2 and 3 and the preserved
+   verify `tdc_schema_migrations` versions 2, 3 and 4 and the preserved
    `tdc_queued_tasks` legacy table.
 
 ## Stable identity / deletion

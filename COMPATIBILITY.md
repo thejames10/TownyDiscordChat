@@ -77,7 +77,7 @@ security revocations are preferred in the membership lane, while
 resource deletions take priority over additions in the resource lane.
 DiscordSRV/JDA handles actual Discord rate-limit responses.
 
-The old `tdc_queued_tasks` table is imported non-destructively into
+The old `tdc_queued_tasks` table (including unexpired NULL/false/0 rows) is imported non-destructively into
 `tdc_discord_jobs`; its records are not dropped. New tables include
 `tdc_member_intents`, `tdc_managed_member_roles`,
 `tdc_towny_identity`, `tdc_schema_migrations` and `tdc_audit_runs`.

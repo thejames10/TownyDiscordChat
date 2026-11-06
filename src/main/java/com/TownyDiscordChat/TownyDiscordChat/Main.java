@@ -6,12 +6,11 @@ import com.TownyDiscordChat.TownyDiscordChat.Listeners.MembershipChangeListener;
 import com.TownyDiscordChat.TownyDiscordChat.Listeners.OnboardingListener;
 import com.TownyDiscordChat.TownyDiscordChat.Listeners.AccountChangeListener;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
+import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.StableEntityStore;
 import com.TownyDiscordChat.TownyDiscordChat.Storage.Database;
 import com.TownyDiscordChat.TownyDiscordChat.Storage.StorageMigration;
 import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.*;
-import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Log.Log;
-import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Players.Players;
 import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Queue.Queue;
 import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Reconciler;
 import github.scarsz.discordsrv.DiscordSRV;
@@ -40,17 +39,6 @@ public class Main extends JavaPlugin {
     public TownVoiceChannels townVoiceChannelsDB;
     public NationTextChannels nationTextChannelsDB;
     public NationVoiceChannels nationVoiceChannelsDB;
-    public QueuedTask queuedTaskDB;
-    public Log logScheduler;
-    public Players playersScheduler;
-    public com.TownyDiscordChat.TownyDiscordChat.Schedulers.Categories.Towns townCategoriesScheduler;
-    public com.TownyDiscordChat.TownyDiscordChat.Schedulers.Categories.Nations nationCategoriesScheduler;
-    public com.TownyDiscordChat.TownyDiscordChat.Schedulers.Roles.Nations nationRolesScheduler;
-    public com.TownyDiscordChat.TownyDiscordChat.Schedulers.Roles.Towns townRolesScheduler;
-    public com.TownyDiscordChat.TownyDiscordChat.Schedulers.Channels.Text.Towns townTextChannelsScheduler;
-    public com.TownyDiscordChat.TownyDiscordChat.Schedulers.Channels.Text.Nations nationTextChannelsScheduler;
-    public com.TownyDiscordChat.TownyDiscordChat.Schedulers.Channels.Voice.Towns townVoiceChannelsScheduler;
-    public com.TownyDiscordChat.TownyDiscordChat.Schedulers.Channels.Voice.Nations nationVoiceChannelsScheduler;
     public Queue queueScheduler;
     public Reconciler reconciler;
     public CompatibilityGuard compatibility;
@@ -159,7 +147,6 @@ public class Main extends JavaPlugin {
         this.townVoiceChannelsDB = new TownVoiceChannels(this);
         this.nationTextChannelsDB = new NationTextChannels(this);
         this.nationVoiceChannelsDB = new NationVoiceChannels(this);
-        this.queuedTaskDB = new QueuedTask(this);
 
         try {
             SQL.connect();
@@ -184,7 +171,7 @@ public class Main extends JavaPlugin {
                 townVoiceChannelsDB.createTable();
                 nationTextChannelsDB.createTable();
                 nationVoiceChannelsDB.createTable();
-                queuedTaskDB.createTable();
+                new DiscordJobStore(this).initialize();
                 new MemberIntentStore(this).initialize();
                 new StableEntityStore(this).initialize();
                 SQL.ensureIndexes();

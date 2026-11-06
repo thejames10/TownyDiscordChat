@@ -609,6 +609,7 @@ public final class Queue {
                 if (!channel.getName().equalsIgnoreCase(job.name) ||
                         channel.getParent() == null ||
                         !channel.getParent().getName().equalsIgnoreCase(category) ||
+                        !privateCategory(guild, channel.getParent()) ||
                         channel.getPermissionOverride(guild.getPublicRole()) == null ||
                         !channel.getPermissionOverride(guild.getPublicRole()).getDenied()
                             .contains(Permission.VIEW_CHANNEL)) {
@@ -626,7 +627,11 @@ public final class Queue {
                         "category." + (town ? "Town" : "Nation") + ".Name", "");
                 if (!channel.getName().equalsIgnoreCase(job.name) ||
                         channel.getParent() == null ||
-                        !channel.getParent().getName().equalsIgnoreCase(category)) {
+                        !channel.getParent().getName().equalsIgnoreCase(category) ||
+                        !privateCategory(guild, channel.getParent()) ||
+                        channel.getPermissionOverride(guild.getPublicRole()) == null ||
+                        !channel.getPermissionOverride(guild.getPublicRole()).getDenied()
+                            .contains(Permission.VIEW_CHANNEL)) {
                     fail(job, "Voice channel " + mappedId + " was repurposed; refusing deletion");
                     return;
                 }
@@ -660,23 +665,30 @@ public final class Queue {
             }
             com.palmergames.bukkit.towny.object.Resident resident = uuid == null
                     ? null : TownyUniverse.getInstance().getResident(uuid);
-            final Set<String> desired = new HashSet<String>();
+            // Snapshot immutable Towny identities on the server thread.
+            // Name lookup here would wrongly revoke during an in-place rename.
+            String townUuid = null, nationUuid = null;
             if (resident != null && resident.hasTown()) {
                 try {
                     Town town = resident.getTown();
                     if (town != null) {
-                        Role r = uniqueSafeRole(guild, "town-" + town.getName());
-                        if (r != null) desired.add(r.getId());
+                        townUuid = town.getUUID().toString();
                         if (town.hasNation()) {
                             Nation nation = town.getNation();
-                            Role n = uniqueSafeRole(guild, "nation-" + nation.getName());
-                            if (n != null) desired.add(n.getId());
+                            if (nation != null) nationUuid = nation.getUUID().toString();
                         }
                     }
                 } catch (com.palmergames.bukkit.towny.exceptions.NotRegisteredException ex) {
                     defer(job, "Towny changed during membership audit");
                     return;
                 }
+            }
+            final String expectedTownUuid = townUuid;
+            final String expectedNationUuid = nationUuid;
+            final Map<String,String> safeRoleNamesById = new HashMap<String,String>();
+            for (Role candidate : guild.getRoles()) {
+                if (candidate.getPermissions().isEmpty())
+                    safeRoleNamesById.put(candidate.getId(),candidate.getName());
             }
             final Set<String> actual = new HashSet<String>();
             final Map<String,String> roleNames = new HashMap<String,String>();
@@ -692,12 +704,30 @@ public final class Queue {
                 try {
                     Set<String> owned = new HashSet<String>(store.mappedIds("TOWN_ROLE").values());
                     owned.addAll(store.mappedIds("NATION_ROLE").values());
+                    final Set<String> desired = new HashSet<String>();
+                    if (expectedTownUuid != null) {
+                        StableEntityStore.Entity expected = stable.find(
+                                guild.getId(), "TOWN", expectedTownUuid);
+                        if (expected != null && expected.roleId != null
+                                && safeRoleNamesById.containsKey(expected.roleId)
+                                && safeRoleNamesById.get(expected.roleId).startsWith("town-"))
+                            desired.add(expected.roleId);
+                    }
+                    if (expectedNationUuid != null) {
+                        StableEntityStore.Entity expected = stable.find(
+                                guild.getId(), "NATION", expectedNationUuid);
+                        if (expected != null && expected.roleId != null
+                                && safeRoleNamesById.containsKey(expected.roleId)
+                                && safeRoleNamesById.get(expected.roleId).startsWith("nation-"))
+                            desired.add(expected.roleId);
+                    }
                     List<Grant> observed = new ArrayList<Grant>();
                     for (String id : actual) {
                         String name = roleNames.get(id);
-                        boolean recognized = owned.contains(id) ||
-                                (name.startsWith("town-") && townNames.contains(name.substring(5))) ||
-                                (name.startsWith("nation-") && nationNames.contains(name.substring(7)));
+                        boolean recognized = owned.contains(id)
+                                || (name != null && safeRoleNamesById.containsKey(id)
+                                && ((name.startsWith("town-") && townNames.contains(name.substring(5)))
+                                || (name.startsWith("nation-") && nationNames.contains(name.substring(7)))));
                         if (!recognized) continue;
                         observed.add(new Grant(job.name, id));
                         if (!desired.contains(id))
@@ -751,7 +781,9 @@ public final class Queue {
             for (TextChannel channel : guild.getTextChannelsByName(job.name, true)) {
                 if (channel.getParent() != null
                         && categoryName.equalsIgnoreCase(channel.getParent().getName())
+                        && privateCategory(guild, channel.getParent())
                         && channel.getPermissionOverride(role) != null
+                        && channel.getPermissionOverride(role).getAllowed().contains(Permission.VIEW_CHANNEL)
                         && channel.getPermissionOverride(guild.getPublicRole()) != null
                         && channel.getPermissionOverride(guild.getPublicRole())
                             .getDenied().contains(Permission.VIEW_CHANNEL)) {
@@ -763,7 +795,12 @@ public final class Queue {
             for (VoiceChannel channel : guild.getVoiceChannelsByName(job.name, true)) {
                 if (channel.getParent() != null
                         && categoryName.equalsIgnoreCase(channel.getParent().getName())
-                        && channel.getPermissionOverride(role) != null) {
+                        && privateCategory(guild, channel.getParent())
+                        && channel.getPermissionOverride(role) != null
+                        && channel.getPermissionOverride(role).getAllowed().contains(Permission.VIEW_CHANNEL)
+                        && channel.getPermissionOverride(guild.getPublicRole()) != null
+                        && channel.getPermissionOverride(guild.getPublicRole()).getDenied()
+                            .contains(Permission.VIEW_CHANNEL)) {
                     success(job, channel.getId(), channel.getParent().getId());
                     return;
                 }

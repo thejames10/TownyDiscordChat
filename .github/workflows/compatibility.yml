@@ -36,10 +36,43 @@ jobs:
           name: TownyDiscordChat-MC-${{ matrix.minecraft }}
           path: TownyDiscordChat-MC-${{ matrix.minecraft }}.zip
           if-no-files-found: error
+  modern-api:
+    name: Modern DiscordSRV 1.30.5 / Towny 0.103.2.0 (MC ${{ matrix.minecraft }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        minecraft: ['1.20.1', '1.21.10']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Compile against modern release APIs
+        run: mvn --batch-mode --no-transfer-progress -Dspigot.version=${{ matrix.minecraft }}-R0.1-SNAPSHOT -Ddiscordsrv.version=1.30.5 -Dtowny.version=0.103.2.0 clean verify
+      - name: Validate dependencies are server provided
+        run: |
+          if jar tf target/TownyDiscordChat-*.jar | grep -E '^github/scarsz/discordsrv/|^com/palmergames/bukkit/towny/|^net/dv8tion/jda/'; then
+            echo 'ERROR: server-provided APIs bundled in plugin jar'
+            exit 1
+          fi
+      - name: Create modern API test bundle
+        run: |
+          mkdir -p staging
+          cp target/TownyDiscordChat-*.jar staging/TownyDiscordChat-MC-${{ matrix.minecraft }}-modern.jar
+          cp COMPATIBILITY.md staging/README-DEPENDENCIES.md
+          (cd staging && zip -r ../TownyDiscordChat-MC-${{ matrix.minecraft }}-modern.zip .)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TownyDiscordChat-MC-${{ matrix.minecraft }}-modern
+          path: TownyDiscordChat-MC-${{ matrix.minecraft }}-modern.zip
+          if-no-files-found: error
   release:
     name: Publish versioned release packages
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+    needs: [build, modern-api]
     runs-on: ubuntu-latest
     permissions:
       contents: write

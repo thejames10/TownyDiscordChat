@@ -78,6 +78,26 @@ network disconnect or crash. Startup discovery and conservative
 identity/privacy checks minimize the risk, but ambiguous objects
 may still need administrator review.
 
+### Existing Discord role permissions
+
+A legacy town/nation role can retain ordinary guild-level permissions; it
+need not have an empty permission bitset. One shared `RoleSafety` policy
+is applied to role adoption, snapshots, member grants/revocations, full
+and targeted audits, and role renames/deletions. It permits explicitly
+listed participant capabilities, including recent Discord permissions
+that the bundled DiscordSRV JDA may not recognize by enum name.
+It rejects administrator, moderation, server/channel/role management,
+other sensitive powers, and unknown future bits. Managed integration
+roles and `@everyone` are also ineligible. New roles are created with
+no explicit guild-wide permissions. Existing role permissions are never
+rewritten, and sensitive/ambiguous candidates require manual review.
+
+Automatic name-based adoption requires a unique name matching a live
+Towny town/nation. A stable UUID-to-Discord-ID association, once
+recorded, protects renames and prevents transfer to a different Towny
+object merely reusing the name. Privacy checks for existing channels
+remain independent of the role's server-wide permissions.
+
 ## YAML configuration upgrade (separate from database migration)
 
 On startup, if `config.yml` is absent and `config.yml.bak` exists,

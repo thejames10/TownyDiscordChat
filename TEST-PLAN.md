@@ -119,6 +119,20 @@ of any prior TownyDiscordChat tables before migration.
   Repeat with a matching text channel and a public parent category.
 - Duplicate a `town-...` role name. Verify the synchronizer refuses
   ambiguous adoption rather than choosing the first role.
+- Legacy role adoption: assign ordinary server-level permissions to a
+  uniquely named existing `town-...` role (e.g. Create Expressions,
+  Create Public/Private Threads, Use Soundboard, Create Events).
+  Confirm the plugin adopts its **existing role ID**, grants/revokes
+  membership, and leaves all permission bits unchanged; do not create
+  a duplicate Discord role. Verify channel overrides remain private.
+- Add Administrator or Manage Roles (or a currently unknown permission
+  bit) to a test town role. Confirm the worker refuses adoption and
+  automatic member changes, with an actionable warning. Remove it,
+  then verify pending jobs can complete after retry.
+- Create two roles with the same `town-...` name, one safe and one
+  privileged; verify the safe twin is not adopted by name. Verify
+  the full-guild and targeted audits do not incorrectly treat the
+  privileged twin as an adopted Towny role.
 - Move the bot's highest role below a managed Towny role. Guild preflight
   should reject synchronization until its role hierarchy is corrected.
 - Verify legacy `Expired='false'` or `Expired='0'` mapping rows

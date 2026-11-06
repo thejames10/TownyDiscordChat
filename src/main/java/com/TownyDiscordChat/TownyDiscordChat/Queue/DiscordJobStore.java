@@ -194,6 +194,8 @@ public final class DiscordJobStore {
                     int attempts = rs.getInt("attempts") + 1;
                     String kind = rs.getString("kind");
                     String name = rs.getString("resource_name");
+                    if ("AUDIT_GUILD".equals(kind))
+                        leaseUntil = Math.max(leaseUntil, now + 1800000L);
                     try (PreparedStatement update = c.prepareStatement(
                             "UPDATE " + TABLE + " SET status='RUNNING',attempts=?,lease_until=? WHERE id=?")) {
                         update.setInt(1, attempts);

@@ -176,12 +176,16 @@ public final class Queue {
             }
             Member member = guild.getMemberById(intent.memberId);
             if (member != null && intent.desired) {
-                applyMember(intent, guild, member, role);
+                applyMember(intent, guild, member, role, owners);
             } else {
                 // Do not infer missing role membership from an incomplete JDA
-                // member cache; check the API instead.
+                // member cache; check the API instead. JDA completion runs
+                // off-thread: return to Bukkit before touching Towny state.
                 guild.retrieveMemberById(intent.memberId).queue(
-                    found -> applyMember(intent, guild, found, role),
+                    found -> {
+                        if (plugin.isEnabled()) Bukkit.getScheduler().runTask(plugin,
+                                () -> applyMember(intent, guild, found, role, owners));
+                    },
                     failure -> {
                         if (!intent.desired && isUnknownMember(failure)) doneMember(intent);
                         else if (intent.desired && isUnknownMember(failure))
@@ -230,8 +234,18 @@ public final class Queue {
                 && ((ErrorResponseException) failure).getErrorCode() == 10007;
     }
 
-    private void applyMember(Intent intent, Guild guild, Member member, Role role) {
+    private void applyMember(Intent intent, Guild guild, Member member, Role role,
+                             Set<String> owners) {
         try {
+            // A kick/unlink may occur while Discord's REST lookup is in flight.
+            // Verify again immediately before queuing a permission grant.
+            if (intent.desired && !authorizedNow(intent, role, owners)) {
+                finalizeMemberAsync(intent, () -> {
+                    memberStore.desire(intent.guildId,intent.memberId,intent.roleId,false);
+                    memberStore.succeed(intent);
+                }, "Cancelled grant after Towny membership changed: " + intent.memberId);
+                return;
+            }
             boolean hasRole = member.getRoles().contains(role);
             if (hasRole == intent.desired) {
                 doneMember(intent);

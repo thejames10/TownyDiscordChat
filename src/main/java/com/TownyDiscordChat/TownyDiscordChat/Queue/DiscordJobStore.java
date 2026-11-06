@@ -76,6 +76,7 @@ public final class DiscordJobStore {
         }
         ensurePriorityColumn();
         migrateLegacyRows();
+        migrateLegacyFalseRows();
     }
 
     private void ensurePriorityColumn() throws SQLException {
@@ -169,6 +170,52 @@ public final class DiscordJobStore {
             }
             try { c.commit(); }
             catch (SQLException e) { c.rollback(); throw e; }
+        }
+    }
+
+    /**
+     * Follow-up import for 2023 installations that stored unexpired status as
+     * the VARCHAR strings 'false', '0' or ''. Version 2 only imported NULL.
+     * This is a one-time, idempotent migration; no legacy rows are deleted.
+     */
+    private void migrateLegacyFalseRows() throws SQLException {
+        try (Connection c=connect()) {
+            c.setAutoCommit(false);
+            try {
+                try (PreparedStatement check=c.prepareStatement(
+                        "SELECT version FROM tdc_schema_migrations WHERE version=4 FOR UPDATE");
+                     ResultSet rs=check.executeQuery()) {
+                    if (rs.next()) { c.commit(); return; }
+                }
+                boolean oldTable;
+                try (ResultSet rs=c.getMetaData().getTables(c.getCatalog(),null,
+                        "tdc_queued_tasks",null)) { oldTable=rs.next(); }
+                if (oldTable) {
+                    try (PreparedStatement ps=c.prepareStatement(
+                            "SELECT Time,townRoleName,nationRoleName,townCategoryName,nationCategoryName,"
+                            + "townTextChannelName,nationTextChannelName,townVoiceChannelName,nationVoiceChannelName"
+                            + " FROM tdc_queued_tasks WHERE LOWER(TRIM(Expired)) IN ('false','0','')");
+                         ResultSet rows=ps.executeQuery()) {
+                        String[] kinds={"TOWN_ROLE","NATION_ROLE","TOWN_CATEGORY","NATION_CATEGORY",
+                                "TOWN_TEXT","NATION_TEXT","TOWN_VOICE","NATION_VOICE"};
+                        while (rows.next()) {
+                            for (int i=0;i<kinds.length;i++) {
+                                String value=rows.getString(i+2);
+                                if (value!=null && !value.isEmpty() && value.length()<=128
+                                        && !value.equalsIgnoreCase("null"))
+                                    enqueue(c,kinds[i],value);
+                            }
+                        }
+                    }
+                }
+                try (PreparedStatement ps=c.prepareStatement(
+                        "INSERT IGNORE INTO tdc_schema_migrations(version,applied_at,description)"
+                        + " VALUES (4,?,'Import legacy queue rows marked false/0')")) {
+                    ps.setLong(1,System.currentTimeMillis());
+                    ps.executeUpdate();
+                }
+                c.commit();
+            } catch (SQLException e) { c.rollback(); throw e; }
         }
     }
 

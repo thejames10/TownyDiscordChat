@@ -85,8 +85,9 @@ public final class StableEntityStore {
                     // Another UUID's record may represent a deleted/replaced
                     // Towny object. Do not adopt its Discord resources.
                     if (nameClaimed(c, guild, kind, name, uuid)) {
-                        c.commit();
-                        return new Entity(guild,kind,uuid,name,null,null,null,null,false);
+                        throw new SQLException("Towny identity collision: " + kind + "/" + name
+                                + " is still owned by an older UUID. Cleanup must complete"
+                                + " before granting access to a new town/nation with the same name.");
                     }
                     try (PreparedStatement insert = c.prepareStatement(
                             "INSERT INTO " + TABLE + " (guild_id,kind,towny_uuid,last_name,"

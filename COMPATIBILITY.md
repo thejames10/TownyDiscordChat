@@ -84,6 +84,22 @@ Manage Roles, Manage Channels, private category permissions, and the
 bot's role hierarchy above current town/nation roles. If incompatible it starts in an inert
 safe mode and notifies the console and joining admins.
 
+## Configuration upgrades
+
+When replacing an older TownyDiscordChat build, the recommended upgrade
+path is to **stop the server**, back up the plugin's database and data,
+then rename `plugins/TownyDiscordChat/config.yml` to
+`config.yml.bak` before the first start of the new JAR. The plugin
+generates its current template and copies compatible values.
+If `config.yml` already exists, it takes precedence and no
+automatic backup import is attempted. The backup is retained;
+unsupported values abort migration into safe mode.
+
+MySQL credentials are retained for existing MySQL users; the new
+`storage.type: auto` selects MySQL when legacy credentials are present.
+The config upgrade is **not** a database migration. See
+[README.md](README.md#automatic-config-upgrade-from-configymlbak).
+
 ## Legacy logging settings
 
 `log.Category.Name`, `log.Channel.Name`, and

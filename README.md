@@ -80,7 +80,64 @@ Enable Discord's privileged **Server Members Intent** in the bot's Developer Por
 
 Follow **Downloading a test build** above to locate the correct Minecraft-version ZIP in the latest successful SQL-branch workflow. Each ZIP includes `BUILD-INFO.txt` describing its compile-time dependency versions. Extract the ZIP, then copy **the plugin JAR, not the ZIP**, into `plugins/`.
 
-**Before the first server start**, copy the ZIP's `config.example.yml` to `plugins/TownyDiscordChat/config.yml` (create the plugin directory if needed), then configure your Discord categories and storage. This prevents the plugin from creating Discord resources with unintended default names. **On upgrades**, keep and back up the existing config, then merge any new settings from the version-matched example.
+**For a new installation:** before the first server start, copy the ZIP's
+`config.example.yml` to `plugins/TownyDiscordChat/config.yml` (create
+the plugin directory if needed), then configure your Discord categories
+and storage. This avoids creating Discord resources with unintended
+default names.
+
+**For an upgrade using a previous configuration:** stop the server, back
+up the plugin's data/database, and rename your existing
+`plugins/TownyDiscordChat/config.yml` to `config.yml.bak` in **that same
+directory**. On the next startup, TownyDiscordChat creates a fresh
+configuration from the bundled defaults, imports compatible settings
+from the backup, and retains the backup untouched. See
+[Automatic config upgrade](#automatic-config-upgrade-from-configymlbak)
+before performing this step on a populated server.
+
+### Automatic config upgrade from `config.yml.bak`
+
+This is an **opt-in, first-start-only** configuration upgrade: it runs
+when **`config.yml` does not exist** but `config.yml.bak` is present
+in `plugins/TownyDiscordChat/`. If both files are present, the plugin
+loads `config.yml` as-is and **does not** apply the backup. If neither
+file exists, it generates the standard default config.
+
+1. **Stop your server.** Back up the plugin's entire directory, including
+   its SQLite file (and WAL files if present), or back up the existing
+   MySQL database. Rename `config.yml` to `config.yml.bak` in the
+   same plugin directory. Keep a separate copy outside that directory
+   as an additional backup if needed.
+2. Install the SQL-branch JAR and start the server. The plugin reads
+   the backup, generates the current `config.yml` with its **new
+   settings, defaults and comments**, and overlays compatible old
+   values for categories, role creation, messages, database connection,
+   queue and other still-supported options.
+3. **Read the console's `[CONFIG UPGRADE]` lines** for the number
+   of imported settings and the names of ignored keys. Unknown and
+   discontinued settings (such as the old manually guessed Discord API
+   rate-limit configuration) are not carried forward.
+4. Review the new `config.yml`, especially `storage.type`, `SQL.*`,
+   private category names/IDs, role colors, and queue settings. Stop
+   the server and edit any settings that need changing before testing
+   Discord synchronization.
+
+**Safety rules:** Existing `config.yml` is never overwritten, and the
+`.bak` is never deleted or modified. Invalid YAML, unsupported
+types, or incompatible values cause startup **safe mode**, without
+publishing a partially migrated config. Correct the backup and restart,
+or manually create `config.yml` using the matching ZIP example.
+The migration never copies unknown options or automatically starts
+`storage.migrateToMySQL`; that flag resets to `false`.
+
+An old configuration containing real `SQL.database` / MySQL
+credentials continues on **MySQL** through the new `storage.type: auto`
+default. Missing/invalid MySQL credentials cause safe mode rather
+than silently starting an empty SQLite database. **This process only
+upgrades YAML settings:** it does not move database records between
+SQLite and MySQL, nor does it rebuild Discord resources. Follow the
+separate [SQLite → MySQL migration](#switching-from-sqlite-to-mysql)
+if you intend to change storage backends.
 
 ### 4. Configure storage and categories
 

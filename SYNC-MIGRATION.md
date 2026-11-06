@@ -78,6 +78,24 @@ network disconnect or crash. Startup discovery and conservative
 identity/privacy checks minimize the risk, but ambiguous objects
 may still need administrator review.
 
+## YAML configuration upgrade (separate from database migration)
+
+On startup, if `config.yml` is absent and `config.yml.bak` exists,
+the plugin builds a new file using its bundled defaults and comments,
+then overlays only recognized, type-compatible legacy settings.
+Old MySQL credentials, Towny/Discord category values and other
+supported options are retained; new settings use current defaults.
+Obsolete keys are listed in the console without printing their values.
+The source `.bak` is never modified and an existing `config.yml`
+always takes precedence.
+
+A malformed backup, an incompatible setting, or failed current-schema
+validation leaves the new file unpublished and starts the plugin in
+safe mode. The offline `storage.migrateToMySQL` flag is deliberately
+reset rather than implicitly initiating a database transfer.
+This file migration has no dependency on Discord API calls and
+does **not** migrate SQL/SQLite data.
+
 ## Storage backends and offline migration
 
 The same durable queue and mapping tables run on embedded **SQLite** or an

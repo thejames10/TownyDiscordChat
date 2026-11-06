@@ -26,6 +26,28 @@ of any prior TownyDiscordChat tables before migration.
 - Check an admin joining during config safe mode sees an actionable
   message without repeated spam.
 
+## Configuration backup and first-start migration
+
+- On a stopped test server, rename an old valid `config.yml` to
+  `config.yml.bak`, start the new JAR, and verify the plugin generated
+  a new file with current template comments and defaults while
+  preserving compatible MySQL credentials, category names, and color
+  settings. The old backup must remain byte-for-byte unchanged.
+- Add unknown historical `Discord.Api.RateLimit` settings to the
+  backup. Verify they are skipped and their **key names** appear in
+  the console; no secret values should be logged.
+- Set `storage.migrateToMySQL: true` in the old backup. Verify the new
+  config contains `storage.migrateToMySQL: false` and does not launch a
+  MySQL transfer implicitly.
+- Leave an existing `config.yml` alongside the `.bak`. Confirm
+  automatic migration does not run and the active file is unchanged.
+- Corrupt the YAML, supply an invalid role color, or provide partial
+  old MySQL credentials. Confirm migration fails closed, no new
+  `config.yml` is written and no Discord sync or DB switching occurs.
+- Confirm an absent `.bak` follows standard default installation.
+  Test repeated startups after a successful migration; the old
+  backup must not be imported again.
+
 ## Storage backend and migration verification
 
 - Fresh install with `storage.type: auto` and blank `SQL` fields:

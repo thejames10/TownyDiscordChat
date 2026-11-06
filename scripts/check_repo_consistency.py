@@ -109,6 +109,13 @@ for doc in GUIDES:
             require((doc.parent / local).is_file(),
                     f"{doc.name} has a broken local Markdown link: {target}")
 
+for doc in (README, ROOT / "COMPATIBILITY.md", ROOT / "SYNC-MIGRATION.md",
+            ROOT / "TEST-PLAN.md"):
+    require("config.yml.bak" in docs[doc],
+            f"{doc.name} must describe the optional configuration backup upgrade")
+require((ROOT / "src/main/java/com/TownyDiscordChat/TownyDiscordChat/ConfigUpgrade.java").is_file(),
+        "ConfigUpgrade.java is required for README documented first-start backup import")
+
 for name in ("README.md", "COMPATIBILITY.md", "SYNC-MIGRATION.md",
              "TEST-PLAN.md", "config.example.yml", "BUILD-INFO.txt"):
     require(name in workflow, f"CI artifact bundle is missing {name}")

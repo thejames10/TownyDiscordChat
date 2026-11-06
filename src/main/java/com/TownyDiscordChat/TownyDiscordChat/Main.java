@@ -103,6 +103,47 @@ public class Main extends JavaPlugin {
     @Override
     public void onEnable() {
         plugin = this;
+
+        // Upgrade only when the active configuration is absent. Never let a
+        // stale .bak overwrite an already-installed config.yml.
+        java.io.File current = new java.io.File(getDataFolder(),"config.yml");
+        java.io.File previous = new java.io.File(getDataFolder(),"config.yml.bak");
+        if (!current.exists() && previous.isFile()) {
+            try (java.io.InputStream template=getResource("config.yml")) {
+                if (template==null)
+                    throw new java.io.IOException("Missing bundled config.yml template");
+                java.io.ByteArrayOutputStream data=new java.io.ByteArrayOutputStream();
+                byte[] buffer=new byte[8192];
+                int n;
+                while ((n=template.read(buffer))!=-1) data.write(buffer,0,n);
+                ConfigUpgrade.Result result=ConfigUpgrade.migrateIfNeeded(
+                        getDataFolder(),new String(data.toByteArray(),
+                                java.nio.charset.StandardCharsets.UTF_8));
+                if (result.migrated) {
+                    getLogger().info("[CONFIG UPGRADE] Created fresh config.yml from "
+                            +result.copied.size()+" compatible settings in config.yml.bak. "
+                            +"New defaults and comments were retained. "
+                            +"The .bak file was not modified.");
+                    if (!result.ignored.isEmpty()) {
+                        getLogger().warning("[CONFIG UPGRADE] Ignored "
+                                +result.ignored.size()+" obsolete/unknown backup keys: "
+                                +result.ignored
+                                +". Their values were not carried forward.");
+                    }
+                    getLogger().warning("[CONFIG UPGRADE] Review config.yml and confirm "
+                            +"storage, Discord categories and role settings before "
+                            +"running synchronization; restart if edits are required.");
+                }
+            } catch (java.io.IOException | RuntimeException e) {
+                getLogger().severe("[CONFIG UPGRADE] Failed to migrate config.yml.bak: "
+                        +e.getMessage());
+                enterSafeMode("Automatic config migration failed. config.yml.bak was "
+                        +"preserved and no new config.yml was published. "
+                        +"Fix the backup or create a current config.yml manually; "
+                        +"see console, then restart.");
+                return;
+            }
+        }
         saveDefaultConfig();
         reloadConfig();
         config = getConfig();

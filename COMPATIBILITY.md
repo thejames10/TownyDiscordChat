@@ -29,10 +29,10 @@ status table.
 ## Required server plugins
 
 - [DiscordSRV 1.30.5](https://github.com/DiscordSRV/DiscordSRV/releases/tag/v1.30.5)
-  is the current release tested in the modern API lane. DiscordSRV
+  is the DiscordSRV API version used by current CI test packages. DiscordSRV
   must be loaded and linked to the intended Discord guild.
 - [Towny 0.103.2.0](https://github.com/TownyAdvanced/Towny/releases/tag/0.103.2.0)
-  is the current stable tested in the modern API lane; supports MC
+  is the modern Towny API version used by current CI packages; supports MC
   1.19 and newer, requires Java 17+, and Paper/Purpur (not Spigot).
 - [Towny 0.100.3.0](https://github.com/TownyAdvanced/Towny/releases/tag/0.100.3.0)
   is the historical branch recommended by Towny for 1.16–1.18.
@@ -53,7 +53,9 @@ SQLite JDBC, MySQL Connector/J, and relocated bStats are packaged in the plugin 
    version. The ZIP has **no** `-modern` suffix. Read the included
    `BUILD-INFO.txt` for the exact compile API versions.
 3. Extract the ZIP. Put **only the .jar** inside `plugins/`; do not
-   install the ZIP itself.
+   install the ZIP itself. Before the first server start, copy the
+   included `config.example.yml` to `plugins/TownyDiscordChat/config.yml`
+   and review storage/category names.
 4. Configure DiscordSRV, install the appropriate Towny version,
    and enable **Server Members Intent** in the Discord Developer Portal
    and the matching DiscordSRV/JDA configuration. Without that intent,

@@ -80,7 +80,7 @@ Enable Discord's privileged **Server Members Intent** in the bot's Developer Por
 
 Follow **Downloading a test build** above to locate the correct Minecraft-version ZIP in the latest successful SQL-branch workflow. Each ZIP includes `BUILD-INFO.txt` describing its compile-time dependency versions. Extract the ZIP, then copy **the plugin JAR, not the ZIP**, into `plugins/`.
 
-Start the server once to generate `plugins/TownyDiscordChat/config.yml`, then stop it before choosing storage settings. **Do not delete your existing config when upgrading**; back it up and merge newer settings. See the versioned configuration template inside the artifact ZIP.
+**Before the first server start**, copy the ZIP's `config.example.yml` to `plugins/TownyDiscordChat/config.yml` (create the plugin directory if needed), then configure your Discord categories and storage. This prevents the plugin from creating Discord resources with unintended default names. **On upgrades**, keep and back up the existing config, then merge any new settings from the version-matched example.
 
 ### 4. Configure storage and categories
 
@@ -176,7 +176,7 @@ than rebuilding all mappings through Discord API discovery.
 The entire active database is copied, including old SQL mapping tables,
 stable Towny UUIDs, queued and failed operations, membership revisions and
 audit checkpoints. SQLite remains unchanged as a fallback backup.
-The MySQL copy is transactional, checked for row-count consistency, and
+Rows are copied transactionally and checked for count consistency; MySQL may retain empty newly created tables if copying fails. The migration
 aborts if the target already has plugin data. **Do not operate both backends
 as independent servers after migration.** See [storage migration details](SYNC-MIGRATION.md).
 
@@ -185,7 +185,7 @@ as independent servers after migration.** See [storage migration details](SYNC-M
 At startup, TownyDiscordChat validates YAML syntax, selected storage settings, category names, role colors, time zones, queue limits, and plugin compatibility **before** beginning synchronization. When DiscordSRV's guild connects, it checks the guild/category privacy and bot permissions.
 
 - **Valid configuration:** synchronization starts and adoption/creation proceeds automatically.
-- **Invalid configuration:** no SQL queue is started; the plugin reports safe mode in console and to administrators joining the server.
+- **Invalid configuration:** no database-backed queue is started; the plugin reports safe mode in console and to administrators joining the server.
 - **Discord not connected yet:** synchronization stays gated until the guild is available and validated.
 - **Unsafe or ambiguous categories:** sync is suspended; correct category privacy/names before restarting.
 
@@ -205,7 +205,7 @@ TownyDiscordChat **does not maintain another linking database or issue its own v
 1. **Join a Towny town.** If you're not in a town, you don't need to link just for TownyDiscordChat.
 2. Use **`/tdc status`** to see your town/nation and whether DiscordSRV has linked your Minecraft account.
 3. If you're unlinked, run **`/tdc link`**, which delegates to DiscordSRV's built-in **`/discord link`**. Follow DiscordSRV's instructions to finish linking.
-4. Your linked account's town/nation roles and private channel access will synchronize through the SQL queue. It may take a short time; `/discord linked` confirms the DiscordSRV connection.
+4. Your linked account's town/nation roles and private channel access will synchronize through the durable queue. It may take a short time; `/discord linked` confirms the DiscordSRV connection.
 
 Players in a town can receive a **configurable, cooldown-limited reminder** when joining the Minecraft server or a town. Players outside towns are not prompted. Linking/unlinking events trigger reconciliation, and DiscordSRV's existing command and permissions continue to control identity.
 

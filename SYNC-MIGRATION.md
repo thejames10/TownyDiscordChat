@@ -8,7 +8,7 @@ auditable intent, ownership mappings and retry history; neither
 an empty DB nor a stale Discord cache is treated as proof that
 resources do not exist.
 
-The plugin retains **its own JDBC-backed SQLite/MySQL queue**, with two independent lanes.
+The plugin retains **its own durable JDBC-backed SQLite/MySQL queue**, with two independent lanes.
 Revocations take precedence over grants in the membership lane.
 Verified role/channel deletions (priority 10) precede resource
 renames (priority 20) and creations (priority 100) in the resource lane.
@@ -19,12 +19,18 @@ DiscordSRV's relocated JDA still handles Discord HTTP 429 rate limits.
 Migration 2 imports the legacy `tdc_queued_tasks` entries into
 `tdc_discord_jobs`, leaving the old table in place and recording
 completion in `tdc_schema_migrations`. The migration is idempotent.
-Migration 4 also imports older unexpired queue rows where the legacy\n`Expired` column contains the string `false`, `0` or empty instead of SQL\nNULL. No historical rows are removed. Migration 3 adds `tdc_towny_identity` with primary key
+Migration 3 adds `tdc_towny_identity` with primary key
 `(guild_id,kind,towny_uuid)`, storing the last-known name plus
 role/text/voice Discord IDs. The original legacy SQL mapping tables
 are preserved. During a rename, their name-based keys are updated
 transactionally without changing Discord IDs. Back up the schema
-before starting a new version.
+before starting a new version. Migration 4 imports older queued tasks
+where `Expired` was the string `false`, `0`, or empty rather than SQL
+NULL. Migration 5 normalizes these active flags in the **legacy resource
+mapping tables** to NULL (the modern active-row convention); rows marked
+`true` remain retired and original legacy queue history is preserved.
+Migration 6 records a completed offline SQLite-to-MySQL copy on the
+destination. These migrations are idempotent.
 
 The identity table is backfilled from verified existing resources when
 the plugin first runs. If a town was renamed **before the identity
@@ -160,9 +166,10 @@ repeated prompts. Link events request a reconciled final state.
 
 ## Compatibility and limitations
 
-Both the legacy (DiscordSRV 1.24.0 / Towny 0.97.5.0)
-and modern (DiscordSRV 1.30.5 / Towny 0.103.2.0) APIs are
-included in the compilation matrix. Modern Towny 0.102+ requires
+The published CI packages compile against DiscordSRV 1.30.5 and
+Towny 0.100.3.0 (Minecraft 1.16–1.18) or 0.103.2.0 (newer
+Minecraft versions). An additional development-only job checks
+historical DiscordSRV 1.24.0 / Towny 0.97.5.0 source compatibility. Modern Towny 0.102+ requires
 Paper/Purpur/Folia; this plugin's Bukkit scheduler does **not**
 support Folia, so use Paper/Purpur. The version guard verifies
 minimum versions and selected shaded-JDA methods, and enters

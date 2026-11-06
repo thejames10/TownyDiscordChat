@@ -12,7 +12,7 @@ of any prior TownyDiscordChat tables before migration.
 - Set an invalid numeric ID, an incorrect category name, or a public
   category. Confirm the Discord preflight blocks mutations and tells
   admins what to correct.
-- Enter malformed YAML, placeholder MySQL credentials, invalid
+- Enter malformed YAML, missing MySQL credentials **with `storage.type: mysql`**, invalid
   role colors and bad queue bounds in separate test runs. Verify
   safe mode instead of stack traces and no SQL queue activity.
 - Join while **not in a town** with no Discord link; confirm no
@@ -74,8 +74,9 @@ of any prior TownyDiscordChat tables before migration.
    only that channel is recreated, with no new role or duplicate category.
 4. Stale SQL references: delete a mapped Discord role and channel after
    taking a backup. Check new Discord IDs are recorded after repair.
-5. Old SQL branch schema: restore a 2023 backup, start this build,
-   verify `tdc_schema_migrations` versions 2, 3 and 4 and the preserved
+5. Old SQL branch schema: restore a 2023 backup with active `Expired='false'`
+   resource rows, start this build, verify the IDs were preserved, and
+   verify `tdc_schema_migrations` versions 2, 3, 4 and 5 and the preserved
    `tdc_queued_tasks` legacy table.
 
 ## Stable identity / deletion

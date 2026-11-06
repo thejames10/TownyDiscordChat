@@ -99,7 +99,7 @@ messages:
 
   Category:
     DoNothing:
-      Success: "&Category change not required!"
+      Success: "&7Category change not required!"
       Failure: "&7Failed to do nothing!"
     Remove:
       Success: "&7Removed category!"
@@ -156,7 +156,7 @@ messages:
     Rename:
       Success: "&7Renamed VoiceChannel!"
       Failure: "&7Failed to rename VoiceChannel!"
-# MySQL-backed Discord reconciliation / dispatch. All delays are in seconds.
+# Durable SQLite/MySQL Discord reconciliation queue. All delays are in seconds.
 queue:
   startDelaySeconds: 10
   pollSeconds: 1

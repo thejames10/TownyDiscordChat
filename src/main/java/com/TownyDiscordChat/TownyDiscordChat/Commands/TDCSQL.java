@@ -58,7 +58,7 @@ public class TDCSQL implements CommandExecutor {
                     }
                 } catch (SQLException e) {
                     plugin.getLogger().warning("Queue admin request failed: " + e.getMessage());
-                    sendOnMain(plugin, sender, "Could not query MySQL queue. See server log.");
+                    sendOnMain(plugin, sender, "Could not query the storage-backed queue. See server log.");
                     return;
                 }
                 sendOnMain(plugin, sender, message);

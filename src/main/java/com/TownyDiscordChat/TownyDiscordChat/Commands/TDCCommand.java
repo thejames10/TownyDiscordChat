@@ -2,7 +2,6 @@ package com.TownyDiscordChat.TownyDiscordChat.Commands;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.Messages.TDCMessages;
-import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.google.common.base.Preconditions;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -11,7 +10,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.UUID;
 
 public class TDCCommand implements CommandExecutor {
 
@@ -82,12 +80,6 @@ public class TDCCommand implements CommandExecutor {
                     }
                     // /TDC Check Role command
                     if (sender.hasPermission("TownyDiscordChat.Admin") || sender.hasPermission("TownyDiscordChat.Player") || sender.hasPermission("TownyDiscordChat.Check.Role")) {
-                        UUID UUID = player.getUniqueId();
-                        String discordId = DiscordSRV.getPlugin().getAccountLinkManager().getDiscordId(UUID);
-
-                        Preconditions.checkNotNull(UUID, "UUID null in onCommand()!");
-                        Preconditions.checkNotNull(UUID, "discordId null in onCommand()!");
-
                         TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsPleasewait());
                         Main.plugin.reconciler.requestSoon();
                     }

@@ -148,6 +148,12 @@ public final class MemberIntentStore {
         final long now = System.currentTimeMillis();
         final long lease = now + Math.max(60, plugin.getConfig().getLong("queue.leaseSeconds", 300)) * 1000L;
         try (Connection c = connect()) {
+            return claim(c,now,lease,revocations,excluded);
+        }
+    }
+
+    static Intent claim(Connection c,long now,long lease,boolean revocations,
+                        java.util.Set<Long> excluded) throws SQLException {
             c.setAutoCommit(false);
             StringBuilder sql=new StringBuilder(
                     "SELECT id,guild_id,member_id,role_id,desired,revision,attempts FROM " + TABLE
@@ -186,7 +192,6 @@ public final class MemberIntentStore {
                     return intent;
                 }
             } catch (SQLException e) { c.rollback(); throw e; }
-        }
     }
 
     /**

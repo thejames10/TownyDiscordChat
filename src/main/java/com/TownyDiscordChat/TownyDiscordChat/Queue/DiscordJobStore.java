@@ -230,6 +230,12 @@ public final class DiscordJobStore {
         long now = System.currentTimeMillis();
         long leaseUntil = now + Math.max(60, plugin.getConfig().getLong("queue.leaseSeconds", 300)) * 1000L;
         try (Connection c = connect()) {
+            return claim(c,now,leaseUntil,excluded);
+        }
+    }
+
+    static Job claim(Connection c,long now,long leaseUntil,Set<Long> excluded)
+            throws SQLException {
             c.setAutoCommit(false);
             StringBuilder sql=new StringBuilder(
                     "SELECT id,kind,resource_name,attempts FROM " + TABLE + " WHERE "
@@ -274,7 +280,6 @@ public final class DiscordJobStore {
                 c.rollback();
                 throw ex;
             }
-        }
     }
 
     /**

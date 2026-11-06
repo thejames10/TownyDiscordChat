@@ -181,7 +181,12 @@ public final class Queue {
     }
 
     private void doneMember(Intent intent) {
-        finalizeMemberAsync(intent, () -> memberStore.succeed(intent), "Completed " + intent);
+        finalizeMemberAsync(intent, () -> {
+            memberStore.succeed(intent);
+            // Verify the eventual remote result, including after a lease
+            // expired and an older asynchronous grant arrived too late.
+            if (intent.desired) store.enqueue("AUDIT_MEMBER", intent.memberId);
+        }, "Completed " + intent);
     }
 
     private void deferMember(Intent intent, String reason) {
@@ -363,9 +368,13 @@ public final class Queue {
         try {
             UUID uuid = DiscordSRV.getPlugin().getAccountLinkManager()
                     .getLinkedAccounts().get(job.name);
-            if (uuid == null) { discard(job); return; }
-            com.palmergames.bukkit.towny.object.Resident resident =
-                    TownyUniverse.getInstance().getResident(uuid);
+            if (uuid == null && !plugin.getConfig().getBoolean(
+                    "security.revokeUnlinkedAccounts", true)) {
+                discard(job);
+                return;
+            }
+            com.palmergames.bukkit.towny.object.Resident resident = uuid == null
+                    ? null : TownyUniverse.getInstance().getResident(uuid);
             final Set<String> desired = new HashSet<String>();
             if (resident != null && resident.hasTown()) {
                 try {

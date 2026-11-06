@@ -7,6 +7,10 @@ import com.palmergames.bukkit.towny.event.NationAddTownEvent;
 import com.palmergames.bukkit.towny.event.NationRemoveTownEvent;
 import com.palmergames.bukkit.towny.event.RenameTownEvent;
 import com.palmergames.bukkit.towny.event.RenameNationEvent;
+import com.palmergames.bukkit.towny.event.DeleteTownEvent;
+import com.palmergames.bukkit.towny.event.DeleteNationEvent;
+import com.palmergames.bukkit.towny.event.NewTownEvent;
+import com.palmergames.bukkit.towny.event.NewNationEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -40,4 +44,16 @@ public final class MembershipChangeListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onRenameNation(RenameNationEvent event) { changed(); }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onDeleteTown(DeleteTownEvent event) { changed(); }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onDeleteNation(DeleteNationEvent event) { changed(); }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onCreateTown(NewTownEvent event) { changed(); }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onCreateNation(NewNationEvent event) { changed(); }
 }

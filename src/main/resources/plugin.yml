@@ -1,21 +1,27 @@
 main: com.TownyDiscordChat.TownyDiscordChat.Main
 name: TownyDiscordChat
-version: 1.0.8
-api-version: 1.18
+version: '${project.version}'
+api-version: '1.16'
 authors: 
 - thejames10
 - Hugo5000
 
-depend: [DiscordSRV, Towny]
+softdepend: [DiscordSRV, Towny]
 
 commands:
   TownyDiscordChat:
-    description: Link Discord and Towny Data
+    description: Towny Discord status, DiscordSRV linking, and administrator reconciliation
     aliases: [tdc]
-    usage: /TownyDiscordChat
+    usage: /tdc [status|link|check]
+  tdcqueue:
+    description: View or retry the durable Discord task queue
+    aliases: [tdcsql]
+    usage: /tdcqueue [status|retry-dead|audit]
+    permission: TownyDiscordChat.Admin
 
-  permissions:
+permissions:
     TownyDiscordChat.Admin:
+      default: op
       description: Gives access to all TownyDiscordChat commands
       children:
         TownyDiscordChat.Check.Role.AllLinked: true

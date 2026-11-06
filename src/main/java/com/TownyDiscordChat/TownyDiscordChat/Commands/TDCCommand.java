@@ -1,6 +1,7 @@
-package com.TownyDiscordChat.TownyDiscordChat;
+package com.TownyDiscordChat.TownyDiscordChat.Commands;
 
-import github.scarsz.discordsrv.DiscordSRV;
+import com.TownyDiscordChat.TownyDiscordChat.Main;
+import com.TownyDiscordChat.TownyDiscordChat.Messages.TDCMessages;
 import github.scarsz.discordsrv.dependencies.google.common.base.Preconditions;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -9,7 +10,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.UUID;
 
 public class TDCCommand implements CommandExecutor {
 
@@ -22,20 +22,32 @@ public class TDCCommand implements CommandExecutor {
 
         Preconditions.checkNotNull(player);
 
+        // Player self-service intentionally delegates all verification/token
+        // handling to DiscordSRV; TDC merely provides a Towny-aware entrypoint.
+        if (args.length > 0 && args[0].equalsIgnoreCase("link")) {
+            Main.plugin.onboarding.link(player);
+            return true;
+        }
+        if (args.length > 0 && (args[0].equalsIgnoreCase("status")
+                || args[0].equalsIgnoreCase("linked"))) {
+            Main.plugin.onboarding.showStatus(player);
+            return true;
+        }
+
         if (args.length == 0) {
             // No arguments were provided, just "/TownyDiscordChat | /tdc"
 
             String msg = String.join("\n"
                     , ChatColor.DARK_GREEN + "------------------------"
                     , ChatColor.DARK_GREEN + "Plugin: " + ChatColor.GRAY + "TownyDiscordChat"
-                    , ChatColor.DARK_GREEN + "Version: " + ChatColor.GRAY + "1.0.8"
+                    , ChatColor.DARK_GREEN + "Version: " + ChatColor.GRAY + com.TownyDiscordChat.TownyDiscordChat.Main.plugin.getDescription().getVersion()
                     , ChatColor.DARK_GREEN + "Authors: " + ChatColor.GRAY + "thejames10,Hugo5000"
                     , ChatColor.DARK_GREEN + "Root Cmd: " + ChatColor.GRAY + "/TownyDiscordChat"
                     , ChatColor.DARK_GREEN + "Alias: " + ChatColor.GRAY + "/TDC"
                     , ChatColor.DARK_GREEN + "---------------------------------");
 
             TDCMessages.sendMessageToPlayerGame(player,msg);
-
+            Main.plugin.onboarding.showStatus(player);
             return true;
         }
 
@@ -50,7 +62,7 @@ public class TDCCommand implements CommandExecutor {
                         // /TDC Check Role AllLinked command
                         if (sender.hasPermission("TownyDiscordChat.Admin") || sender.hasPermission("TownyDiscordChat.Check.Role.AllLinked")) {
                             TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsPleasewait());
-                            TDCManager.discordUserRoleCheckAllLinked();
+                            Main.plugin.reconciler.requestSoon();
                         } else {
                             TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsNopermission());
                         }
@@ -60,7 +72,7 @@ public class TDCCommand implements CommandExecutor {
                         // /TDC Check Role CreateAllTownsAndNations command
                         if (sender.hasPermission("TownyDiscordChat.Admin") || sender.hasPermission("TownyDiscordChat.Check.Role.CreateAllTownsAndNations")) {
                             TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsPleasewait());
-                            TDCManager.discordRoleCheckAllTownsAllNations();
+                            Main.plugin.reconciler.requestSoon();
                         } else {
                             TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsNopermission());
                         }
@@ -68,14 +80,8 @@ public class TDCCommand implements CommandExecutor {
                     }
                     // /TDC Check Role command
                     if (sender.hasPermission("TownyDiscordChat.Admin") || sender.hasPermission("TownyDiscordChat.Player") || sender.hasPermission("TownyDiscordChat.Check.Role")) {
-                        UUID UUID = player.getUniqueId();
-                        String discordId = DiscordSRV.getPlugin().getAccountLinkManager().getDiscordId(UUID);
-
-                        Preconditions.checkNotNull(UUID, "UUID null in onCommand()!");
-                        Preconditions.checkNotNull(UUID, "discordId null in onCommand()!");
-
                         TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsPleasewait());
-                        TDCManager.discordUserRoleCheck(discordId, UUID);
+                        Main.plugin.reconciler.requestSoon();
                     }
                     else {
                         TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsNopermission());
@@ -88,7 +94,7 @@ public class TDCCommand implements CommandExecutor {
                         // /TDC Check TextChannel AllTownsAndNations command
                         if (sender.hasPermission("TownyDiscordChat.Admin") || sender.hasPermission("TownyDiscordChat.Check.TextChannel.AllTownsAndNations")) {
                             TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsPleasewait());
-                            TDCManager.discordTextChannelCheckAllTownsAllNations();
+                            Main.plugin.reconciler.requestSoon();
                         }
                         else {
                             TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsNopermission());
@@ -103,7 +109,7 @@ public class TDCCommand implements CommandExecutor {
                         // /TDC Check VoiceChannel AllTownsAndNations command
                         if (sender.hasPermission("TownyDiscordChat.Admin") || sender.hasPermission("TownyDiscordChat.Check.VoiceChannel.AllTownsAndNations")) {
                             TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsPleasewait());
-                            TDCManager.discordVoiceChannelCheckAllTownsAllNations();
+                            Main.plugin.reconciler.requestSoon();
                         } else {
                             TDCMessages.sendMessageToPlayerGame(player, TDCMessages.getConfigMsgCommandsNopermission());
                         }

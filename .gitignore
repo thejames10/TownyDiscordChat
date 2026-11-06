@@ -49,3 +49,8 @@ craftbukkit.jar
 .vs/slnx.sqlite
 .vs/TownyDiscordChat/v17/.suo
 .vs/VSWorkspaceState.json
+
+# Local test output and editor state are not release source artifacts.
+/.vs/
+/server/crash-reports/
+/server/plugins/TownyDiscordChat.jar

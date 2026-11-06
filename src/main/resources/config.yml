@@ -1,3 +1,26 @@
+# Storage options:
+#   auto   -> use MySQL when legacy SQL credentials are configured,
+#             otherwise use a local SQLite database (no server required).
+#   sqlite -> always use the plugin's local database file.
+#   mysql  -> always connect to the MySQL server below.
+# Existing MySQL installations continue using MySQL with the default 'auto'.
+storage:
+  type: auto
+  sqlite:
+    file: "townydiscordchat.db"
+  # One-time OFFLINE data transfer. Requires a fully configured target MySQL.
+  # Set type: sqlite and migrateToMySQL: true, start the server once, then
+  # after verification change type to mysql and migrateToMySQL to false.
+  migrateToMySQL: false
+
+# Only required when using MySQL or migrating SQLite -> MySQL.
+SQL:
+  host: "localhost"
+  port: "3306"
+  database: "blank"
+  username: "blank"
+  password: "blank"
+
 nation:
   CreateTextChannelForRole: true
   CreateVoiceChannelForRole: true
@@ -5,6 +28,8 @@ nation:
   UseCategoryForText: true
   UseCategoryForVoice: true
 
+  # 0 = automatic category discovery by category.<Town/Nation>.Name
+  # Nonzero legacy IDs are verified, but workers select categories by name.
   TextCategoryId: 0
   VoiceCategoryId: 0
 
@@ -17,15 +42,40 @@ town:
   UseCategoryForText: true
   UseCategoryForVoice: true
 
+  # 0 = automatic category discovery by category.<Town/Nation>.Name
+  # Nonzero legacy IDs are verified, but workers select categories by name.
   TextCategoryId: 0
   VoiceCategoryId: 0
 
   CreateRoleIfNoneExists: true
   RoleCreateColorCode: "0x006798"
 
+category:
+  SubChannelsMax: 50
+  Town:
+    Name: "MINECRAFT-TOWN-CHAT"
+  Nation:
+    Name: "MINECRAFT-NATION-CHAT"
+  Admin:
+    Name: "MINECRAFT-STAFF"
+
+# Private Discord activity log. The SQL queue sends actual resource changes,
+# membership changes and failures to this existing channel, asynchronously.
+# The channel or its category must deny @everyone View Channel; the bot
+# must be able to read and send messages there. No public log channel is created.
+# Console logging remains active even when this channel is missing/disabled.
+log:
+  Enabled: true
+  Category:
+    Name: "MINECRAFT-STAFF"
+  Channel:
+    Name: "townydiscordchat-logs"
+
 messages:
   TimeZone: "UTC"
   DateFormat: "dd/MM/yyyy - hh:mm a"
+  # Legacy ID from pre-SQL releases (ignored). The active Discord log channel
+  # is located by log.Category.Name and log.Channel.Name.
   DiscordLogTextChannelId: 0
 
   Prefix: "&8[&2TDC Bot&8]"
@@ -53,6 +103,26 @@ messages:
     Rename:
       Success: "&7Renamed role!"
       Failure: "&7Failed to rename role!"
+
+  Category:
+    DoNothing:
+      Success: "&7Category change not required!"
+      Failure: "&7Failed to do nothing!"
+    Remove:
+      Success: "&7Removed category!"
+      Failure: "&7Failed to remove category!"
+    Add:
+      Success: "&7Added category!"
+      Failure: "&7Failed to add category!"
+    Create:
+      Success: "&7Created category!"
+      Failure: "&7Failed to create category!"
+    Delete:
+      Success: "&7Deleted category!"
+      Failure: "&7Failed to delete category!"
+    Rename:
+      Success: "&7Renamed category!"
+      Failure: "&7Failed to rename category!"
 
   TextChannel:
     DoNothing:
@@ -93,3 +163,31 @@ messages:
     Rename:
       Success: "&7Renamed VoiceChannel!"
       Failure: "&7Failed to rename VoiceChannel!"
+# Durable SQLite/MySQL Discord reconciliation queue. All delays are in seconds.
+queue:
+  startDelaySeconds: 10
+  pollSeconds: 1
+  reconcileSeconds: 180
+  leaseSeconds: 300
+  maxAttempts: 10
+  retryBaseSeconds: 30
+  retryMaxSeconds: 900
+  deletionGraceSeconds: 120
+  fullAudit:
+    enabled: true
+    intervalSeconds: 21600
+
+# Towny access is revoked when membership is lost.
+# Full guild scans require Discord's privileged Server Members Intent.
+security:
+  revokeUnlinkedAccounts: true
+
+# Player guidance only; DiscordSRV performs the actual account linking.
+# Do not prompt players who are not in a Towny town.
+onboarding:
+  enabled: true
+  remindOnJoin: true
+  remindOnTownJoin: true
+  cooldownMinutes: 60
+  joinDelayTicks: 60
+  message: "&eYour town has private Discord channels. Link using &a/tdc link&e (DiscordSRV: /discord link)."

@@ -123,8 +123,8 @@ public final class Queue {
             }
             Role role = guild.getRoleById(intent.roleId);
             if (role == null) {
-                // Superseded role ID (the resource reconciler will adopt/recreate).
-                doneMember(intent);
+                if (intent.desired) deferMember(intent, "Waiting for role to exist in Discord");
+                else doneMember(intent); // Deleted role cannot grant any access.
                 return;
             }
             Member member = guild.getMemberById(intent.memberId);

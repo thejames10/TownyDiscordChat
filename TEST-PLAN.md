@@ -88,6 +88,29 @@ of any prior TownyDiscordChat tables before migration.
   Verify inert safe mode, clear console instructions, and admin messages.
 - Check no Towny, DiscordSRV or JDA class is shaded in the test JAR.
 
+## Console and Discord activity logging
+
+- With `log.Enabled: true`, create a private text channel named
+  `log.Channel.Name` under `log.Category.Name`. Confirm the log
+  prints its destination and posts one startup confirmation message.
+- Confirm `/tdcqueue status` displays synchronization readiness and
+  whether Discord log delivery is enabled or unavailable.
+- Create a new Towny role/channel and alter membership: console must
+  distinguish `CREATED` and `GRANTED`/`REVOKED`; the actual changes
+  must appear in the log channel after SQL acknowledgement.
+- Restore a previously populated Discord guild. Existing resources
+  should show `ADOPTED` in console but must **not** generate new Discord
+  log messages or duplicate remote resources.
+- Simulate missing, ambiguous, public, or unwritable logging channels.
+  Queue jobs must still complete, while the console reports a delivery
+  warning and `/tdcqueue status` reports a logging problem.
+- Verify a Towny name with `@everyone` cannot ping members via Discord
+  log messages, and long messages do not exceed Discord's message limit.
+- Check text channel names such as `bradfordshire` versus
+  `Bradfordshire` do not repeatedly enqueue `RENAME_TOWN_TEXT` jobs
+  on every reconciliation. A no-op reports `SKIPPED` with its reason,
+  not a misleading `missing Towny entity` error.
+
 ## Database/Discord state matrix
 
 1. Empty database (SQLite or MySQL) + empty guild: establish one town and one nation and

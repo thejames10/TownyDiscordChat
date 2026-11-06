@@ -259,12 +259,12 @@ repeated prompts. Link events request a reconciled final state.
 
 ## Compatibility and limitations
 
-The published CI packages compile against DiscordSRV 1.30.5 and
-Towny 0.100.3.0 (Minecraft 1.16–1.18) or 0.103.2.0 (newer
-Minecraft versions). An additional development-only job checks
-historical DiscordSRV 1.24.0 / Towny 0.97.5.0 source compatibility. Modern Towny 0.102+ requires
+The release packages compile against DiscordSRV 1.30.5 and
+Towny 0.100.3.0 (Minecraft 1.16–1.18), 0.103.2.0 (Minecraft 1.19–26.2),
+or 0.103.2.15 (Minecraft 26.3, Towny pre-release). Towny 0.102+ requires
 Paper/Purpur/Folia; this plugin's Bukkit scheduler does **not**
-support Folia, so use Paper/Purpur. The version guard verifies
+support Folia, so use Paper/Purpur. Minecraft 26.x requires Java 25
+and the modern build-qualified Paper API. The version guard verifies
 minimum versions and selected shaded-JDA methods, and enters
 inert safe mode when unsupported.
 

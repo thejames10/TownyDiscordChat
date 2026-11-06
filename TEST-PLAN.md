@@ -1,4 +1,4 @@
-# Manual integration test plan (SQL branch)
+# Manual integration test plan — TownyDiscordChat 1.1.1
 
 Perform all tests against an **isolated Discord guild**, a throwaway
 Paper/Purpur server, and a disposable SQLite database or MySQL schema. Preserve a backup
@@ -77,6 +77,20 @@ of any prior TownyDiscordChat tables before migration.
 - Keep the SQLite DB as a backup, and never run two plugin instances
   against the same guild on independent backends.
 
+## Minecraft 1.21.11 and 26.x compatibility
+
+- Verify Minecraft 1.21.11 on Paper/Purpur with Java 21 and Towny
+  0.103.2.0, including DiscordSRV linking, roles and revocations.
+- Verify Minecraft 26.1.2 and 26.2 on **Java 25**, using matching
+  Paper/Purpur servers and Towny 0.103.2.0. Check the generated
+  plugin.yml API version and database initialization.
+- Verify Minecraft 26.3 on **Java 25** with a compatible Paper/Purpur
+  server and Towny 0.103.2.15 pre-release. Test linking, private
+  channel creation, resource renames and full-guild audits.
+- Confirm unsupported 26.1.0 and 26.1.1 have no published artifacts.
+- Verify all 14 JARs report version 1.1.1 and have matching
+  Minecraft API declarations; test on an isolated Discord guild.
+
 ## Startup / version checks
 
 - Install Towny + DiscordSRV supported for the selected Minecraft server.
@@ -122,7 +136,7 @@ of any prior TownyDiscordChat tables before migration.
    only that channel is recreated, with no new role or duplicate category.
 4. Stale SQL references: delete a mapped Discord role and channel after
    taking a backup. Check new Discord IDs are recorded after repair.
-5. Old SQL branch schema: restore a 2023 backup with active `Expired='false'`
+5. Pre-1.1.0 database schema: restore a 2023 backup with active `Expired='false'`
    resource rows, start this build, verify the IDs were preserved, and
    verify `tdc_schema_migrations` versions 2, 3, 4 and 5 and the preserved
    `tdc_queued_tasks` legacy table.

@@ -1,7 +1,7 @@
 name: Test Minecraft compatibility
 on:
   push:
-    branches: [SQL, main]
+    branches: [SQL, main, 'release/**']
     tags: ['v*']
   pull_request:
     branches: [main]

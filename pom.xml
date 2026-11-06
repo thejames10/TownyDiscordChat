@@ -41,12 +41,22 @@
       <artifactId>Towny</artifactId>
       <version>${towny.version}</version>
       <scope>provided</scope>
+      <!-- JDA is shaded by DiscordSRV, and Towny is provided by the server.
+           Avoid resolving obsolete snapshots from legacy transitive POMs. -->
+      <exclusions>
+        <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.discordsrv</groupId>
       <artifactId>discordsrv</artifactId>
       <version>${discordsrv.version}</version>
       <scope>provided</scope>
+      <!-- JDA is shaded by DiscordSRV, and Towny is provided by the server.
+           Avoid resolving obsolete snapshots from legacy transitive POMs. -->
+      <exclusions>
+        <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.bstats</groupId>

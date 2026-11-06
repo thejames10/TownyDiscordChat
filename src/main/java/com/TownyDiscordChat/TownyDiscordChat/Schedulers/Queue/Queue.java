@@ -356,7 +356,10 @@ public final class Queue {
             if ((job.kind.startsWith("TOWN_") || job.kind.startsWith("NATION_"))
                     && !job.kind.endsWith("CATEGORY")) {
                 String uuid = currentTownyUuid(job.kind,job.name);
-                if (uuid == null) { discard(job); return; }
+                if (uuid == null) {
+                    recoverDeletedCreate(job,guild,nameOwners);
+                    return;
+                }
                 if (nameOwners.size()!=1 || !nameOwners.contains(uuid)) {
                     if (nameOwners.size()>1)
                         plugin.reportAdminWarning("Ambiguous Towny UUID ownership of "
@@ -433,6 +436,98 @@ public final class Queue {
     }
 
 
+
+    /**
+     * A Towny object may disappear while its remote CREATE was in flight.
+     * When recovering an expired lease, never drop proof of its newly created
+     * Discord object. Verify a unique private resource, persist its ID under
+     * the deleted UUID, then reconcile promptly to delete it by ID.
+     *
+     * This never sends a new REST creation request.
+     */
+    private void recoverDeletedCreate(Job job,Guild guild,Set<String> nameOwners) {
+        if (nameOwners.isEmpty()) {
+            discard(job);
+            return;
+        }
+        if (nameOwners.size()!=1) {
+            fail(job,"Multiple stable UUID owners for deleted "+job.kind+"/"+job.name);
+            plugin.reportAdminWarning("Ambiguous deleted Towny identity "+job.name
+                    + "; manual cleanup required.");
+            return;
+        }
+        boolean town=job.kind.startsWith("TOWN_");
+        String roleName=(town ? "town-" : "nation-")+job.name;
+        if (job.kind.endsWith("ROLE")) {
+            Role role=uniqueSafeRole(guild,roleName);
+            if (role==null) discard(job);
+            else orphanFound(job,role.getId(),null);
+            return;
+        }
+        String categoryName=plugin.getConfig().getString(
+                "category."+(town ? "Town" : "Nation")+".Name","");
+        Role role=uniqueSafeRole(guild,roleName);
+        if (job.kind.endsWith("TEXT")) {
+            List<TextChannel> matches=new ArrayList<TextChannel>();
+            for (TextChannel channel:guild.getTextChannelsByName(job.name,true))
+                if (channel.getParent()!=null
+                        && categoryName.equalsIgnoreCase(channel.getParent().getName()))
+                    matches.add(channel);
+            if (matches.isEmpty()) { discard(job); return; }
+            if (matches.size()!=1 || role==null || !safeExistingText(guild,matches.get(0),role)) {
+                fail(job,"Unsafe/ambiguous orphan text channel for "+job.name);
+                plugin.reportAdminWarning("Unverified orphan Discord text channel "
+                        +job.name+" needs manual review.");
+                return;
+            }
+            TextChannel channel=matches.get(0);
+            orphanFound(job,channel.getId(),channel.getParent().getId());
+            return;
+        }
+        if (job.kind.endsWith("VOICE")) {
+            List<VoiceChannel> matches=new ArrayList<VoiceChannel>();
+            for (VoiceChannel channel:guild.getVoiceChannelsByName(job.name,true))
+                if (channel.getParent()!=null
+                        && categoryName.equalsIgnoreCase(channel.getParent().getName()))
+                    matches.add(channel);
+            if (matches.isEmpty()) { discard(job); return; }
+            if (matches.size()!=1 || role==null || !safeExistingVoice(guild,matches.get(0),role)) {
+                fail(job,"Unsafe/ambiguous orphan voice channel for "+job.name);
+                plugin.reportAdminWarning("Unverified orphan Discord voice channel "
+                        +job.name+" needs manual review.");
+                return;
+            }
+            VoiceChannel channel=matches.get(0);
+            orphanFound(job,channel.getId(),channel.getParent().getId());
+            return;
+        }
+        fail(job,"Unknown removed-Towny create type "+job.kind);
+    }
+
+    private void orphanFound(Job job,String remoteId,String parentId) {
+        finalizeAsync(job, () -> {
+            store.succeed(job,remoteId,parentId);
+            if (plugin.reconciler!=null) plugin.reconciler.requestSoon();
+        }, "Recovered resource belonging to deleted Towny identity: "+job);
+    }
+
+    private static boolean safeExistingText(Guild guild,TextChannel channel,Role role) {
+        return channel.getParent()!=null && privateCategory(guild,channel.getParent())
+                && channel.getPermissionOverride(guild.getPublicRole())!=null
+                && channel.getPermissionOverride(guild.getPublicRole()).getDenied()
+                    .contains(Permission.VIEW_CHANNEL)
+                && channel.getPermissionOverride(role)!=null
+                && channel.getPermissionOverride(role).getAllowed().contains(Permission.VIEW_CHANNEL);
+    }
+
+    private static boolean safeExistingVoice(Guild guild,VoiceChannel channel,Role role) {
+        return channel.getParent()!=null && privateCategory(guild,channel.getParent())
+                && channel.getPermissionOverride(guild.getPublicRole())!=null
+                && channel.getPermissionOverride(guild.getPublicRole()).getDenied()
+                    .contains(Permission.VIEW_CHANNEL)
+                && channel.getPermissionOverride(role)!=null
+                && channel.getPermissionOverride(role).getAllowed().contains(Permission.VIEW_CHANNEL);
+    }
 
     private String currentTownyUuid(String kind, String name) {
         if (kind.startsWith("TOWN_")) {

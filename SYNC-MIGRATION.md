@@ -9,6 +9,15 @@ an empty DB nor a stale Discord cache is treated as proof that
 resources do not exist.
 
 The plugin retains **its own durable JDBC-backed SQLite/MySQL queue**, with two independent lanes.
+Discord activity logging is separate: once an operation is acknowledged in
+SQL, the logger asynchronously posts actual changes and failures to an
+existing private channel found by `log.Category.Name` /
+`log.Channel.Name`, when `log.Enabled` is true. It never holds a SQL
+transaction while sending a message, never trusts the old numeric log
+channel hint, and never logs mere adoption/reconciliation to Discord.
+Console logging is always on. This is **best-effort notification**, not
+a second durable queue: Discord delivery failure or a crash between SQL
+acknowledgement and posting cannot be replayed.
 Revocations take precedence over grants in the membership lane.
 Verified role/channel deletions (priority 10) precede resource
 renames (priority 20) and creations (priority 100) in the resource lane.

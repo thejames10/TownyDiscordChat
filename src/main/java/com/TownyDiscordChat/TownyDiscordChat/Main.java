@@ -108,8 +108,10 @@ public class Main extends JavaPlugin {
         if (!fileCheck.valid() || !configCheck.valid()) {
             for (String error:fileCheck.errors()) getLogger().severe("[CONFIG] "+error);
             for (String error:configCheck.errors()) getLogger().severe("[CONFIG] "+error);
-            startupProblem="Invalid config.yml: "+fileCheck.errors().size()+" YAML issue(s), "
-                    +configCheck.errors().size()+" setting issue(s). Correct them and restart.";
+            String firstError=!fileCheck.errors().isEmpty() ? fileCheck.errors().get(0)
+                    : configCheck.errors().get(0);
+            startupProblem="Invalid config.yml: "+firstError
+                    +" Check console for all errors, correct the file, then restart.";
         }
 
         // Soft dependencies permit a visible, inert safe mode when outdated or

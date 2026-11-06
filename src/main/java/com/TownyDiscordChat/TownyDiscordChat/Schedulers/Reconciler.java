@@ -484,11 +484,13 @@ public final class Reconciler {
         // delete them automatically without stable identity evidence.
         for (StableEntityStore.Entity previous : stable.all(s.guildId,type)) {
             if (live.containsKey(previous.uuid)) continue;
-            if (previous.roleId != null && eq(previous.roleId, roles.get(previous.name)))
+            // Stable UUID mappings are authoritative even if a previous
+            // installation lost its mutable-name legacy SQL rows.
+            if (previous.roleId != null)
                 resources.enqueue("DELETE_" + type + "_ROLE",previous.name);
-            if (previous.textId != null && eq(previous.textId, texts.get(previous.name)))
+            if (previous.textId != null)
                 resources.enqueue("DELETE_" + type + "_TEXT",previous.name);
-            if (previous.voiceId != null && eq(previous.voiceId, voices.get(previous.name)))
+            if (previous.voiceId != null)
                 resources.enqueue("DELETE_" + type + "_VOICE",previous.name);
             if (previous.roleId == null && previous.textId == null && previous.voiceId == null)
                 stable.retireIfEmpty(s.guildId,type,previous.uuid);

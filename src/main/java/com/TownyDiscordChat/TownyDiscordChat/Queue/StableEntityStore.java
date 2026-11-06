@@ -233,6 +233,33 @@ public final class StableEntityStore {
     }
 
     /**
+     * Recover a deleted resource from its immutable identity when an older
+     * legacy table is missing. A duplicate name is ambiguous and must be
+     * reviewed manually; never select the first matching UUID.
+     */
+    public String uniqueIdForName(String guild,String kind,String name,String component)
+            throws SQLException {
+        if (!("ROLE".equals(component) || "TEXT".equals(component)
+                || "VOICE".equals(component)))
+            throw new SQLException("Unknown Discord resource component "+component);
+        try (Connection c=jobs.connect(); PreparedStatement ps=c.prepareStatement(
+                "SELECT role_id,text_id,voice_id FROM " + TABLE
+                + " WHERE guild_id=? AND kind=? AND last_name=?")) {
+            ps.setString(1,guild);
+            ps.setString(2,kind);
+            ps.setString(3,name);
+            try (ResultSet rs=ps.executeQuery()) {
+                if (!rs.next()) return null;
+                String id="ROLE".equals(component) ? rs.getString(1)
+                        : "TEXT".equals(component) ? rs.getString(2) : rs.getString(3);
+                if (rs.next()) throw new SQLException("Ambiguous stable UUID identities for "
+                        + kind + "/" + name + "; manual cleanup required");
+                return id;
+            }
+        }
+    }
+
+    /**
      * A recorded Discord ID is evidence that a pending cleanup may actually
      * target a renamed entity. Abort deletion if a still-live UUID owns it.
      */

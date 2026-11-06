@@ -123,9 +123,16 @@ public final class Queue {
             current = job;
             final Set<String> categoryIds = job.kind.endsWith("CATEGORY")
                     ? store.trackedCategoryIds(job.kind) : Collections.<String>emptySet();
-            final String mappedId = job.kind.startsWith("DELETE_")
-                    ? store.mappedId(job.kind, job.name) : null;
             final Guild guild = DiscordSRV.getPlugin().getMainGuild();
+            String mapped = job.kind.startsWith("DELETE_")
+                    ? store.mappedId(job.kind, job.name) : null;
+            if (mapped == null && guild != null && job.kind.startsWith("DELETE_")) {
+                final String type = job.kind.contains("TOWN_") ? "TOWN" : "NATION";
+                final String component = job.kind.endsWith("ROLE") ? "ROLE"
+                        : job.kind.endsWith("TEXT") ? "TEXT" : "VOICE";
+                mapped=stable.uniqueIdForName(guild.getId(),type,job.name,component);
+            }
+            final String mappedId = mapped;
             final Set<String> stableOwners = job.kind.startsWith("DELETE_") && guild != null
                     ? stable.ownersOfId(guild.getId(),job.kind,mappedId)
                     : Collections.<String>emptySet();

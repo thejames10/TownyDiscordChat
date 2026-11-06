@@ -1,70 +1,106 @@
-# Compatibility and test deployments
+# TownyDiscordChat SQL branch — test deployment
 
-## Status
-These are CI-built **test candidates** until exercised against a running server. The
-matrix compiles the same source against Spigot API snapshots for Minecraft 1.16.5
-through 1.21.x. This does NOT prove binary compatibility with each available
-Towny/DiscordSRV release, nor does it guarantee runtime support on Paper/Folia.
+**Status: pre-release integration candidate.** Do not deploy to a production
+guild until you have tested the queue, database migrations and role revocation.
 
-## Installing
-1. Install a server implementation for your selected Minecraft version.
-2. Install a Towny release supported by that exact server version.
-3. Install a DiscordSRV release supported by that exact server version.
-4. Copy only TownyDiscordChat-MC-<version>.jar into plugins; do not install the ZIP.
-5. Install MySQL 8-compatible database, configure SQL settings in config.yml,
-   and check server log for queue migration / initialization.
-6. Back up MySQL tables and Discord guild configuration before first run. Test on
-   a non-production guild: reconciliation is capable of creating Discord resources.
+## Compiled dependency combinations
 
-DiscordSRV and Towny are **server-provided** dependencies, NOT shaded into this
-plugin's JAR. Each third-party plugin must be obtained from its official release
-source under its own license. DiscordSRV's bundled JDA performs HTTP rate-limit
-handling; this plugin adds database-backed durable scheduling and retry handling.
+| Minecraft API | DiscordSRV API | Towny API | Workflow |
+| --- | --- | --- | --- |
+| 1.16.5, 1.17.1, 1.18.2, 1.19.4, 1.20.1, 1.20.6, 1.21.1, 1.21.4, 1.21.8, 1.21.10 | 1.24.0 | 0.97.5.0 | Baseline matrix |
+| 1.20.1 | 1.30.5 | 0.103.2.0 | Modern API test |
+| 1.21.10 | 1.30.5 | 0.103.2.0 | Modern API test |
 
-## Dependency baselines used for compilation
-- DiscordSRV 1.24.0 (legacy JDA 4 API used in this source)
-- Towny 0.97.5.0 (legacy Towny API)
-- MySQL Connector/J 8.0.33 (bundled)
-- bStats Bukkit 2.2.1 (relocated and bundled)
-- Spigot API version is selected per matrix job.
+These results demonstrate **Maven compilation and packaging**, not
+runtime correctness on all listed Minecraft versions. The modern test
+checks the published DiscordSRV and Towny APIs and excludes their
+classes from the shaded JAR. Minecraft API version alone does not
+certify that a particular Towny/DiscordSRV combination works.
 
-This old DiscordSRV/Towny combination is **not guaranteed** to work on current
-1.20+/1.21+ servers. A separate modern integration adapter will be needed if
-their API compatibility has changed. Do not upgrade the DiscordSRV Maven
-dependency without also checking JDA package and API changes.
+## Required server plugins
 
-## Java
-The generated plugin targets Java 8 bytecode; Minecraft 1.16 can use Java 8.
-Minecraft 1.17+ has its own higher Java runtime minimums.
-Choose the Java runtime required by the server implementation, not by this JAR.
+- [DiscordSRV 1.30.5](https://github.com/DiscordSRV/DiscordSRV/releases/tag/v1.30.5)
+  is the current release tested in the modern API lane. DiscordSRV
+  must be loaded and linked to the intended Discord guild.
+- [Towny 0.103.2.0](https://github.com/TownyAdvanced/Towny/releases/tag/0.103.2.0)
+  is the current stable tested in the modern API lane; supports MC
+  1.19 and newer, requires Java 17+, and Paper/Purpur (not Spigot).
+- [Towny 0.100.3.0](https://github.com/TownyAdvanced/Towny/releases/tag/0.100.3.0)
+  is the historical branch recommended by Towny for 1.16–1.18.
+  Verify its own Java/server requirements for the selected release.
+- Towny 0.102+ does not support Spigot, and this plugin currently
+  **does not support Folia's region scheduler**. Use Paper or Purpur.
+- TownyDiscordChat needs a working MySQL database (MySQL 8 preferred).
 
-## SQL queue
-The SQL branch's legacy tdc_queued_tasks table is imported into
-tdc_discord_jobs and is otherwise kept in place. Deduplication keys are
-kind+resource name; the worker claims one job at a time with a lease.
-Retries use exponential backoff; exhausted jobs are marked DEAD and retained.
-Application pacing does not replace JDA's API rate-limit handling.
-The legacy listener mutation paths remain disabled while they are converted.
+Towny, DiscordSRV and their bundled JDA are **provided by the server**,
+not bundled with TownyDiscordChat. Install each from its official site.
+MySQL Connector/J and relocated bStats are packaged in the plugin JAR.
 
-## Testing checklist
-- Start with an empty guild and an isolated MySQL schema.
-- Verify roles, categories, text and voice channels for town and nation.
-- Restart server during a Discord operation and check that no duplicate resource
-  is created and the job is eventually acknowledged.
-- Verify callback failure produces retries and eventually a DEAD job.
-- Disconnect DiscordSRV and reconnect; database backlog should remain queued.
-- Check role/category permissions and enforce Discord hierarchy.
-- Confirm there are no Bukkit asynchronous-access warnings.
-- Test manual Discord resource deletion, guild role rename, and town rename.
-- Validate account link/unlink, Towny delete/rename, role removal and
-  permissions before production; these reconciliation behaviors are not finished.
+## Install a CI artifact for testing
 
-## Future release workflow
-Create signed/manual releases only after CI passes and live compatibility tests
-pass. Separate artifacts for each Minecraft version are created by the
-GitHub Actions build and can be downloaded from the workflow run's artifacts.
+1. Open the successful **Test Minecraft compatibility** workflow run
+   on the SQL branch in [GitHub Actions](https://github.com/thejames10/TownyDiscordChat/actions).
+2. Download the `TownyDiscordChat-MC-<version>-modern` artifact ZIP for
+   a modern Paper/Purpur 1.20.1 or 1.21.10 server, or a baseline
+   `TownyDiscordChat-MC-<version>` ZIP when evaluating older APIs.
+3. Extract the ZIP. Put **only the .jar** inside `plugins/`; do not
+   install the ZIP itself.
+4. Configure DiscordSRV, install the appropriate Towny version,
+   and enable **Server Members Intent** in the Discord Developer Portal
+   and the matching DiscordSRV/JDA configuration. Without that intent,
+   complete guild audits cannot run.
+5. Set `SQL.host`, `SQL.port`, `SQL.database`, `SQL.username` and
+   `SQL.password` in `plugins/TownyDiscordChat/config.yml`.
+6. Back up the existing database first, start the server, check logs and
+   run `/tdcqueue status` as console/operator.
+7. Use `/tdcqueue audit` to start a full-guild audit; it runs through
+   the durable queue. Use `/tdcqueue retry-dead` only after fixing
+   the reason a job exhausted its retries.
+
+**Never point your first test at a live guild that contains irreplaceable
+roles/channels.** This plugin intentionally creates, renames, revokes
+membership from, and deletes recognized Towny-managed Discord resources.
+
+## Version and Java policy
+
+The plugin is compiled to Java 8 bytecode. The **server and installed
+Towny/DiscordSRV versions determine the actual minimum Java version**.
+Towny 0.103.2.0 requires Java 17+. Newer Minecraft 1.21 servers may
+require Java 21. CompatibilityGuard checks the plugin versions and
+selected shaded-JDA methods. If incompatible it starts in an inert
+safe mode and notifies the console and joining admins.
+
+## Queuing, migration and security
+
+MySQL stores the latest desired membership and two independent queues:
+security revocations are preferred in the membership lane, while
+resource deletions take priority over additions in the resource lane.
+DiscordSRV/JDA handles actual Discord rate-limit responses.
+
+The old `tdc_queued_tasks` table is imported non-destructively into
+`tdc_discord_jobs`; its records are not dropped. New tables include
+`tdc_member_intents`, `tdc_managed_member_roles`,
+`tdc_towny_identity`, `tdc_schema_migrations` and `tdc_audit_runs`.
+Stable Towny UUID mappings preserve Discord IDs across in-place renames.
+See [SYNC-MIGRATION.md](SYNC-MIGRATION.md).
+
+Automatic deletion requires an existing stable UUID-to-Discord mapping,
+a grace period (120 seconds by default), and exact Discord ownership
+verification. It does not delete categories, repurposed roles/channels,
+or ambiguous old resources.
 
 ## Operator commands
-- `/tdcqueue status`: show pending, running and dead job counts.
-- `/tdcqueue retry-dead`: retry exhausted jobs after diagnosing the root cause.
-Requires permission `TownyDiscordChat.Admin`; works from the console.
+
+- `/tdcqueue status` — counts of pending/running/dead jobs and intentions.
+- `/tdcqueue audit` — queue a full guild member scan.
+- `/tdcqueue retry-dead` — retry exhausted work after resolving root cause.
+
+All three require `TownyDiscordChat.Admin` (operator by default).
+See [TEST-PLAN.md](TEST-PLAN.md) for deployment and recovery tests.
+
+## Release policy
+
+The GitHub Actions matrix generates separate test ZIPs. A tagged `v*`
+build can publish ZIPs, but **do not tag a public release** until actual
+Paper/Purpur + Towny + DiscordSRV combinations have been tested for
+Discord permissions, MySQL rollback, restarts and rate limits.

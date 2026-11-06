@@ -1,135 +1,116 @@
-# TownyDiscordChat synchronization and migration
+# Synchronization, migration and safety design
 
-## Design
-Towny membership is authoritative. Discord reports actual guild resources
-and membership. SQL persists IDs, desired membership and in-flight operations.
-DiscordSRV/JDA handles HTTP 429 response scheduling; the plugin retains its
-own durable, two-lane operation queue, callbacks, leases and retries. A
-membership revocation is not blocked by a slow channel creation.
+## Sources of truth
 
-For memberships, one row per (guild,member,role) expresses the **latest**
-desired state. A rapid ADD / REMOVE / ADD collapses to the latest state.
-Revisions fence stale callbacks. Revocations are claimed before creation
-and new grants. This does not guarantee immediate access removal during
-a Discord outage or if bot permissions prevent removal.
+Towny defines who belongs to each town/nation. Discord defines the
+resources and member-role state actually present. SQL stores an
+auditable intent, ownership mappings and retry history; neither
+an empty DB nor a stale Discord cache is treated as proof that
+resources do not exist.
 
-A job is complete only once an API result (or verified already-matching
-remote state) has been durably acknowledged. Failed jobs back off, dead
-jobs persist for operator attention. In-flight tasks have leases; a
-server restart allows retry after lease expiry. Discord REST mutations
-are not transactionally atomic with SQL; retries check Discord state
-before creating resources or changing membership.
+The plugin retains **its own MySQL queue**, with two independent lanes.
+Revocations take precedence over grants in the membership lane.
+Verified role/channel deletions (priority 10) precede resource
+renames (priority 20) and creations (priority 100) in the resource lane.
+DiscordSRV's relocated JDA still handles Discord HTTP 429 rate limits.
 
-## Three-way startup reconciliation
-- Empty database, populated Discord: adopt matching roles, verified
-  channels with expected category and role permissions, and existing
-  categories. Save observed grants for linked users.
-- Populated database, empty Discord: recreate missing roles and channels
-  after comparing actual IDs to SQL mappings.
-- Partial state: repair only mismatched resources.
-- Discord and SQL disagree: remote IDs are checked and verified before
-  reusing them. Names alone are insufficient for channel ownership.
-- Role assignments: linked players' expected memberships come from
-  current Towny state. Persisted grants enable revocation after kicks,
-  leave events, relinks, and restarts.
-- The DiscordSRV member cache may be incomplete; the dispatcher fetches
-  uncached members by REST rather than assuming their role is absent.
+## Migrations
 
-**Known remaining limitations:** verified SQL-owned orphan roles/channels
-are deleted when the corresponding Towny entity disappears. Categories
-are deliberately NOT deleted automatically, as they may contain unrelated
-channels. Renames currently take the delete-and-create path, which can
-cause temporary access loss; stable Towny UUID identity will improve this.
-There is no full-guild REST audit for unlinked users without SQL history.
-Cached unlinked members and individually rechecked former members have
-TDC-owned access revoked by default (configurable).
-The plugin performs rate-limited REST audits for linked members on
-startup and when JDA's member cache is missing entries. Completed grants
-also trigger a REST audit to catch late HTTP responses. Newer DiscordSRV
-integrations using unshaded JDA require a separate adapter.
+Migration 2 imports the legacy `tdc_queued_tasks` entries into
+`tdc_discord_jobs`, leaving the old table in place and recording
+completion in `tdc_schema_migrations`. The migration is idempotent.
+Migration 3 adds `tdc_towny_identity` with primary key
+`(guild_id,kind,towny_uuid)`, storing the last-known name plus
+role/text/voice Discord IDs. The original legacy SQL mapping tables
+are preserved. During a rename, their name-based keys are updated
+transactionally without changing Discord IDs. Back up the schema
+before starting a new version.
 
-## Non-destructive database migration
-Back up your entire schema first. `tdc_schema_migrations` tracks the
-conversion of the original SQL branch's `tdc_queued_tasks` into
-`tdc_discord_jobs`. The original table and SQL mapping tables are
-never dropped in this migration. `tdc_member_intents` stores desired
-membership with revisions and priorities; `tdc_managed_member_roles`
-stores previously observed/granted memberships. Creating either table
-does not rewrite existing role mappings. Migration version 2 is
-idempotent, but operators should validate historic mappings using a
-test guild before running production reconciliation.
+The identity table is backfilled from verified existing resources when
+the plugin first runs. If a town was renamed **before the identity
+table existed**, and there is no safe UUID link between the old name
+and new Towny object, automatic inference is impossible. The old
+mapping is left untouched for manual review rather than deleted.
 
-## Scheduling and prioritization
-1. Membership revocations (priority 0, membership lane)
-2. Verified SQL-owned role/channel deletions (priority 10, resource lane)
-3. Resource creation, adoption and REST membership audits (priority 100, resource lane)
-4. Membership grants (priority 100, membership lane, only after revocations)
+## State recovery
 
-A slow resource mutation does not block membership revocations. Each
-lane submits one request at a time, while JDA handles actual Discord
-API buckets and HTTP 429 responses. Older in-flight callbacks are fenced
-with SQL revisions; the newest desired membership wins.
+| State | Action |
+| --- | --- |
+| No SQL rows; Discord already populated | Adopt only verified uniquely-named roles and private channels, then scan guild membership |
+| SQL references missing Discord objects | Recreate using the current Towny entity and correct SQL mappings |
+| Partially created Discord guild | Enqueue only missing roles/categories/channels |
+| Existing Towny UUID was renamed | Migrate SQL keys and rename the existing Discord role/text/voice channels **in-place** |
+| Towny entity truly deleted | After a grace period, delete only resources whose exact IDs are mapped to that deleted UUID |
+| Guild roles modified manually | Refuse unsafe or ambiguous adoption/deletion; notify administrators |
+| Server crashes during a Discord operation | Recover expired SQL leases, inspect actual Discord state before retrying |
 
-## Safe-mode compatibility
-On startup the plugin checks for enabled Towny and DiscordSRV,
-minimum legacy versions, and key shaded-JDA methods. When incompatible,
-it does not start SQL jobs or Discord operations. The console receives
-a warning and admins receive a message on join. Version minimums and
-API shape are prerequisites, not a certified support guarantee.
+One unique job key prevents repeated creation requests for the
+same resource. In-flight and failed tasks survive restarts. Attempts
+are retried with exponential backoff; exhausted jobs are retained as
+`DEAD` for operator diagnosis.
 
-## Testing
-Use an isolated guild and backed-up MySQL schema. Test empty DB,
-empty guild, partial discord resources, stale IDs, server crash between
-Discord creation and SQL acknowledgement, linked/unlinked membership,
-kicks, rapid join/kick/join, missing permissions, unknown members, offline
-Discord and sustained rate limiting. Examine `/tdcqueue status`
-and use `/tdcqueue retry-dead` only after fixing the cause.
+Resource deletion is intentionally delayed by
+`queue.deletionGraceSeconds` (default 120) to allow rapid renames.
+Categories are never auto-deleted because they might contain
+unrelated Discord content. In-flight HTTP actions cannot be
+cancelled transactionally; reconciliation detects stale outcomes.
 
-## Discord ownership safety
-A guild role must be uniquely identified by name and must not have guild-
-wide permissions before TDC can adopt it or grant it to a player.
-Categories must deny VIEW_CHANNEL to @everyone. Channels must have the
-expected parent category, the matching role permission override, and a
-VIEW_CHANNEL denial for @everyone. Resource deletions require an exact
-stored Discord ID and matching name/parent; mismatched or repurposed
-resources are retained and reported for manual review.
+## Membership security
 
-## Limits of the version check
-DiscordSRV 1.24.0 and Towny 0.97.5.0 are historical **minimum API
-baselines**, not a promise of support on the latest Minecraft versions.
-The guard also checks for specific shaded JDA methods. A modern
-DiscordSRV version may expose an incompatible JDA package and trigger
-safe mode despite passing the numeric version test. Use an integration
-adapter and tested per-version dependency matrix for official releases.
+`tdc_member_intents` uses one unique key per (guild, member, role).
+Its `desired` bit and monotonically increasing `revision` collapse
+ADD/REMOVE/ADD into the latest requested state. Late callbacks cannot
+acknowledge a newer intent. Before sending a grant, the dispatcher
+rechecks the member's current Towny membership *and* the immutable
+Towny UUID ownership of the target Discord role. A new town that
+reuses a deleted town's name cannot inherit the old Discord role.
 
-## Security migration note
-The default `security.revokeUnlinkedAccounts: true` is intentionally
-strict: an unlinked Discord account should not retain access to private
-Towny channels. For custom manual access policies, review that setting
-before starting the plugin. It only targets verified managed roles,
-not arbitrary Discord roles. This cannot recover uncached, unlinked
-accounts that were never recorded in SQL without a complete guild audit.
+Fast Towny and DiscordSRV events request a coalesced reconciliation.
+Revocations remain prioritized independently of slow category
+creation, and failures are logged prominently.
 
-## Stable identity and full member audit
-Towny town/nation UUIDs are stored in `tdc_towny_identity`; names remain
-mutable. On a rename the existing SQL mapping keys are migrated, pending
-old-name creation/deletion jobs are cancelled and Discord role/channel names
-are changed **in-place** while keeping their original snowflake IDs.
-Previously unknown legacy rows with no provable UUID are NOT automatically
-deleted. After a real town/nation deletion, only IDs previously associated
-with a Towny UUID are eligible for delayed cleanup. The configurable
-`queue.deletionGraceSeconds` defaults to 120 to avoid rename races.
+**No application can guarantee immediate revocation during Discord
+outages, missing bot permissions or Discord rate-limit delays.**
+In such conditions admins should manage the affected Discord access
+directly until the bot recovers.
 
-A startup and periodic full-guild member audit uses JDA's gateway member
-chunking, not `Guild.getMembers()`. **Server Members Intent must be enabled
-in the Discord Developer Portal and requested by DiscordSRV/JDA.** If it is
-missing, the queue records the failure and alerts online/joining admins; it
-continues targeted linked-account audits. Use `/tdcqueue audit` to request
-another full scan after enabling the intent. Audit results are recorded in
-`tdc_audit_runs` and all observed TDC-managed roles are compared against
-current Towny membership by the regular reconciler; unlinked stale access
-is revoked. Config `queue.fullAudit.intervalSeconds` defaults to 21600.
+## Complete guild member audits
 
-**Release qualification:** every matrix build compiles the same codebase,
-but binary/API compatibility and Discord REST behavior must be validated
-on actual server/DiscordSRV/Towny combinations before a public release.
+DiscordSRV's JDA `Guild.getMembers()` reports cache contents only.
+The durable `AUDIT_GUILD` job instead invokes JDA's
+`Guild.loadMembers(Consumer<Member>)` gateway chunking. This
+requires **privileged GUILD_MEMBERS / Server Members Intent** to
+be enabled for the bot in the Discord Developer Portal and in
+DiscordSRV's gateway setup.
+
+The audit records every observed *verified Towny-managed* role
+grant, including completely unlinked/uncached members, in
+`tdc_managed_member_roles`. The following regular reconciliation
+compares those grants to Towny's current linked accounts and queues
+revocations where appropriate. Routine targeted REST audits also
+cover linked members when their caches are incomplete.
+
+The guild audit runs on startup and periodically (default every
+21,600 seconds), or on demand via `/tdcqueue audit`. SQL checkpoints
+in `tdc_audit_runs` avoid scanning the entire guild repeatedly.
+If the privileged intent is disabled, the job fails without altering
+unrelated Discord resources and an actionable warning goes to
+console and administrators. Targeted audits remain operational.
+
+## Compatibility and limitations
+
+Both the legacy (DiscordSRV 1.24.0 / Towny 0.97.5.0)
+and modern (DiscordSRV 1.30.5 / Towny 0.103.2.0) APIs are
+included in the compilation matrix. Modern Towny 0.102+ requires
+Paper/Purpur/Folia; this plugin's Bukkit scheduler does **not**
+support Folia, so use Paper/Purpur. The version guard verifies
+minimum versions and selected shaded-JDA methods, and enters
+inert safe mode when unsupported.
+
+Compilation is not a live integration test. Test a separate Discord
+guild and backed-up SQL database for empty/partial state,
+rename and delete, rapid join/kick/rejoin, unlinked accounts,
+HTTP failures, full-guild audit permissions and server crash recovery.
+
+See [COMPATIBILITY.md](COMPATIBILITY.md) and
+[TEST-PLAN.md](TEST-PLAN.md).

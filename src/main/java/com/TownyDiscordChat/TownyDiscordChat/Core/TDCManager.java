@@ -272,11 +272,11 @@ public class TDCManager {
 
         RoleAction role = guild.createRole().setName("town-" + town.getName()).setColor(Color.decode(Main.plugin.config.getString("town.RoleCreateColorCode")));
         role.queue(success -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateSuccess() + " town-" + town.getName() + " [1023]");
+
             roleId.set(success.getId());
             callback.accept(roleId.get());
         }, failure -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateFailure() + " town-" + town.getName() + " [1023]");
+
             callback.accept(null);
         });
     }
@@ -302,11 +302,11 @@ public class TDCManager {
 
         RoleAction role = guild.createRole().setName("nation-" + nation.getName()).setColor(Color.decode(Main.plugin.config.getString("nation.RoleCreateColorCode")));
         role.queue(success -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateSuccess() + " nation-" + nation.getName() + " [1024]");
+
             roleId.set(success.getId());
             callback.accept(roleId.get());
         }, failure -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgRoleCreateFailure() + " nation-" + nation.getName() + " [1024]");
+
             callback.accept(null);
         });
     }
@@ -949,10 +949,10 @@ public class TDCManager {
                 .addMemberPermissionOverride(botId, viewPermission, noPermission);
 
         categoryChannelAction.queue(success -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgCategoryCreateSuccess() + " " + name + " [28]");
+
             callback.accept(success.getId());
         }, failure -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgCategoryCreateFailure() + " " + name + " [28]");
+
             callback.accept(null);
         });
     }
@@ -980,10 +980,10 @@ public class TDCManager {
                 .setParent(guild.getCategoryById(parentCategoryId));
 
         textChannelAction.queue(success -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelCreateSuccess() + " " + name + " [33]");
+
             callback.accept(success.getId());
         }, failure -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelCreateFailure() + " " + name + " [33]");
+
             callback.accept(null);
         });
     }
@@ -1013,10 +1013,10 @@ public class TDCManager {
                 .setParent(guild.getCategoryById(townCategoryId));
 
         textChannelAction.queue(success -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelCreateSuccess() + " " + name + " [29]");
+
             callback.accept(success.getId());
         }, failure -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelCreateFailure() + " " + name + " [29]");
+
             callback.accept(null);
         });
     }
@@ -1046,10 +1046,10 @@ public class TDCManager {
                 .setParent(guild.getCategoryById(nationCategoryId));
 
         textChannelAction.queue(success -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelCreateSuccess() + " " + name + " [30]");
+
             callback.accept(success.getId());
         }, failure -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelCreateFailure() + " " + name + " [30]");
+
             callback.accept(null);
         });
     }
@@ -1079,10 +1079,10 @@ public class TDCManager {
                 .setParent(guild.getCategoryById(townCategoryId));
 
         voiceChannelAction.queue(success -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgVoiceChannelCreateSuccess() + " " + name + " [31]");
+
             callback.accept(success.getId());
         }, failure -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgVoiceChannelCreateFailure() + " " + name + " [31]");
+
             callback.accept(null);
         });
     }
@@ -1112,10 +1112,10 @@ public class TDCManager {
                 .setParent(guild.getCategoryById(nationCategoryId));
 
         voiceChannelAction.queue(success -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgVoiceChannelCreateSuccess() + " " + name + " [32]");
+
             callback.accept(success.getId());
         }, failure -> {
-            TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgVoiceChannelCreateFailure() + " " + name + " [32]");
+
             callback.accept(null);
         });
     }
@@ -1184,9 +1184,9 @@ public class TDCManager {
                 voiceChannelAction.setParent(guild.getCategoryById(voiceChannelCategoryId));
             }
             voiceChannelAction.queue(success -> {
-                TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgVoiceChannelCreateSuccess() + " " + name + " [26]");
+
             }, failure -> {
-                TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgVoiceChannelCreateFailure() + " " + name + " [26]");
+
             });
         }
         if (createTextChannel) {
@@ -1198,9 +1198,9 @@ public class TDCManager {
                 textChannelAction.setParent(guild.getCategoryById(textChannelCategoryId));
             }
             textChannelAction.queue(success -> {
-                TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelCreateSuccess() + " " + name + " [27]");
+
             }, failure -> {
-                TDCMessages.sendMessageToDiscordLogChannel(TDCMessages.getConfigMsgTextChannelCreateFailure() + " " + name + " [27]");
+
             });
         }
     }

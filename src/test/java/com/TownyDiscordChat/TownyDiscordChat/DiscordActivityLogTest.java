@@ -7,12 +7,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class DiscordActivityLogTest {
     @Test void avoidsMentionsAndMultilineSpoofing() {
         String formatted=DiscordActivityLog.format("CHANGE",
-                "Created town @everyone\\n[ADMIN] fake message @here");
+                "Created town @everyone\n[ADMIN] fake message @here");
         assertTrue(formatted.startsWith("[TDC CHANGE] Created town "));
         assertFalse(formatted.contains("@everyone"));
         assertFalse(formatted.contains("@here"));
-        assertFalse(formatted.contains("\\n"));
-        assertTrue(formatted.contains("@\\u200Beveryone"));
+        assertFalse(formatted.contains("\n"));
+        assertTrue(formatted.contains("@\u200Beveryone"));
     }
 
     @Test void neverExceedsDiscordMessageLimit() {

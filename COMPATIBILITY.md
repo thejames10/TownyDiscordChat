@@ -3,19 +3,28 @@
 **Status: pre-release integration candidate.** Do not deploy to a production
 guild until you have tested the queue, database migrations and role revocation.
 
-## Compiled dependency combinations
+## Intended test combinations
 
-| Minecraft API | DiscordSRV API | Towny API | Workflow |
-| --- | --- | --- | --- |
-| 1.16.5, 1.17.1, 1.18.2, 1.19.4, 1.20.1, 1.20.6, 1.21.1, 1.21.4, 1.21.8, 1.21.10 | 1.24.0 | 0.97.5.0 | Baseline matrix |
-| 1.20.1 | 1.30.5 | 0.103.2.0 | Modern API test |
-| 1.21.10 | 1.30.5 | 0.103.2.0 | Modern API test |
+One ZIP is produced per Minecraft API version. No special `-modern` download is needed.
 
-These results demonstrate **Maven compilation and packaging**, not
-runtime correctness on all listed Minecraft versions. The modern test
-checks the published DiscordSRV and Towny APIs and excludes their
-classes from the shaded JAR. Minecraft API version alone does not
-certify that a particular Towny/DiscordSRV combination works.
+| Minecraft API | Server implementation | Towny compile API | DiscordSRV compile API | Status |
+| --- | --- | --- | --- | --- |
+| 1.16.5, 1.17.1, 1.18.2 | Spigot / Paper / Purpur | 0.100.3.0 | 1.30.5 | 🧪 CI test package |
+| 1.19.4 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 🧪 CI test package |
+| 1.20.1, 1.20.6 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 🧪 CI test package |
+| 1.21.1, 1.21.4, 1.21.8, 1.21.10 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 🧪 CI test package |
+
+The `legacy-api-check` workflow job still compiles the source against
+DiscordSRV 1.24.0 and Towny 0.97.5.0 to detect historical API regressions.
+It does **not** produce an alternative installer. The old `-modern`
+suffix indicated compile-time dependencies only: Towny, DiscordSRV and
+JDA are provided by the server and are never shaded inside our JAR.
+
+These checks establish compilation, tests, and packaging; **not**
+runtime compatibility with an actual Discord guild or production server.
+The `BUILD-INFO.txt` file in each ZIP records the exact compile
+API versions. See [README.md](README.md#compatibility) for an at-a-glance
+status table.
 
 ## Required server plugins
 
@@ -38,11 +47,11 @@ MySQL Connector/J and relocated bStats are packaged in the plugin JAR.
 
 ## Install a CI artifact for testing
 
-1. Open the successful **Test Minecraft compatibility** workflow run
-   on the SQL branch in [GitHub Actions](https://github.com/thejames10/TownyDiscordChat/actions).
-2. Download the `TownyDiscordChat-MC-<version>-modern` artifact ZIP for
-   a modern Paper/Purpur 1.20.1 or 1.21.10 server, or a baseline
-   `TownyDiscordChat-MC-<version>` ZIP when evaluating older APIs.
+1. Open a successful **Test Minecraft compatibility** run on
+   [the SQL branch](https://github.com/thejames10/TownyDiscordChat/actions?query=branch%3ASQL).
+2. Download `TownyDiscordChat-MC-<version>` for your exact Minecraft
+   version. The ZIP has **no** `-modern` suffix. Read the included
+   `BUILD-INFO.txt` for the exact compile API versions.
 3. Extract the ZIP. Put **only the .jar** inside `plugins/`; do not
    install the ZIP itself.
 4. Configure DiscordSRV, install the appropriate Towny version,
@@ -100,7 +109,7 @@ See [TEST-PLAN.md](TEST-PLAN.md) for deployment and recovery tests.
 
 ## Release policy
 
-The GitHub Actions matrix generates separate test ZIPs. A tagged `v*`
+The GitHub Actions matrix generates **one** test ZIP per Minecraft version. A tagged `v*`
 build can publish ZIPs, but **do not tag a public release** until actual
 Paper/Purpur + Towny + DiscordSRV combinations have been tested for
 Discord permissions, MySQL rollback, restarts and rate limits.

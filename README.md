@@ -26,23 +26,31 @@
    <img alt="GitHub license" src="https://img.shields.io/github/license/thejames10/TownyDiscordChat">
    </a>
 </p>
+
 ## Compatibility
 
-**Current development version:** **TownyDiscordChat 1.1.0-SNAPSHOT** on the [SQL test branch](https://github.com/thejames10/TownyDiscordChat/tree/SQL). The rows below represent the **intended support matrix**, not a guarantee of production compatibility. GitHub Actions confirms Maven compilation for the specified combinations; live Paper/Purpur and Discord permission tests are still required before we promote a public release.
+**TownyDiscordChat `1.1.0-SNAPSHOT`** — [SQL branch test builds](https://github.com/thejames10/TownyDiscordChat/tree/SQL).
 
-| Minecraft server | Server software | Towny version | DiscordSRV version | TownyDiscordChat version | Validation |
+| Minecraft version | Server software | Towny | DiscordSRV | TownyDiscordChat | Status |
 | --- | --- | --- | --- | --- | --- |
-| 1.16.5–1.18.2 | Spigot, Paper, Purpur | **0.100.3.0** (Towny's historical recommendation) | **1.30.5** | **1.1.0-SNAPSHOT** | Intended; baseline API builds pass, this exact dependency pair needs runtime testing |
-| 1.19.4 | Paper, Purpur | **0.103.2.0** | **1.30.5** | **1.1.0-SNAPSHOT** | Intended; runtime testing pending |
-| 1.20.1 | Paper, Purpur | **0.103.2.0** | **1.30.5** | **1.1.0-SNAPSHOT** | Modern dependency API compilation passed; runtime testing pending |
-| 1.20.6–1.21.8 | Paper, Purpur | **0.103.2.0** | **1.30.5** | **1.1.0-SNAPSHOT** | Intended; Spigot API compilation passed, modern combination unverified |
-| 1.21.10 | Paper, Purpur | **0.103.2.0** | **1.30.5** | **1.1.0-SNAPSHOT** | Modern dependency API compilation passed; runtime testing pending |
-| 1.19+ with modern Towny | Spigot / CraftBukkit | 0.102.0.0+ | Any | **Not supported** | Towny 0.102+ requires Paper/Purpur/Folia |
-| Any | Folia | Any | Any | **Not supported** | TownyDiscordChat's scheduler is not Folia-aware |
+| `1.16.5`, `1.17.1`, `1.18.2` | Spigot / Paper / Purpur | `0.100.3.0` | `1.30.5` | `1.1.0-SNAPSHOT` | 🧪 Test build |
+| `1.19.4` | Paper / Purpur | `0.103.2.0` | `1.30.5` | `1.1.0-SNAPSHOT` | 🧪 Test build |
+| `1.20.1`, `1.20.6` | Paper / Purpur | `0.103.2.0` | `1.30.5` | `1.1.0-SNAPSHOT` | 🧪 Test build |
+| `1.21.1`, `1.21.4`, `1.21.8`, `1.21.10` | Paper / Purpur | `0.103.2.0` | `1.30.5` | `1.1.0-SNAPSHOT` | 🧪 Test build |
+| `1.19+` with Towny `0.102+` | Spigot / CraftBukkit | `0.102+` | — | — | ⛔ Unsupported |
+| Any | Folia | — | — | — | ⛔ Unsupported |
 
-All ten Minecraft versions also compile against our **historical baseline API** (Towny 0.97.5.0 / DiscordSRV 1.24.0), but this does **not** mean those older plugins should be installed on modern Minecraft. For the exact dependency versions, server platform and Java runtime, consult the [official Towny compatibility table](https://github.com/TownyAdvanced/Towny#current-recommended-versions), [Towny releases](https://github.com/TownyAdvanced/Towny/releases) and [DiscordSRV releases](https://github.com/DiscordSRV/DiscordSRV/releases). The current Towny 0.103.x line requires **Java 17 or newer**; the Minecraft server may require a newer runtime.
+**🧪 Test build:** packaged by GitHub Actions and checked against the listed dependency APIs; **live server, database, and Discord permission testing is still required**. **⛔ Unsupported:** this combination is not supported by the current SQL-branch scheduler or the required Towny release.
 
-Previous TownyDiscordChat **1.0.x** builds are legacy releases and do not include the SQL migration/queue. Use their corresponding release or Git tag to find historical instructions.
+Versions shown are the **intended test combinations**, not a production certification. Java requirements depend on the Minecraft server and Towny release (Towny `0.103.x` requires Java 17+). See [Towny's official releases](https://github.com/TownyAdvanced/Towny/releases), [DiscordSRV's releases](https://github.com/DiscordSRV/DiscordSRV/releases), and the [detailed compatibility notes](COMPATIBILITY.md).
+
+### Which download should I use?
+
+Download **`TownyDiscordChat-MC-<your-version>.zip`** from a successful [SQL-branch build](https://github.com/thejames10/TownyDiscordChat/actions?query=branch%3ASQL). There is **one package per listed Minecraft version**; the ZIP contains the JAR, configuration example, setup instructions, and `BUILD-INFO.txt` with the exact APIs used to compile it.
+
+Earlier development builds offered a second `-modern` artifact. That suffix distinguished **compile-time** Towny/DiscordSRV APIs, not a feature edition or bundled dependencies. We now build the player-facing artifact against the intended version combination and run historical API checks separately, so users no longer need to choose between two packages.
+
+Older TownyDiscordChat `1.0.x` releases use the previous implementation and do not include the SQL queue or migrations. Consult the README at the relevant Git tag for historical instructions.
 
 ## Installation
 
@@ -68,7 +76,7 @@ Enable Discord's privileged **Server Members Intent** in the bot's Developer Por
 
 ### 3. Install the TownyDiscordChat build
 
-Download the ZIP matching your Minecraft version from a successful [SQL-branch GitHub Actions run](https://github.com/thejames10/TownyDiscordChat/actions?query=branch%3ASQL). A `-modern` artifact is compiled against DiscordSRV 1.30.5 and Towny 0.103.2.0 where available. Extract the ZIP, then copy **the plugin JAR, not the ZIP**, into `plugins/`.
+Download the ZIP matching your Minecraft version from a successful [SQL-branch GitHub Actions run](https://github.com/thejames10/TownyDiscordChat/actions?query=branch%3ASQL). Each ZIP includes `BUILD-INFO.txt` describing its compile-time dependency versions. Extract the ZIP, then copy **the plugin JAR, not the ZIP**, into `plugins/`.
 
 Start the server once to generate `plugins/TownyDiscordChat/config.yml`, then stop it before editing MySQL credentials. **Do not delete your existing config when upgrading**; back it up and merge newer settings. See the versioned configuration template inside the artifact ZIP.
 

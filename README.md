@@ -112,15 +112,16 @@ file exists, it generates the standard default config.
    the backup, generates the current `config.yml` with its **new
    settings, defaults and comments**, and overlays compatible old
    values for categories, role creation, messages, database connection,
-   queue and other still-supported options.
+   queue and other still-supported options. **This first startup stays
+   in safe mode, without Discord synchronization or queue processing.**
 3. **Read the console's `[CONFIG UPGRADE]` lines** for the number
    of imported settings and the names of ignored keys. Unknown and
    discontinued settings (such as the old manually guessed Discord API
    rate-limit configuration) are not carried forward.
 4. Review the new `config.yml`, especially `storage.type`, `SQL.*`,
    private category names/IDs, role colors, and queue settings. Stop
-   the server and edit any settings that need changing before testing
-   Discord synchronization.
+   the server and edit any settings that need changing. **Restart once
+   more to activate synchronization** using the reviewed config.
 
 **Safety rules:** Existing `config.yml` is never overwritten, and the
 `.bak` is never deleted or modified. Invalid YAML, unsupported

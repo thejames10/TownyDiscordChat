@@ -35,7 +35,10 @@ of any prior TownyDiscordChat tables before migration.
   settings. The old backup must remain byte-for-byte unchanged.
 - Add unknown historical `Discord.Api.RateLimit` settings to the
   backup. Verify they are skipped and their **key names** appear in
-  the console; no secret values should be logged.
+  the console; no secret values should be logged. The first import boot
+  must remain in safe mode without Discord API calls or queue work.
+  Confirm sync starts only after the new config is reviewed and the
+  server is restarted.
 - Set `storage.migrateToMySQL: true` in the old backup. Verify the new
   config contains `storage.migrateToMySQL: false` and does not launch a
   MySQL transfer implicitly.

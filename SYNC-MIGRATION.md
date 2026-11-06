@@ -87,7 +87,9 @@ Old MySQL credentials, Towny/Discord category values and other
 supported options are retained; new settings use current defaults.
 Obsolete keys are listed in the console without printing their values.
 The source `.bak` is never modified and an existing `config.yml`
-always takes precedence.
+always takes precedence. A successful import still enters review-only
+safe mode on its first boot, allowing admins to check the generated
+file before a restart activates synchronization and the durable queue.
 
 A malformed backup, an incompatible setting, or failed current-schema
 validation leaves the new file unpublished and starts the plugin in

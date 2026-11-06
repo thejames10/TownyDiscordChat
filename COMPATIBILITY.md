@@ -93,7 +93,10 @@ then rename `plugins/TownyDiscordChat/config.yml` to
 generates its current template and copies compatible values.
 If `config.yml` already exists, it takes precedence and no
 automatic backup import is attempted. The backup is retained;
-unsupported values abort migration into safe mode.
+unsupported values abort migration into safe mode. A successful import
+also remains in **review-only safe mode** until the administrator checks
+the generated settings and restarts. No Discord synchronization occurs
+on the import startup.
 
 MySQL credentials are retained for existing MySQL users; the new
 `storage.type: auto` selects MySQL when legacy credentials are present.

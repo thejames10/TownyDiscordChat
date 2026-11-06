@@ -157,4 +157,4 @@ queue:
 # This only scans members visible in DiscordSRV's member cache; old grants are
 # also remembered in MySQL for revocation after an unlink.
 security:
-  revokeUnlinkedAccounts: false
+  revokeUnlinkedAccounts: true

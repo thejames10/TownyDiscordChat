@@ -74,26 +74,22 @@ jobs:
         run: |
           test -n "$HANGAR_API_TOKEN" || { echo "Missing repository secret HANGAR_API_TOKEN"; exit 1; }
 
-      - name: Download the original GitHub release JAR and notes
+      - name: Verify the original GitHub release JAR and notes
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p hangar-packages
-          gh release download "$RELEASE_TAG" \
-            --repo "$GITHUB_REPOSITORY" \
-            --pattern 'TownyDiscordChat-MC-26.3.jar' \
-            --dir hangar-packages
-          test -s hangar-packages/TownyDiscordChat-MC-26.3.jar
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets \
+            --jq '.assets[].name' | grep -Fxq 'TownyDiscordChat-MC-26.3.jar'
           gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json body --jq '.body' > hangar-changelog.md
           if ! grep -q '[^[:space:]]' hangar-changelog.md; then
             printf 'See GitHub release: https://github.com/%s/releases/tag/%s\n' "$GITHUB_REPOSITORY" "$RELEASE_TAG" > hangar-changelog.md
           fi
           printf '\nOther Minecraft-specific builds: https://github.com/%s/releases/tag/%s\n' "$GITHUB_REPOSITORY" "$RELEASE_TAG" >> hangar-changelog.md
 
-      - name: Upload the Paper 26.3 JAR to Hangar
+      - name: Register the Paper 26.3 GitHub download on Hangar
         uses: milkdrinkers/Hangar-Publish@v2
         with:
           api_token: ${{ secrets.HANGAR_API_TOKEN }}
@@ -105,8 +101,9 @@ jobs:
           files: |
             [
               {
-                "path": "hangar-packages/TownyDiscordChat-MC-26.3.jar",
-                "platforms": ["PAPER"]
+                "platforms": ["PAPER"],
+                "url": true,
+                "externalUrl": "https://github.com/thejames10/TownyDiscordChat/releases/download/${{ steps.release.outputs.tag }}/TownyDiscordChat-MC-26.3.jar"
               }
             ]
           platform_dependencies: |

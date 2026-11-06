@@ -95,6 +95,23 @@ public class Main extends JavaPlugin {
 
     public FileConfiguration config = getConfig();
 
+    private void enterSafeMode(String reason) {
+        operational = false;
+        guildValidated = false;
+        startupProblem = reason;
+        getLogger().severe("SAFE MODE: " + reason);
+        java.util.Objects.requireNonNull(getCommand("TownyDiscordChat"))
+                .setExecutor((sender,command,label,args) -> {
+                    sender.sendMessage("[TownyDiscordChat] SAFE MODE: " + getSafeModeReason());
+                    return true;
+                });
+        java.util.Objects.requireNonNull(getCommand("tdcqueue"))
+                .setExecutor((sender,command,label,args) -> {
+                    sender.sendMessage("[TownyDiscordChat] SAFE MODE: " + getSafeModeReason());
+                    return true;
+                });
+    }
+
     @Override
     public void onEnable() {
         plugin = this;
@@ -122,17 +139,7 @@ public class Main extends JavaPlugin {
         boolean dependenciesReady=compatibility.check();
         if (!dependenciesReady || startupProblem!=null) {
             if (!dependenciesReady) compatibility.warnConsole();
-            if (startupProblem!=null) getLogger().severe("SAFE MODE: "+startupProblem);
-            java.util.Objects.requireNonNull(getCommand("TownyDiscordChat"))
-                    .setExecutor((sender,command,label,args) -> {
-                        sender.sendMessage("[TownyDiscordChat] SAFE MODE: " + getSafeModeReason());
-                        return true;
-                    });
-            java.util.Objects.requireNonNull(getCommand("tdcqueue"))
-                    .setExecutor((sender,command,label,args) -> {
-                        sender.sendMessage("[TownyDiscordChat] SAFE MODE: " + getSafeModeReason());
-                        return true;
-                    });
+            enterSafeMode(startupProblem!=null ? startupProblem : compatibility.problem());
             return;
         }
 
@@ -157,8 +164,9 @@ public class Main extends JavaPlugin {
         try {
             SQL.connect();
         } catch (ClassNotFoundException | SQLException e) {
-            getLogger().severe("Database not connected: " + e.getMessage());
-            getServer().getPluginManager().disablePlugin(this);
+            getLogger().severe("Database connection failed: " + e.getMessage());
+            enterSafeMode("Database connection failed. Check storage.type, database "
+                    + "credentials and server availability; see console for details.");
             return;
         }
 
@@ -238,8 +246,15 @@ public class Main extends JavaPlugin {
                 this.operational = true;
             }
         } catch (SQLException e) {
-            getLogger().severe("Failed to initialize queue: " + e.getMessage());
-            getServer().getPluginManager().disablePlugin(this);
+            getLogger().severe("Failed to initialize database/queue schema: " + e.getMessage());
+            enterSafeMode("Database schema initialization failed. Back up the database, "
+                    + "check migration logs and table columns, then restart.");
+            try {
+                if (SQL != null && SQL.isConnected()) SQL.disconnect();
+            } catch (SQLException closeError) {
+                getLogger().warning("Could not close database after startup failure: "
+                        + closeError.getMessage());
+            }
             return;
         }
 

@@ -51,7 +51,7 @@ jobs:
           java-version: '21'
           cache: maven
       - name: Compile against modern release APIs
-        run: mvn --batch-mode --no-transfer-progress -Dspigot.version=${{ matrix.minecraft }}-R0.1-SNAPSHOT -Ddiscordsrv.version=1.30.5 -Dtowny.version=0.103.2.0 clean verify
+        run: mvn --batch-mode --no-transfer-progress -Dspigot.version=${{ matrix.minecraft }}-R0.1-SNAPSHOT -Ddiscordsrv.version=1.30.5 -Dtowny.version=0.103.2.0 -Dtowny.groupId=com.palmergames.bukkit.towny -Dtowny.artifactId=towny clean verify
       - name: Validate dependencies are server provided
         run: |
           if jar tf target/TownyDiscordChat-*.jar | grep -E '^github/scarsz/discordsrv/|^com/palmergames/bukkit/towny/|^net/dv8tion/jda/'; then

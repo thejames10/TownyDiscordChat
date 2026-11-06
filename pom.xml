@@ -14,6 +14,8 @@
     <!-- Legacy DiscordSRV JDA API is used directly; don't silently upgrade it. -->
     <discordsrv.version>1.24.0</discordsrv.version>
     <towny.version>0.97.5.0</towny.version>
+    <towny.groupId>com.github.TownyAdvanced</towny.groupId>
+    <towny.artifactId>Towny</towny.artifactId>
   </properties>
   <repositories>
     <repository>
@@ -27,6 +29,10 @@
     <repository>
       <id>scarsz-nexus</id>
       <url>https://nexus.scarsz.me/content/groups/public/</url>
+    </repository>
+    <repository>
+      <id>glaremasters-towny</id>
+      <url>https://repo.glaremasters.me/repository/towny/</url>
     </repository>
   </repositories>
   <dependencies>
@@ -43,8 +49,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>com.github.TownyAdvanced</groupId>
-      <artifactId>Towny</artifactId>
+      <groupId>${towny.groupId}</groupId>
+      <artifactId>${towny.artifactId}</artifactId>
       <version>${towny.version}</version>
       <scope>provided</scope>
       <!-- JDA is shaded by DiscordSRV, and Towny is provided by the server.

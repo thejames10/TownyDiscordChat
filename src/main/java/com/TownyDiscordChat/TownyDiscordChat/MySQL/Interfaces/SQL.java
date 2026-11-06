@@ -65,20 +65,22 @@ public class SQL {
                 ps.executeUpdate();
             } else if (!ignoreAlreadyExists) {
 
-                StringBuilder values = new StringBuilder();
-                int i = 1;
-                for (Map.Entry<String, String> value : ColNameValuePair.entrySet()) {
-                    if (i < ColNameValuePair.size()) {
-                        values.append(value.getKey()).append(" = '").append(value.getValue()).append("', ");
-                    } else {
-                        values.append(value.getKey()).append(" = '").append(value.getValue()).append("'");
-                    }
-                    i++;
+                // Legacy helper remains for older call sites: values must
+                // never be concatenated into an SQL statement.
+                StringBuilder assignments = new StringBuilder();
+                for (String column : ColNameValuePair.keySet()) {
+                    if (assignments.length() > 0) assignments.append(", ");
+                    assignments.append(column).append("=?");
                 }
-
-                PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("UPDATE " + TABLE + " SET "
-                        + values + " WHERE " + searchColName + " = '" + searchValue + "'");
-                ps.executeUpdate();
+                try (PreparedStatement ps = plugin.SQL.getConnection().prepareStatement(
+                        "UPDATE " + TABLE + " SET " + assignments + " WHERE "
+                        + searchColName + "=?")) {
+                    int parameter = 1;
+                    for (String value : ColNameValuePair.values())
+                        ps.setString(parameter++,value);
+                    ps.setString(parameter,searchValue);
+                    ps.executeUpdate();
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -157,12 +159,13 @@ public class SQL {
     public static List<String> getAllEntriesWhereEqual(String selectCol, String searchCol, String searchValue, String TABLE) {
         List<String> results = new ArrayList<>();
             try {
-                PreparedStatement ps = plugin.SQL.getConnection().prepareStatement("SELECT " + selectCol + " FROM " + TABLE + " WHERE " + searchCol + " = '" + searchValue + "'");
-
-                ResultSet resultSet = ps.executeQuery();
-
-                while (resultSet.next()) {
-                    results.add(resultSet.getString(selectCol));
+                try (PreparedStatement ps = plugin.SQL.getConnection().prepareStatement(
+                    "SELECT " + selectCol + " FROM " + TABLE + " WHERE " + searchCol + "=?")) {
+                    ps.setString(1,searchValue);
+                    try (ResultSet resultSet = ps.executeQuery()) {
+                        while (resultSet.next())
+                            results.add(resultSet.getString(selectCol));
+                    }
                 }
             } catch (SQLException e) {
                 e.printStackTrace();

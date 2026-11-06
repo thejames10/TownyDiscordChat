@@ -207,10 +207,25 @@ These snippets are examples, **not full replacement configuration files**.
 categories are reused and missing ones created. Nonzero legacy category IDs
 are verified for matching name/privacy before syncing.
 
-The legacy `messages.DiscordLogTextChannelId: 0` is also allowed.
-`log.Category.Name` and `log.Channel.Name` are retained for backward
-compatibility but the old Discord log-channel scheduler is **not active**
-in the SQL branch; queue/API diagnostics go to the server console.
+The legacy `messages.DiscordLogTextChannelId: 0` is also allowed, but its
+numeric ID is **ignored**. The new SQL activity logger uses
+`log.Enabled: true` (the default), `log.Category.Name` and
+`log.Channel.Name` to locate **one existing private Discord text channel**.
+For example, `MINECRAFT-STAFF` → `#townydiscordchat-logs`. The channel
+or its parent category must deny `@everyone` View Channel and the bot must
+be able to view/send messages in the channel. Nothing is auto-created or
+made public for logging. Look for `[DISCORD LOG] Sending changes...` at
+startup and `Discord activity log: enabled` in `/tdcqueue status`.
+
+The new logger posts a startup confirmation, confirmed Discord resource
+**creations/renames/deletions**, membership **grants/revocations**, and queue
+failures/admin warnings. Adopting an existing role, redundant no-ops,
+and periodic reconciliation do **not** send Discord messages, avoiding
+flooding on reinstall. All activity still appears in the Minecraft
+console with explicit `[QUEUE] CREATED`, `ADOPTED`, `RENAMED`,
+`DELETED`, `GRANTED`, `REVOKED`, `SKIPPED` and `FAILED` labels.
+Discord logging is best-effort (JDA async delivery), not a second durable
+queue; a failure to post is warned in console without stopping sync.
 DiscordSRV/JDA handles actual Discord rate-limit responses, while the
 durable SQLite or MySQL queue handles retries and job priority.
 

@@ -164,7 +164,9 @@ jobs:
 
   release:
     name: Publish v1.1.0 pre-release (10 JARs and 10 ZIPs)
-    if: github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release: TownyDiscordChat 1.1.0')
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      startsWith(github.event.head_commit.message, 'release: TownyDiscordChat 1.1.0')
     needs: [build, legacy-api-check, storage-migration, repository-audit]
     runs-on: ubuntu-latest
     permissions:

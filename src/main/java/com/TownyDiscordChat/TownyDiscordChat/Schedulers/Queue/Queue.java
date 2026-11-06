@@ -315,7 +315,8 @@ public final class Queue {
                 doneMember(intent);
                 return;
             }
-            String outcome=QueueMessages.member(intent.desired,member.getId(),
+            String outcome=QueueMessages.member(intent.desired,
+                    member.getEffectiveName()+" [member "+member.getId()+"]",
                     role.getName()+" [role "+role.getId()+"]",intent.id,intent.attempts);
             if (intent.desired) {
                 guild.addRoleToMember(member, role).queue(

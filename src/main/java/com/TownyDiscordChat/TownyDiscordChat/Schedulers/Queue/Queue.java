@@ -2,6 +2,7 @@ package com.TownyDiscordChat.TownyDiscordChat.Schedulers.Queue;
 
 import com.TownyDiscordChat.TownyDiscordChat.Core.TDCManager;
 import com.TownyDiscordChat.TownyDiscordChat.Main;
+import com.TownyDiscordChat.TownyDiscordChat.RoleSafety;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.StableEntityStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore.Job;
@@ -210,17 +211,19 @@ public final class Queue {
                 }
                 return;
             }
+            String permissionProblem=RoleSafety.problem(role);
+            if (permissionProblem != null) {
+                plugin.reportAdminWarning("Tracked role " + role.getId()
+                        + " cannot be changed automatically: " + permissionProblem);
+                failMember(intent, "Unsafe role; " + permissionProblem);
+                return;
+            }
             if (!intent.desired && owners.isEmpty()
-                    && (!role.getPermissions().isEmpty()
-                    || !(role.getName().startsWith("town-")
-                    || role.getName().startsWith("nation-")))) {
+                    && !(role.getName().startsWith("town-")
+                    || role.getName().startsWith("nation-"))) {
                 plugin.reportAdminWarning("Tracked role " + role.getId()
                         + " was repurposed. Refusing automated membership changes.");
                 failMember(intent,"Role was repurposed; manual review required");
-                return;
-            }
-            if (intent.desired && !role.getPermissions().isEmpty()) {
-                failMember(intent, "Refusing to grant guild permissions through TDC role " + role.getId());
                 return;
             }
             Member member = guild.getMemberById(intent.memberId);
@@ -301,6 +304,13 @@ public final class Queue {
                 return;
             }
             if (intent.desired) {
+                // A role can be edited while the async member lookup is running.
+                // Recheck immediately before submitting a privilege grant.
+                String permissionProblem=RoleSafety.problem(role);
+                if (permissionProblem != null) {
+                    failMember(intent,"Unsafe role at grant dispatch: " + permissionProblem);
+                    return;
+                }
                 guild.addRoleToMember(member, role).queue(
                         success -> doneMember(intent),
                         failure -> failMember(intent, failure));
@@ -588,7 +598,7 @@ public final class Queue {
             final Set<String> owned = new HashSet<String>();
             for (String recordedId : recordedIds) {
                 Role role = guild.getRoleById(recordedId);
-                if (role != null && role.getPermissions().isEmpty()
+                if (role != null && RoleSafety.safeForMembership(role)
                         && (role.getName().startsWith("town-")
                         || role.getName().startsWith("nation-")))
                     owned.add(recordedId);
@@ -600,7 +610,7 @@ public final class Queue {
             for (Town town : TownyUniverse.getInstance().getTowns()) townNames.add(town.getName());
             for (Nation nation : TownyUniverse.getInstance().getNations()) nationNames.add(nation.getName());
             for (Role role : guild.getRoles()) {
-                if (!role.getPermissions().isEmpty()) continue;
+                if (!RoleSafety.safeForMembership(role)) continue;
                 String name = role.getName();
                 if (((name.startsWith("town-") && townNames.contains(name.substring(5)))
                         || (name.startsWith("nation-") && nationNames.contains(name.substring(7))))
@@ -675,7 +685,7 @@ public final class Queue {
             if ("ROLE".equals(component)) {
                 Role role=guild.getRoleById(id);
                 if (role==null) { discard(job); return; }
-                if (!role.getPermissions().isEmpty() || !role.getName().startsWith(prefix)) {
+                if (!RoleSafety.safeForMembership(role) || !role.getName().startsWith(prefix)) {
                     fail(job,"Refusing unsafe role rename: " + id); return;
                 }
                 String desired=prefix+entity.name;
@@ -775,7 +785,7 @@ public final class Queue {
                 Role role = guild.getRoleById(mappedId);
                 if (role == null) { deleted(job, mappedId); return; }
                 String expected = (town ? "town-" : "nation-") + job.name;
-                if (!role.getPermissions().isEmpty() || !role.getName().equalsIgnoreCase(expected)) {
+                if (!RoleSafety.safeForMembership(role) || !role.getName().equalsIgnoreCase(expected)) {
                     fail(job, "Role " + mappedId + " repurposed/mismatched; refusing automatic deletion");
                     return;
                 }
@@ -869,7 +879,7 @@ public final class Queue {
             final String expectedNationUuid = nationUuid;
             final Map<String,String> safeRoleNamesById = new HashMap<String,String>();
             for (Role candidate : guild.getRoles()) {
-                if (candidate.getPermissions().isEmpty())
+                if (RoleSafety.safeForMembership(candidate))
                     safeRoleNamesById.put(candidate.getId(),candidate.getName());
             }
             final Set<String> actual = new HashSet<String>();
@@ -1046,9 +1056,10 @@ public final class Queue {
                     + "; manual administrator mapping is required");
         if (roles.isEmpty()) return null;
         Role role = roles.get(0);
-        if (!role.getPermissions().isEmpty())
+        String problem=RoleSafety.problem(role);
+        if (problem != null)
             throw new IllegalStateException("Discord role " + name
-                    + " has guild-level permissions; refusing to adopt");
+                    + " is unsafe to adopt: " + problem);
         return role;
     }
 

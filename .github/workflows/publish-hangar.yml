@@ -30,7 +30,7 @@ concurrency:
 
 jobs:
   publish:
-    name: Upload the Minecraft 26.3 build
+    name: Publish all supported Minecraft builds
     if: >-
       github.repository == 'thejames10/TownyDiscordChat' &&
       (github.event_name != 'workflow_run' ||
@@ -82,7 +82,12 @@ jobs:
         run: |
           set -euo pipefail
           gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets \
-            --jq '.assets[].name' | grep -Fxq 'TownyDiscordChat-MC-26.3.jar'
+            --jq '.assets[].name' > release-assets.txt
+          for mc in 26.3 26.2 26.1.2 1.21.11 1.21.10 1.21.8 1.21.4 1.21.1 1.20.6 1.20.1 1.19.4 1.18.2 1.17.1 1.16.5; do
+            grep -Fxq "TownyDiscordChat-MC-$mc.jar" release-assets.txt || {
+              echo "::error::Missing release artifact: TownyDiscordChat-MC-$mc.jar"; exit 1;
+            }
+          done
           gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json body --jq '.body' > hangar-changelog.md
           if ! grep -q '[^[:space:]]' hangar-changelog.md; then
             printf 'See GitHub release: https://github.com/%s/releases/tag/%s\n' "$GITHUB_REPOSITORY" "$RELEASE_TAG" > hangar-changelog.md
@@ -115,34 +120,61 @@ jobs:
           token=$(jq -er '.token' auth-response.json)
           echo "::add-mask::$token"
           rm -f auth-response.json
-          download_url="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/TownyDiscordChat-MC-26.3.jar"
-          jq -n \
-            --arg version "$RELEASE_VERSION" \
-            --arg channel "$RELEASE_CHANNEL" \
-            --rawfile description hangar-changelog.md \
-            --arg url "$download_url" \
-            '{
-              version: $version,
-              channel: $channel,
-              description: $description,
-              files: [{platforms: ["PAPER"], url: true, externalUrl: $url}],
-              platformDependencies: {PAPER: ["26.3"]},
-              pluginDependencies: {PAPER: [
-                {name: "Towny", required: true, externalUrl: "https://github.com/TownyAdvanced/Towny"},
-                {name: "DiscordSRV", required: true, externalUrl: "https://github.com/DiscordSRV/DiscordSRV"}
-              ]}
-            }' > hangar-upload.json
-          jq -e '.platformDependencies.PAPER == ["26.3"] and (.files | length) == 1' hangar-upload.json > /dev/null
-          status=$(curl --silent --show-error --location --output upload-response.json \
-            --write-out '%{http_code}' --request POST \
-            --header "Authorization: $token" \
-            --header 'User-Agent: TownyDiscordChat-GitHub-Actions' \
-            --form 'versionUpload=@hangar-upload.json;type=application/json' \
-            "$base/projects/TownyDiscordChat/upload")
-          if [[ "$status" != "200" && "$status" != "201" ]]; then
-            echo "::error::Hangar rejected release $RELEASE_VERSION (HTTP $status)."
-            jq -r 'if type == "object" then (.message // .error // tostring) else tostring end' upload-response.json || cat upload-response.json
-            exit 1
-          fi
-          echo "Hangar version published:"
-          jq -r '.url // tostring' upload-response.json
+          # One Paper artifact is permitted per Hangar version. Publish distinct
+          # version labels so each entry advertises exactly one compatible JAR.
+          # The 26.3 build retains the canonical plugin version.
+          failed=0
+          for mc in 26.3 26.2 26.1.2 1.21.11 1.21.10 1.21.8 1.21.4 1.21.1 1.20.6 1.20.1 1.19.4 1.18.2 1.17.1 1.16.5; do
+            if [[ "$mc" == "26.3" ]]; then
+              hangar_version="$RELEASE_VERSION"
+            else
+              hangar_version="$RELEASE_VERSION-mc-$mc"
+            fi
+            # Existing versions are immutable: don't attempt to overwrite them.
+            check_status=$(curl --silent --show-error --output /dev/null \
+              --write-out '%{http_code}' \
+              --header 'User-Agent: TownyDiscordChat-GitHub-Actions' \
+              "$base/projects/TownyDiscordChat/versions/$hangar_version")
+            if [[ "$check_status" == "200" ]]; then
+              echo "Skipping existing Hangar version $hangar_version"
+              continue
+            fi
+            if [[ "$check_status" != "404" ]]; then
+              echo "::error::Cannot verify $hangar_version on Hangar (HTTP $check_status)"
+              exit 1
+            fi
+            download_url="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/TownyDiscordChat-MC-$mc.jar"
+            jq -n \
+              --arg version "$hangar_version" \
+              --arg channel "$RELEASE_CHANNEL" \
+              --arg minecraft "$mc" \
+              --rawfile description hangar-changelog.md \
+              --arg url "$download_url" \
+              '{
+                version: $version,
+                channel: $channel,
+                description: ("Minecraft " + $minecraft + " specific build. Download only for this Minecraft version.\\n\\n" + $description),
+                files: [{platforms: ["PAPER"], url: true, externalUrl: $url}],
+                platformDependencies: {PAPER: [$minecraft]},
+                pluginDependencies: {PAPER: [
+                  {name: "Towny", required: true, externalUrl: "https://github.com/TownyAdvanced/Towny"},
+                  {name: "DiscordSRV", required: true, externalUrl: "https://github.com/DiscordSRV/DiscordSRV"}
+                ]}
+              }' > hangar-upload.json
+            jq -e --arg mc "$mc" '.platformDependencies.PAPER == [$mc] and (.files | length) == 1' hangar-upload.json > /dev/null
+            status=$(curl --silent --show-error --output upload-response.json \
+              --write-out '%{http_code}' --request POST \
+              --header "Authorization: $token" \
+              --header 'User-Agent: TownyDiscordChat-GitHub-Actions' \
+              --form 'versionUpload=@hangar-upload.json;type=application/json' \
+              "$base/projects/TownyDiscordChat/upload")
+            if [[ "$status" != "200" && "$status" != "201" ]]; then
+              echo "::error::Hangar rejected $hangar_version (Minecraft $mc, HTTP $status)"
+              jq -r 'if type == "object" then (.message // .error // tostring) else tostring end' upload-response.json || cat upload-response.json
+              failed=1
+              break
+            fi
+            echo "Published $hangar_version for Minecraft $mc:"
+            jq -r '.url // tostring' upload-response.json
+          done
+          exit "$failed"

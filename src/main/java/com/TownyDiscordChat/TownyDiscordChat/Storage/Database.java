@@ -87,7 +87,15 @@ public final class Database {
         File folder=file.getParentFile();
         if (folder!=null && !folder.isDirectory() && !folder.mkdirs())
             throw new SQLException("Cannot create SQLite data directory: "+folder);
-        Connection raw=DriverManager.getConnection("jdbc:sqlite:"+file.getAbsolutePath());
+        // Queue claim/ack paths read and then write in the same transaction.
+        // With WAL + DEFERRED two workers can read the same snapshot and one
+        // fails to promote its read transaction with SQLITE_BUSY_SNAPSHOT.
+        // BEGIN IMMEDIATE takes the writer reservation before the first read;
+        // the existing busy timeout lets other workers wait their turn.
+        org.sqlite.SQLiteConfig settings=new org.sqlite.SQLiteConfig();
+        settings.setTransactionMode(org.sqlite.SQLiteConfig.TransactionMode.IMMEDIATE);
+        Connection raw=DriverManager.getConnection(
+                "jdbc:sqlite:"+file.getAbsolutePath(),settings.toProperties());
         try (Statement statement=raw.createStatement()) {
             statement.execute("PRAGMA busy_timeout=15000");
             statement.execute("PRAGMA journal_mode=WAL");

@@ -49,12 +49,18 @@ public class TDCSQL implements CommandExecutor {
                     } else {
                         Map<String, Integer> counts = jobs.statusCounts();
                         Map<String,Integer> members = new MemberIntentStore(plugin).statusCounts();
-                        message = "Resource jobs: pending=" + counts.getOrDefault("PENDING", 0)
+                        message = "[TDC] SQL synchronization: "
+                                + (plugin.isGuildValidated() ? "ACTIVE" : "WAITING for Discord preflight")
+                                + "\nResources: pending=" + counts.getOrDefault("PENDING", 0)
                                 + ", running=" + counts.getOrDefault("RUNNING", 0)
                                 + ", dead=" + counts.getOrDefault("DEAD", 0)
-                                + " | Member intents: pending=" + members.getOrDefault("PENDING",0)
+                                + "\nMembership: pending=" + members.getOrDefault("PENDING",0)
                                 + ", running=" + members.getOrDefault("RUNNING",0)
-                                + ", dead=" + members.getOrDefault("DEAD",0);
+                                + ", dead=" + members.getOrDefault("DEAD",0)
+                                + "\nDiscord activity log: " + (plugin.activityLog==null
+                                        ? "not initialized" : plugin.activityLog.status())
+                                + "\nCounts show outstanding work, not historical changes. "
+                                + "See console/[TDC] log channel for confirmed actions.";
                     }
                 } catch (SQLException e) {
                     plugin.getLogger().warning("Queue admin request failed: " + e.getMessage());
@@ -68,6 +74,8 @@ public class TDCSQL implements CommandExecutor {
     }
 
     private static void sendOnMain(Main plugin, CommandSender sender, String message) {
-        if (plugin.isEnabled()) Bukkit.getScheduler().runTask(plugin, () -> sender.sendMessage(message));
+        if (plugin.isEnabled()) Bukkit.getScheduler().runTask(plugin, () -> {
+            for (String line:message.split("\\n")) sender.sendMessage(line);
+        });
     }
 }

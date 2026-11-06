@@ -84,6 +84,13 @@ Manage Roles, Manage Channels, private category permissions, and the
 bot's role hierarchy above current town/nation roles. If incompatible it starts in an inert
 safe mode and notifies the console and joining admins.
 
+## Legacy logging settings
+
+`log.Category.Name`, `log.Channel.Name`, and
+`messages.DiscordLogTextChannelId` remain in the config for upgrade
+compatibility. The old Discord log-channel scheduler is intentionally
+inactive; critical API/queue errors are printed to the Minecraft console.
+
 ## Queuing, migration and security
 
 SQLite or MySQL stores the latest desired membership and two independent queues:

@@ -150,6 +150,9 @@ categories are reused and missing ones created. Nonzero legacy category IDs
 are verified for matching name/privacy before syncing.
 
 The legacy `messages.DiscordLogTextChannelId: 0` is also allowed.
+`log.Category.Name` and `log.Channel.Name` are retained for backward
+compatibility but the old Discord log-channel scheduler is **not active**
+in the SQL branch; queue/API diagnostics go to the server console.
 DiscordSRV/JDA handles actual Discord rate-limit responses, while the
 durable SQLite or MySQL queue handles retries and job priority.
 

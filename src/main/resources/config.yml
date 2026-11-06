@@ -59,6 +59,9 @@ category:
   Admin:
     Name: "MINECRAFT-STAFF"
 
+# Legacy Discord log-channel names retained for configuration upgrades.
+# The SQL branch reports queue/API failures in the Minecraft server console;
+# the old Discord logging scheduler is deliberately not active.
 log:
   Category:
     Name: "MINECRAFT-STAFF"

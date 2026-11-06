@@ -433,6 +433,11 @@ public final class Reconciler {
                         + ": " + conflict.getMessage());
                 continue; // Other towns and access revocations still reconcile.
             }
+            if (!entity.name.equals(name)) {
+                // A previous-name resource job is still in flight. Avoid
+                // issuing a second create until that callback finishes.
+                continue;
+            }
 
             // In-place rename by immutable ID. Missing Discord resources are
             // recreated; existing renamed resources are NEVER duplicated.

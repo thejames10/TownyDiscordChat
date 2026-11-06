@@ -106,6 +106,12 @@ public final class StableEntityStore {
                 }
 
                 boolean renamed = !before.name.equals(name);
+                if (renamed && hasRunningCreates(c,kind,before.name)) {
+                    // Keep legacy names intact while a CREATE callback may
+                    // still persist under the original name.
+                    c.commit();
+                    return before;
+                }
                 if (renamed) {
                     if (nameClaimed(c,guild,kind,name,uuid))
                         throw new SQLException("Towny name " + name + " already bound to a different UUID");
@@ -259,6 +265,20 @@ public final class StableEntityStore {
             ps.setString(1,type);
             ps.setString(2,name);
             ps.executeUpdate();
+        }
+    }
+
+    private boolean hasRunningCreates(Connection c,String kind,String name) throws SQLException {
+        try (PreparedStatement ps=c.prepareStatement(
+                "SELECT COUNT(*) FROM tdc_discord_jobs WHERE status='RUNNING' "
+                + "AND (job_key=? OR job_key=? OR job_key=?)")) {
+            ps.setString(1,kind+"_ROLE:"+name);
+            ps.setString(2,kind+"_TEXT:"+name);
+            ps.setString(3,kind+"_VOICE:"+name);
+            try (ResultSet rs=ps.executeQuery()) {
+                rs.next();
+                return rs.getInt(1)>0;
+            }
         }
     }
 

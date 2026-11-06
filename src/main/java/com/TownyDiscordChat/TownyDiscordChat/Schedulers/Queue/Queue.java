@@ -50,6 +50,8 @@ public final class Queue {
     private final AtomicBoolean memberBusy = new AtomicBoolean(false);
     private volatile Job current;
     private volatile Intent currentIntent;
+    private volatile boolean warnedResourceLease;
+    private volatile boolean warnedMemberLease;
 
     public Queue(long startDelaySeconds, long intervalDelaySeconds, Main plugin) {
         this.plugin = plugin;
@@ -75,9 +77,15 @@ public final class Queue {
     private void tickMembers() {
         Intent active = currentIntent;
         if (active != null && System.currentTimeMillis() >= active.leaseUntil) {
-            plugin.getLogger().severe("Membership REST operation lease expired: " + active);
-            currentIntent = null;
-            memberBusy.set(false);
+            // Never overlap two REST calls for the same member: the callback
+            // may still complete well after the database lease expires.
+            if (!warnedMemberLease) {
+                warnedMemberLease = true;
+                plugin.reportAdminWarning("Membership REST operation exceeded its lease. "
+                        + "Membership processing remains paused until its callback "
+                        + "finishes or the plugin restarts.");
+            }
+            return;
         }
         if (!memberBusy.compareAndSet(false, true)) return;
         try {
@@ -98,9 +106,15 @@ public final class Queue {
     private void tickResources() {
         Job active = current;
         if (active != null && System.currentTimeMillis() >= active.leaseUntil) {
-            plugin.getLogger().warning("Resource REST operation lease expired: " + active);
-            current = null;
-            resourceBusy.set(false);
+            // An unresolved create can succeed after its nominal lease:
+            // don't create a duplicate object from this process.
+            if (!warnedResourceLease) {
+                warnedResourceLease = true;
+                plugin.reportAdminWarning("Resource REST operation exceeded its lease. "
+                        + "Resource processing remains paused until its callback "
+                        + "finishes or the plugin restarts. Review Discord state.");
+            }
+            return;
         }
         if (!resourceBusy.compareAndSet(false, true)) return;
         try {
@@ -299,6 +313,7 @@ public final class Queue {
             } finally {
                 if (currentIntent == intent) {
                     currentIntent = null;
+                    warnedMemberLease = false;
                     memberBusy.set(false);
                 }
             }
@@ -460,6 +475,7 @@ public final class Queue {
                     } finally {
                         if (current == job) {
                             current = null;
+                            warnedResourceLease = false;
                             resourceBusy.set(false);
                         }
                     }
@@ -576,12 +592,9 @@ public final class Queue {
             if (!town && !nation) { fail(job, "Unknown deletion task"); return; }
 
             // A deleted name may have been recreated or a rename rolled back.
-            if (town && TownyUniverse.getInstance().getTown(job.name) != null) {
-                discard(job); return;
-            }
-            if (nation && TownyUniverse.getInstance().getNation(job.name) != null) {
-                discard(job); return;
-            }
+            // New Towny UUIDs may reuse the same name. Deletion is governed
+            // by the stable UUID that owns the recorded remote ID, not by
+            // whether a different town currently shares its old name.
             if (mappedId == null || !mappedId.matches("[0-9]{1,24}")) {
                 discard(job); // No confirmed SQL ownership mapping.
                 return;
@@ -760,6 +773,7 @@ public final class Queue {
                 } finally {
                     if (current == job) {
                         current = null;
+                        warnedResourceLease = false;
                         resourceBusy.set(false);
                     }
                 }
@@ -902,6 +916,7 @@ public final class Queue {
                     // A callback may arrive after a newer attempt has started.
                     if (current == job) {
                         current = null;
+                        warnedResourceLease = false;
                         resourceBusy.set(false);
                     }
                 }

@@ -239,19 +239,32 @@ Towny UUIDs identify towns/nations even when their names change. Existing Discor
 
 ### Late Discord responses and restart recovery
 
-If a Discord REST operation exceeds its lease, TownyDiscordChat **does not**
-start a second overlapping request in that lane. It warns Minecraft admins
-and pauses that lane until the existing callback finishes or the plugin
-restarts; the other queue lane continues independently. After a restart,
-expired leases become eligible again and the worker first checks known
-Discord roles/channels for safe adoption. Unsafe, publicly visible or
-ambiguous same-name channels are **not duplicated**: fix them manually
-and run `/tdcqueue retry-dead` if needed. A deleted town's old resource
-is identified by its stable Towny UUID, even when a new town reuses its name.
+A Discord REST operation can exceed the configured SQL lease even while
+the original request is still in progress. Instead of reissuing that
+request, TownyDiscordChat **quarantines its exact job ID**. Other queued
+operations — including urgent member revocations and verified resource
+deletions — can continue through the independent dispatcher, while the
+quarantined ID remains ineligible for reclaim in the same process.
 
-Do not run two TownyDiscordChat installations against the same guild
-on independent databases. Record any persistent administrator warning
-before restarting for diagnosis.
+Concurrency is deliberately bounded to at most **16 unresolved member
+operations** or **4 unresolved resource operations**. At the limit, the
+affected queue stops accepting additional work and warns admins to
+inspect DiscordSRV/Discord before restarting. JDA still manages all
+Discord HTTP rate limits. The original callback can eventually clear
+the quarantine and persist its result.
+
+On restart, unfinished callbacks from the previous process cannot
+execute, so expired DB leases are eligible for recovery. The worker
+first checks for uniquely identifiable, safe Discord resources before
+trying to create them again. Ambiguous or publicly accessible channels
+are never adopted or duplicated automatically. Stable Towny UUIDs
+protect renamed and name-reused entities, and incomplete legacy SQL
+mappings are repaired conservatively.
+
+**No automatic system can guarantee exactly-once REST side effects
+across a crash.** Resolve any reported ambiguous resource manually,
+then use `/tdcqueue retry-dead` when appropriate. Never operate two
+plugin installations against the same guild using independent databases.
 
 ## Troubleshooting
 

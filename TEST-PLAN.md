@@ -137,9 +137,16 @@ of any prior TownyDiscordChat tables before migration.
 ## Delayed Discord callbacks, reuse and duplicate prevention
 
 - Artificially delay a role/channel creation response past
-  `queue.leaseSeconds`. Confirm the resource lane pauses and warns
-  admins instead of dispatching another create, while membership
-  revocations in the other lane continue.
+  `queue.leaseSeconds`. Verify that only its **job ID** is quarantined:
+  an unrelated deletion is still claimed, but the same expired creation
+  is not dispatched a second time. Confirm admin warnings appear.
+- Delay a role grant for one player past its lease, then kick a different
+  player. Confirm the second player's revoke proceeds before the first
+  player's hung grant resolves; the original grant ID is not reclaimed.
+- Force repeated callbacks to remain unresolved until 16 membership or
+  4 resource jobs are quarantined. Confirm the corresponding lane
+  stops dispatching new work and warns the operator rather than
+  increasing concurrency indefinitely.
 - Let the first API callback finish late. Confirm the original Discord
   snowflake is persisted and that normal queue activity resumes.
 - Restart after a request is known to have completed remotely but
@@ -157,6 +164,11 @@ of any prior TownyDiscordChat tables before migration.
 - Delete a Towny object, then create a different UUID using the
   old name. Confirm the old UUID's resources are cleaned up before
   granting the new entity's roles; no access passes to the new UUID.
+- Delete a town while its last CREATE is running and there is no
+  saved Discord ID yet. Verify the deleted UUID record is retained until
+  the callback completes, then the orphan is adopted by verified ID
+  and scheduled for deletion. A newly created town with the same name
+  must never receive the old role.
 - Remove a legacy resource-mapping row while retaining its stable
   UUID and Discord snowflake. Confirm the resource can be cleaned
   up using that stable ID without adopting another guild object.

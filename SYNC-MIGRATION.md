@@ -40,37 +40,43 @@ mapping is left untouched for manual review rather than deleted.
 
 ## REST callback and ownership race protection
 
-A Discord create or membership request can outlive the configured SQL
-lease. Rather than immediately reopening the worker lane and dispatching
-a duplicate request, the same process retains the in-flight slot and
-alerts administrators when the lease expires. The lane resumes on the
-original callback, or after a restart when no callback can survive.
-On restart an expired database lease is retried **only after checking
-Discord's currently visible roles and channels**. A unique, correctly
-private resource is reused. Ambiguous candidates or resources with
-unexpected role/privacy overrides halt automatic adoption and require
-an operator to resolve the conflict; the worker will not silently
-make a second similarly-named private channel.
+Discord CREATE, grant and revoke callbacks can outlive the configured
+SQL lease. The dispatcher **quarantines the exact in-flight job ID**
+instead of allowing another worker attempt to claim it. Other pending
+jobs remain eligible, so a hung addition does not starve unrelated
+revocations, and resource deletion work can overtake slower creations.
 
-For resource CREATE jobs the worker checks that the immutable Towny
-UUID recorded in SQL still owns the requested mutable name. A rename
-does not change the historical SQL name while an old-name CREATE job
-is RUNNING; once that job completes, the next reconcile moves the
-mapping and renames the Discord role/channel **in place**.
-Deletion of a replaced town/nation is allowed to finish when a
-*different UUID* reuses the old name, but will never delete a resource
-still owned by a live UUID. If a legacy name table is missing but
-the stable UUID record remains, deletion uses the unique stable Discord
-snowflake. Conflicting identity rows stop cleanup for manual review.
+The number of unresolved callbacks is capped at 16 membership requests
+and 4 resource requests. Hitting the cap pauses new work in that lane
+and raises an administrator warning; this avoids uncontrolled REST
+concurrency during a sustained outage. Individual callbacks remove
+their IDs from the quarantine after database finalization. JDA's
+rate-limit handler still governs every Discord HTTP request.
 
-No Discord REST operation is guaranteed to have exactly-once side effects.
-When Discord acknowledges a create but the application loses its
-callback, a startup rescan and conservative conflict handling minimize
-duplicates, but manual review may still be needed in an ambiguous guild.
+After a process restart, expired SQL leases become eligible for normal
+recovery. The worker checks Discord's visible state and adopts only
+unique resources with verified role/category privacy. Multiple
+same-name channels or unsafe permission overrides require manual
+resolution rather than automatic duplicate creation.
 
-The legacy direct-event REST executors, old pollers and Tasks package
-have been removed. Their *database tables* and historical migrations
-remain supported.
+CREATE jobs verify that the live Towny UUID matches the one recorded
+for the requested mutable name. If a town/nation renames during an
+old-name create, the stable UUID mapping retains its old name until
+the original callback finishes. If the Towny entity is deleted, an
+identity with a running create is **not retired**; a recovered remote
+resource is recorded against that deleted UUID and queued for cleanup.
+A newly created entity that reuses the name cannot inherit the older
+UUID's role or channel. Verified stable IDs also permit cleanup even
+if the legacy name table has been lost.
+
+The old direct-event REST handlers, polling schedulers and Tasks
+package have been removed, while all historical SQL mapping tables
+and migration code remain supported.
+
+Discord REST does not provide exactly-once side effects across a
+network disconnect or crash. Startup discovery and conservative
+identity/privacy checks minimize the risk, but ambiguous objects
+may still need administrator review.
 
 ## Storage backends and offline migration
 

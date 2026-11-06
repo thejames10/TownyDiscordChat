@@ -4,6 +4,28 @@ Perform all tests against an **isolated Discord guild**, a throwaway
 Paper/Purpur server, and a disposable MySQL schema. Preserve a backup
 of any prior TownyDiscordChat tables before migration.
 
+## Configuration and player onboarding
+
+- Leave all four `town/nation.*CategoryId` entries at `0`; verify
+  that existing private categories are adopted by name, or new ones
+  are created if absent. Do not fill IDs manually.
+- Set an invalid numeric ID, an incorrect category name, or a public
+  category. Confirm the Discord preflight blocks mutations and tells
+  admins what to correct.
+- Enter malformed YAML, placeholder MySQL credentials, invalid
+  role colors and bad queue bounds in separate test runs. Verify
+  safe mode instead of stack traces and no SQL queue activity.
+- Join while **not in a town** with no Discord link; confirm no
+  linking prompt is displayed.
+- Join a town while unlinked; confirm one reminder and then cooldown
+  suppression for repeated joins.
+- Run `/tdc status` and `/tdc link`. Verify the latter invokes
+  DiscordSRV's normal linking flow (no TDC-owned codes); complete
+  linking and verify the status changes and reconciliation is queued.
+- Test `onboarding.enabled: false` and `remindOnTownJoin: false`.
+- Check an admin joining during config safe mode sees an actionable
+  message without repeated spam.
+
 ## Startup / version checks
 
 - Install Towny + DiscordSRV supported for the selected Minecraft server.

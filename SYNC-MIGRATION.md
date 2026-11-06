@@ -97,6 +97,23 @@ If the privileged intent is disabled, the job fails without altering
 unrelated Discord resources and an actionable warning goes to
 console and administrators. Targeted audits remain operational.
 
+## Startup validation and DiscordSRV onboarding
+
+The preflight checks YAML, MySQL credentials, role color formats,
+category names/legacy ID hints, queue intervals and date/time
+patterns before starting SQL. When the guild is connected, it
+validates private category candidates and bot permissions before
+enabling the queue. Legacy category IDs of `0` are `auto`; the
+reconciler uses group names, not a magic ID. Old numeric IDs are
+checked as safety hints.
+
+DiscordSRV alone generates/consumes link verification codes.
+TownyDiscordChat exposes `/tdc link` as a delegate and
+`/tdc status` as a contextual view. Join and town-join reminders
+require the player to actually belong to a town and to have
+no DiscordSRV-linked account; a configurable cooldown limits
+repeated prompts. Link events request a reconciled final state.
+
 ## Compatibility and limitations
 
 Both the legacy (DiscordSRV 1.24.0 / Towny 0.97.5.0)

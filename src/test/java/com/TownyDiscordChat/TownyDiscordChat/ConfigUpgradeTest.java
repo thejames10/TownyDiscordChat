@@ -31,6 +31,24 @@ class ConfigUpgradeTest {
         Files.write(data.resolve("config.yml.bak"),yaml.getBytes(StandardCharsets.UTF_8));
     }
 
+    @Test void windowsCrlfTemplateMigratesWithoutLosingCommentsOrLineEndings() throws Exception {
+        backup("messages:\n  Prefix: '&2Windows'\ntown:\n  RoleCreateColorCode: '0xffaabb'\n");
+        String crlfDefaults=defaults().replace("\r\n","\n").replace("\n","\r\n");
+        ConfigUpgrade.Result result=ConfigUpgrade.migrateIfNeeded(data.toFile(),crlfDefaults);
+        assertTrue(result.migrated);
+        assertTrue(result.copied.contains("messages.Prefix"));
+        assertTrue(result.copied.contains("town.RoleCreateColorCode"));
+        String current=new String(Files.readAllBytes(data.resolve("config.yml")),
+                StandardCharsets.UTF_8);
+        assertTrue(current.contains("# Storage options:\r\n"),
+                "The current config comments and CRLF line endings must survive migration");
+        assertFalse(current.replace("\r\n","").contains("\n"),
+                "Migration must not leave mixed line endings");
+        YamlConfiguration merged=new YamlConfiguration();
+        merged.load(data.resolve("config.yml").toFile());
+        assertEquals("&2Windows",merged.getString("messages.Prefix"));
+        assertEquals("0xffaabb",merged.getString("town.RoleCreateColorCode"));
+    }
     @Test void freshBackupMigratesRecognizedValuesWithNewDefaultsAndComments() throws Exception {
         String old=String.join("\n",
                 "SQL:",

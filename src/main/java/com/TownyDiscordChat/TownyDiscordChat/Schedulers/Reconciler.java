@@ -71,6 +71,8 @@ public final class Reconciler {
         final Set<String> desiredPairs = new HashSet<String>();
         final Set<String> cachedPairs = new HashSet<String>();
         final Set<String> linkedMembers = new HashSet<String>();
+        final Map<String,String> expectedTownByMember = new HashMap<String,String>();
+        final Map<String,String> expectedNationByMember = new HashMap<String,String>();
         final Set<String> cachedMembers = new HashSet<String>();
         final Set<String> blockedRoleIds = new HashSet<String>();
         int neededTownChannels, neededNationChannels;
@@ -246,9 +248,9 @@ public final class Reconciler {
             try {
                 Town town = resident.getTown();
                 if (town != null) {
-                    addExpected(state, memberId, "town-" + town.getName());
-                    if (town.hasNation()) addExpected(state, memberId,
-                            "nation-" + town.getNation().getName());
+                    state.expectedTownByMember.put(memberId,town.getUUID().toString());
+                    if (town.hasNation()) state.expectedNationByMember.put(memberId,
+                            town.getNation().getUUID().toString());
                 }
             } catch (NotRegisteredException e) {
                 plugin.getLogger().warning("Towny resident changed during Discord audit: " + uuid);
@@ -322,6 +324,27 @@ public final class Reconciler {
         if (plugin.getConfig().getBoolean("queue.fullAudit.enabled",true)) {
             resources.enqueueFullAuditIfDue(s.guildId,
                     plugin.getConfig().getLong("queue.fullAudit.intervalSeconds",21600L));
+        }
+
+        // Resolve expected memberships by IMMUTABLE Towny UUID, not role
+        // names. During an in-place rename Discord still has the OLD name,
+        // but current residents must retain their existing role ID.
+        s.desiredPairs.clear();
+        for (Map.Entry<String,String> member : s.expectedTownByMember.entrySet()) {
+            StableEntityStore.Entity entity=stable.find(s.guildId,"TOWN",member.getValue());
+            if (entity != null && entity.roleId != null) {
+                String remoteName=s.safeRoleNamesById.get(entity.roleId);
+                if (remoteName != null && remoteName.startsWith("town-"))
+                    s.desiredPairs.add(pair(member.getKey(),entity.roleId));
+            }
+        }
+        for (Map.Entry<String,String> member : s.expectedNationByMember.entrySet()) {
+            StableEntityStore.Entity entity=stable.find(s.guildId,"NATION",member.getValue());
+            if (entity != null && entity.roleId != null) {
+                String remoteName=s.safeRoleNamesById.get(entity.roleId);
+                if (remoteName != null && remoteName.startsWith("nation-"))
+                    s.desiredPairs.add(pair(member.getKey(),entity.roleId));
+            }
         }
 
         // A newly created town must never inherit a previous town's role.

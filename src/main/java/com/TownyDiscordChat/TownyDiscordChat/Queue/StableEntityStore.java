@@ -206,6 +206,26 @@ public final class StableEntityStore {
     }
 
     /**
+     * A CREATE job must belong to the live Towny UUID, not just a mutable
+     * name which could have been reused by a new town after a deletion.
+     */
+    public java.util.Set<String> ownersOfName(String guild, String kind, String name)
+            throws SQLException {
+        java.util.Set<String> owners = new java.util.HashSet<String>();
+        try (Connection c=jobs.connect(); PreparedStatement ps=c.prepareStatement(
+                "SELECT towny_uuid FROM " + TABLE
+                + " WHERE guild_id=? AND kind=? AND last_name=?")) {
+            ps.setString(1,guild);
+            ps.setString(2,kind);
+            ps.setString(3,name);
+            try (ResultSet rs=ps.executeQuery()) {
+                while (rs.next()) owners.add(rs.getString(1));
+            }
+        }
+        return owners;
+    }
+
+    /**
      * A recorded Discord ID is evidence that a pending cleanup may actually
      * target a renamed entity. Abort deletion if a still-live UUID owns it.
      */

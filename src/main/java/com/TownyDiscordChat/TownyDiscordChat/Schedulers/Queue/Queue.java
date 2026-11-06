@@ -134,8 +134,17 @@ public final class Queue {
                     : null;
             final Set<String> auditIds = "AUDIT_GUILD".equals(job.kind)
                     ? mappedRolesForAudit() : Collections.<String>emptySet();
+            // Check immutable ownership before processing a named resource.
+            // A different UUID may have acquired the same name after deletion.
+            final Set<String> nameOwners = (guild != null && !job.kind.startsWith("DELETE_")
+                    && !job.kind.startsWith("RENAME_")
+                    && (job.kind.startsWith("TOWN_") || job.kind.startsWith("NATION_"))
+                    && !job.kind.endsWith("CATEGORY"))
+                    ? stable.ownersOfName(guild.getId(),
+                            job.kind.startsWith("TOWN_") ? "TOWN" : "NATION",job.name)
+                    : Collections.<String>emptySet();
             Bukkit.getScheduler().runTask(plugin, () -> dispatch(job, categoryIds, mappedId,
-                    stableOwners,identity,auditIds));
+                    stableOwners,identity,auditIds,nameOwners));
         } catch (Exception e) {
             plugin.getLogger().warning("Could not claim resource job: " + e.getMessage());
             // SQL lease safely recovers a claim if the callback never started.
@@ -322,7 +331,7 @@ public final class Queue {
 
     private void dispatch(final Job job, Set<String> categoryIds, String mappedId,
                           Set<String> stableOwners, StableEntityStore.Entity identity,
-                          Set<String> auditIds) {
+                          Set<String> auditIds, Set<String> nameOwners) {
         try {
             Guild guild = DiscordSRV.getPlugin().getMainGuild();
             if (guild == null) {
@@ -336,6 +345,16 @@ public final class Queue {
             if (job.kind.startsWith("RENAME_")) {
                 dispatchRename(job,guild,identity);
                 return;
+            }
+            if ((job.kind.startsWith("TOWN_") || job.kind.startsWith("NATION_"))
+                    && !job.kind.endsWith("CATEGORY")) {
+                String uuid = currentTownyUuid(job.kind,job.name);
+                if (uuid == null) { discard(job); return; }
+                if (!nameOwners.contains(uuid)) {
+                    defer(job, "Waiting for verified Towny UUID ownership of "
+                            + job.kind + "/" + job.name);
+                    return;
+                }
             }
             switch (job.kind) {
                 case "AUDIT_GUILD": {
@@ -403,6 +422,15 @@ public final class Queue {
     }
 
 
+
+    private String currentTownyUuid(String kind, String name) {
+        if (kind.startsWith("TOWN_")) {
+            Town town=TownyUniverse.getInstance().getTown(name);
+            return town==null ? null : town.getUUID().toString();
+        }
+        Nation nation=TownyUniverse.getInstance().getNation(name);
+        return nation==null ? null : nation.getUUID().toString();
+    }
 
     private Set<String> mappedRolesForAudit() throws SQLException {
         Set<String> roles = new HashSet<String>();
@@ -803,35 +831,57 @@ public final class Queue {
             return;
         }
 
-        // After an interrupted API callback, reuse the previously created
-        // channel instead of making duplicates. Match both parent and role.
+        // An interrupted callback may have created an object just before
+        // timeout. Inspect ALL same-name objects in our managed category.
+        // A single safe one is adopted; any ambiguous or unsafe candidate
+        // is an operator conflict, not permission to create a duplicate.
         if (text) {
+            List<TextChannel> candidates = new ArrayList<TextChannel>();
             for (TextChannel channel : guild.getTextChannelsByName(job.name, true)) {
                 if (channel.getParent() != null
-                        && categoryName.equalsIgnoreCase(channel.getParent().getName())
-                        && privateCategory(guild, channel.getParent())
-                        && channel.getPermissionOverride(role) != null
-                        && channel.getPermissionOverride(role).getAllowed().contains(Permission.VIEW_CHANNEL)
-                        && channel.getPermissionOverride(guild.getPublicRole()) != null
-                        && channel.getPermissionOverride(guild.getPublicRole())
-                            .getDenied().contains(Permission.VIEW_CHANNEL)) {
-                    success(job, channel.getId(), channel.getParent().getId());
-                    return;
-                }
+                        && categoryName.equalsIgnoreCase(channel.getParent().getName()))
+                    candidates.add(channel);
+            }
+            if (candidates.size()>1)
+                throw new IllegalStateException("Ambiguous Discord text channels for "
+                        + job.kind + "/" + job.name + "; manual resolution required");
+            if (!candidates.isEmpty()) {
+                TextChannel channel=candidates.get(0);
+                if (!privateCategory(guild,channel.getParent())
+                        || channel.getPermissionOverride(guild.getPublicRole())==null
+                        || !channel.getPermissionOverride(guild.getPublicRole()).getDenied()
+                            .contains(Permission.VIEW_CHANNEL)
+                        || channel.getPermissionOverride(role)==null
+                        || !channel.getPermissionOverride(role).getAllowed()
+                            .contains(Permission.VIEW_CHANNEL))
+                    throw new IllegalStateException("Unsafe existing Discord text channel "
+                            + channel.getId() + "; refusing duplicate creation");
+                success(job,channel.getId(),channel.getParent().getId());
+                return;
             }
         } else {
+            List<VoiceChannel> candidates = new ArrayList<VoiceChannel>();
             for (VoiceChannel channel : guild.getVoiceChannelsByName(job.name, true)) {
                 if (channel.getParent() != null
-                        && categoryName.equalsIgnoreCase(channel.getParent().getName())
-                        && privateCategory(guild, channel.getParent())
-                        && channel.getPermissionOverride(role) != null
-                        && channel.getPermissionOverride(role).getAllowed().contains(Permission.VIEW_CHANNEL)
-                        && channel.getPermissionOverride(guild.getPublicRole()) != null
-                        && channel.getPermissionOverride(guild.getPublicRole()).getDenied()
-                            .contains(Permission.VIEW_CHANNEL)) {
-                    success(job, channel.getId(), channel.getParent().getId());
-                    return;
-                }
+                        && categoryName.equalsIgnoreCase(channel.getParent().getName()))
+                    candidates.add(channel);
+            }
+            if (candidates.size()>1)
+                throw new IllegalStateException("Ambiguous Discord voice channels for "
+                        + job.kind + "/" + job.name + "; manual resolution required");
+            if (!candidates.isEmpty()) {
+                VoiceChannel channel=candidates.get(0);
+                if (!privateCategory(guild,channel.getParent())
+                        || channel.getPermissionOverride(guild.getPublicRole())==null
+                        || !channel.getPermissionOverride(guild.getPublicRole()).getDenied()
+                            .contains(Permission.VIEW_CHANNEL)
+                        || channel.getPermissionOverride(role)==null
+                        || !channel.getPermissionOverride(role).getAllowed()
+                            .contains(Permission.VIEW_CHANNEL))
+                    throw new IllegalStateException("Unsafe existing Discord voice channel "
+                            + channel.getId() + "; refusing duplicate creation");
+                success(job,channel.getId(),channel.getParent().getId());
+                return;
             }
         }
 

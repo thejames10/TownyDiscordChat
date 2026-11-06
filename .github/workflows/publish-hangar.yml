@@ -100,7 +100,8 @@ jobs:
           slug: TownyDiscordChat
           version: ${{ steps.release.outputs.version }}
           channel: ${{ steps.release.outputs.channel }}
-          description: ${{ github.event.release.body || format('Minecraft 26.3 release. Other version-specific builds: https://github.com/{0}/releases/tag/{1}', github.repository, steps.release.outputs.tag) }}
+          description: >-
+            ${{ github.event.release.body || format('Minecraft 26.3 release. Other version-specific builds: https://github.com/{0}/releases/tag/{1}', github.repository, steps.release.outputs.tag) }}
           files: |
             [
               {

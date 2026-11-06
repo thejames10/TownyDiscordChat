@@ -43,12 +43,12 @@ jobs:
           - { minecraft: '1.21.4', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '1.21', apiGroup: 'org.spigotmc', apiArtifact: 'spigot-api', apiRelease: '1.21.4-R0.1-SNAPSHOT', jdk: '21' }
           - { minecraft: '1.21.8', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '1.21', apiGroup: 'org.spigotmc', apiArtifact: 'spigot-api', apiRelease: '1.21.8-R0.1-SNAPSHOT', jdk: '21' }
           - { minecraft: '1.21.10', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '1.21', apiGroup: 'org.spigotmc', apiArtifact: 'spigot-api', apiRelease: '1.21.10-R0.1-SNAPSHOT', jdk: '21' }
-          - { minecraft: '1.21.11', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '1.21', apiGroup: 'org.spigotmc', apiArtifact: 'spigot-api', apiRelease: '1.21.11-R0.1-SNAPSHOT', jdk: '21' }
+          - { minecraft: '1.21.11', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '1.21', apiGroup: 'org.spigotmc', apiArtifact: 'spigot-api', apiRelease: '1.21.11-R0.1-SNAPSHOT', jdk: '21', adventure: '4.26.1' }
           # Paper 26.x requires Java 25 and its build-qualified Maven API.
           # 26.1.0 has no Paper build, and 26.1.1 has only obsolete alpha builds.
-          - { minecraft: '26.1.2', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '26.1', apiGroup: 'io.papermc.paper', apiArtifact: 'paper-api', apiRelease: '26.1.2.build.74-stable', jdk: '25' }
-          - { minecraft: '26.2', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '26.2', apiGroup: 'io.papermc.paper', apiArtifact: 'paper-api', apiRelease: '26.2.build.129-stable', jdk: '25' }
-          - { minecraft: '26.3', towny: '0.103.2.15', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '26.3', apiGroup: 'io.papermc.paper', apiArtifact: 'paper-api', apiRelease: '26.3.build.218-stable', jdk: '25' }
+          - { minecraft: '26.1.2', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '26.1', apiGroup: 'io.papermc.paper', apiArtifact: 'paper-api', apiRelease: '26.1.2.build.74-stable', jdk: '25', adventure: '4.26.1' }
+          - { minecraft: '26.2', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '26.2', apiGroup: 'io.papermc.paper', apiArtifact: 'paper-api', apiRelease: '26.2.build.129-stable', jdk: '25', adventure: '5.2.0' }
+          - { minecraft: '26.3', towny: '0.103.2.15', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '26.3', apiGroup: 'io.papermc.paper', apiArtifact: 'paper-api', apiRelease: '26.3.build.218-stable', jdk: '25', adventure: '5.2.0' }
 
     steps:
       - uses: actions/checkout@v4
@@ -67,6 +67,7 @@ jobs:
             -Dserver.api.artifactId=${{ matrix.apiArtifact }} \
             -Dserver.api.version=${{ matrix.apiRelease }} \
             -Dbukkit.api.version=${{ matrix.apiVersion }} \
+            -Dadventure.version=${{ matrix.adventure || '4.21.0' }} \
             -Ddiscordsrv.version=1.30.5 \
             -Dtowny.version=${{ matrix.towny }} \
             -Dtowny.groupId=${{ matrix.townyGroup }} \
@@ -103,6 +104,7 @@ jobs:
           Server API: ${{ matrix.apiGroup }}:${{ matrix.apiArtifact }}:${{ matrix.apiRelease }}
           Server plugin.yml api-version: ${{ matrix.apiVersion }}
           Build JDK: ${{ matrix.jdk }}
+          Adventure API: ${{ matrix.adventure || '4.21.0' }}
           DiscordSRV compile API: 1.30.5
           Towny compile API: ${{ matrix.towny }}
           Towny Maven coordinates: ${{ matrix.townyGroup }}:${{ matrix.townyArtifact }}

@@ -11,6 +11,17 @@ permissions:
   contents: read
 
 jobs:
+  repository-audit:
+    name: Documentation and dependency consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check README, config, Maven and CI release matrix
+        run: python3 scripts/check_repo_consistency.py
+
   build:
     name: MC ${{ matrix.minecraft }} / TDC test package
     runs-on: ubuntu-latest
@@ -151,7 +162,7 @@ jobs:
   release:
     name: Publish per-Minecraft-version release packages
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build, legacy-api-check, storage-migration]
+    needs: [build, legacy-api-check, storage-migration, repository-audit]
     runs-on: ubuntu-latest
     permissions:
       contents: write

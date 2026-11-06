@@ -245,6 +245,21 @@ public final class Reconciler {
         Map<String,String> townVoice = resources.mappedIds("TOWN_VOICE");
         Map<String,String> nationVoice = resources.mappedIds("NATION_VOICE");
 
+        // Delete only resources with an existing SQL-managed mapping. The
+        // worker verifies the recorded Discord ID and name before deleting.
+        for (String name : townRoles.keySet()) if (!s.towns.contains(name))
+            resources.enqueue("DELETE_TOWN_ROLE",name);
+        for (String name : nationRoles.keySet()) if (!s.nations.contains(name))
+            resources.enqueue("DELETE_NATION_ROLE",name);
+        for (String name : townText.keySet()) if (!s.towns.contains(name))
+            resources.enqueue("DELETE_TOWN_TEXT",name);
+        for (String name : nationText.keySet()) if (!s.nations.contains(name))
+            resources.enqueue("DELETE_NATION_TEXT",name);
+        for (String name : townVoice.keySet()) if (!s.towns.contains(name))
+            resources.enqueue("DELETE_TOWN_VOICE",name);
+        for (String name : nationVoice.keySet()) if (!s.nations.contains(name))
+            resources.enqueue("DELETE_NATION_VOICE",name);
+
         for (String name : s.towns) {
             if (!eq(s.roleIds.get("town-"+name), townRoles.get(name)))
                 resources.enqueue("TOWN_ROLE", name);

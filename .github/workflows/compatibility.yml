@@ -176,4 +176,4 @@ jobs:
         with:
           files: packages/*.zip
           generate_release_notes: true
-          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') }}
+          prerelease: ${{ contains(github.ref_name, '-') }}

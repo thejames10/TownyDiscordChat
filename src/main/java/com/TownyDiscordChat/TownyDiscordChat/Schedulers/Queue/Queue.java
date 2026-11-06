@@ -83,7 +83,12 @@ public final class Queue {
             Intent intent = memberStore.claim(true);
             if (intent == null) intent = memberStore.claim(false);
             if (intent == null) { memberBusy.set(false); return; }
-            scheduleMember(intent);
+            Set<String> owners = new HashSet<String>();
+            if (intent.desired) {
+                owners.addAll(stable.ownersOfId(intent.guildId,"TOWN_ROLE",intent.roleId));
+                owners.addAll(stable.ownersOfId(intent.guildId,"NATION_ROLE",intent.roleId));
+            }
+            scheduleMember(intent,owners);
         } catch (Exception e) {
             plugin.getLogger().severe("Could not claim membership intent: " + e.getMessage());
             currentIntent = null;
@@ -126,12 +131,12 @@ public final class Queue {
         }
     }
 
-    private void scheduleMember(Intent intent) {
+    private void scheduleMember(Intent intent, Set<String> owners) {
         currentIntent = intent;
-        Bukkit.getScheduler().runTask(plugin, () -> dispatchMember(intent));
+        Bukkit.getScheduler().runTask(plugin, () -> dispatchMember(intent,owners));
     }
 
-    private void dispatchMember(Intent intent) {
+    private void dispatchMember(Intent intent, Set<String> owners) {
         try {
             Guild guild = DiscordSRV.getPlugin().getMainGuild();
             if (guild == null || !guild.getId().equals(intent.guildId)) {
@@ -142,6 +147,19 @@ public final class Queue {
             if (role == null) {
                 if (intent.desired) deferMember(intent, "Waiting for role to exist in Discord");
                 else doneMember(intent); // Deleted role cannot grant any access.
+                return;
+            }
+            if (intent.desired && !authorizedNow(intent,role,owners)) {
+                if (owners.isEmpty()) {
+                    deferMember(intent,"No stable Towny UUID mapping exists for role " + role.getId());
+                } else {
+                    // The queued grant may refer to a town that renamed,
+                    // was deleted or removed this resident in the meantime.
+                    finalizeMemberAsync(intent, () -> {
+                        memberStore.desire(intent.guildId,intent.memberId,intent.roleId,false);
+                        memberStore.succeed(intent);
+                    }, "Cancelled obsolete grant for " + intent.memberId);
+                }
                 return;
             }
             if (intent.desired && !role.getPermissions().isEmpty()) {
@@ -165,6 +183,37 @@ public final class Queue {
             }
         } catch (Throwable e) {
             failMember(intent, e);
+        }
+    }
+
+    /**
+     * Revalidate authority immediately before submitting an access grant.
+     * A name-reused role owned by a deleted town is never granted to the
+     * replacement town, even if Discord still caches it under the same name.
+     */
+    private boolean authorizedNow(Intent intent, Role role, Set<String> owners) {
+        if (owners.isEmpty()) return false;
+        String roleName = role.getName();
+        boolean townRole = roleName.startsWith("town-");
+        boolean nationRole = roleName.startsWith("nation-");
+        if (!townRole && !nationRole) return false;
+        try {
+            java.util.Map<String,UUID> accounts=DiscordSRV.getPlugin()
+                    .getAccountLinkManager().getLinkedAccounts();
+            if (accounts==null) return false;
+            UUID uuid=accounts.get(intent.memberId);
+            if (uuid==null) return false;
+            com.palmergames.bukkit.towny.object.Resident resident =
+                    TownyUniverse.getInstance().getResident(uuid);
+            if (resident==null || !resident.hasTown()) return false;
+            Town town=resident.getTown();
+            if (town==null) return false;
+            if (townRole) return owners.contains(town.getUUID().toString());
+            if (!town.hasNation()) return false;
+            Nation nation=town.getNation();
+            return nation != null && owners.contains(nation.getUUID().toString());
+        } catch (com.palmergames.bukkit.towny.exceptions.NotRegisteredException e) {
+            return false;
         }
     }
 

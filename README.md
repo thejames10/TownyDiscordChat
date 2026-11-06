@@ -29,20 +29,22 @@
 
 ## Compatibility
 
-**TownyDiscordChat `1.1.0-SNAPSHOT`** — [SQL branch test builds](https://github.com/thejames10/TownyDiscordChat/tree/SQL).
+**TownyDiscordChat `1.1.0-SNAPSHOT`** — [SQL branch test builds](https://github.com/thejames10/TownyDiscordChat/tree/SQL). Select a Minecraft version below to open **its exact CI build**.
 
-| Minecraft version | Server software | Towny | DiscordSRV | TownyDiscordChat | Status |
-| --- | --- | --- | --- | --- | --- |
-| `1.16.5`, `1.17.1`, `1.18.2` | Spigot / Paper / Purpur | `0.100.3.0` | `1.30.5` | `1.1.0-SNAPSHOT` | 🧪 Test build |
-| `1.19.4` | Paper / Purpur | `0.103.2.0` | `1.30.5` | `1.1.0-SNAPSHOT` | 🧪 Test build |
-| `1.20.1`, `1.20.6` | Paper / Purpur | `0.103.2.0` | `1.30.5` | `1.1.0-SNAPSHOT` | 🧪 Test build |
-| `1.21.1`, `1.21.4`, `1.21.8`, `1.21.10` | Paper / Purpur | `0.103.2.0` | `1.30.5` | `1.1.0-SNAPSHOT` | 🧪 Test build |
-| `1.19+` with Towny `0.102+` | Spigot / CraftBukkit | `0.102+` | — | — | ⛔ Unsupported |
-| Any | Folia | — | — | — | ⛔ Unsupported |
+| Minecraft / download | Server software | Towny | DiscordSRV | Status |
+| --- | --- | --- | --- | --- |
+| [1.16.5](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478605771) · [1.17.1](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13477554348) · [1.18.2](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478021490) | Spigot / Paper / Purpur | `0.100.3.0` | `1.30.5` | 🧪 Test |
+| [1.19.4](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478416459) | Paper / Purpur | `0.103.2.0` | `1.30.5` | 🧪 Test |
+| [1.20.1](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478655506) · [1.20.6](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478476239) | Paper / Purpur | `0.103.2.0` | `1.30.5` | 🧪 Test |
+| [1.21.1](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478221252) · [1.21.4](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478246762) · [1.21.8](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478261798) · [1.21.10](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179/artifacts/13478001565) | Paper / Purpur | `0.103.2.0` | `1.30.5` | 🧪 Test |
+| `1.19+` with Towny `0.102+` | Spigot / CraftBukkit | `0.102+` | — | ⛔ No |
+| Any | Folia | — | — | ⛔ No |
 
-**🧪 Test build:** packaged by GitHub Actions and checked against the listed dependency APIs; **live server, database, and Discord permission testing is still required**. **⛔ Unsupported:** this combination is not supported by the current SQL-branch scheduler or the required Towny release.
+**🧪 Test** = compiled and packaged; live Minecraft/Discord testing is still required. **⛔ No** = unsupported configuration. TownyDiscordChat `1.1.0-SNAPSHOT` applies to all test-build rows.
 
-Versions shown are the **intended test combinations**, not a production certification. Java requirements depend on the Minecraft server and Towny release (Towny `0.103.x` requires Java 17+). See [Towny's official releases](https://github.com/TownyAdvanced/Towny/releases), [DiscordSRV's releases](https://github.com/DiscordSRV/DiscordSRV/releases), and the [detailed compatibility notes](COMPATIBILITY.md).
+**Download notes:** These links point to the verified successful [November 6, 2026 CI run](https://github.com/thejames10/TownyDiscordChat/actions/runs/42163920179). GitHub may require signing in to download artifacts, and these particular artifacts are scheduled to expire on **February 4, 2027**. After that, use the [latest successful SQL workflow](https://github.com/thejames10/TownyDiscordChat/actions?query=branch%3ASQL) until a tagged release provides permanent download URLs. The artifact ZIP contains the plugin JAR and its matching setup documentation.
+
+These are **intended test combinations**, not production certifications. Java requirements depend on the server and Towny release (Towny `0.103.x` requires Java 17+). See [Towny releases](https://github.com/TownyAdvanced/Towny/releases), [DiscordSRV releases](https://github.com/DiscordSRV/DiscordSRV/releases) and [detailed compatibility notes](COMPATIBILITY.md).
 
 ### Which download should I use?
 

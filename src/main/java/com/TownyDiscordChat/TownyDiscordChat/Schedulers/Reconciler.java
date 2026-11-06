@@ -43,6 +43,7 @@ public final class Reconciler {
     private final AtomicBoolean reconciling = new AtomicBoolean(false);
     private final AtomicBoolean scheduled = new AtomicBoolean(false);
     private final AtomicBoolean rerun = new AtomicBoolean(false);
+    private final AtomicBoolean firstMemberAudit = new AtomicBoolean(true);
 
     private static final class CategoryInfo {
         final String kind, name, id;
@@ -61,6 +62,8 @@ public final class Reconciler {
         final List<Grant> observed = new ArrayList<Grant>();
         final Set<String> desiredPairs = new HashSet<String>();
         final Set<String> cachedPairs = new HashSet<String>();
+        final Set<String> linkedMembers = new HashSet<String>();
+        final Set<String> cachedMembers = new HashSet<String>();
         int neededTownChannels, neededNationChannels;
     }
 
@@ -180,6 +183,7 @@ public final class Reconciler {
         Map<String, UUID> accounts = DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts();
         if (accounts == null) accounts = Collections.emptyMap();
         Set<String> linked = new HashSet<String>(accounts.keySet());
+        state.linkedMembers.addAll(linked);
 
         for (Map.Entry<String,UUID> link : accounts.entrySet()) {
             String memberId = link.getKey();
@@ -201,6 +205,7 @@ public final class Reconciler {
 
         boolean scanUnlinked = plugin.getConfig().getBoolean("security.revokeUnlinkedAccounts", false);
         for (Member member : guild.getMembers()) {
+            state.cachedMembers.add(member.getId());
             boolean isLinked = linked.contains(member.getId());
             if (!isLinked && !scanUnlinked) continue;
             for (Role role : member.getRoles()) {
@@ -277,6 +282,15 @@ public final class Reconciler {
         }
         if (townSlots < s.neededTownChannels) resources.enqueue("TOWN_CATEGORY",s.townCategory);
         if (nationSlots < s.neededNationChannels) resources.enqueue("NATION_CATEGORY",s.nationCategory);
+
+        // A fresh install may have no SQL history and an incomplete JDA member
+        // cache. Audit linked members via Discord REST in a slow, durable lane.
+        boolean fullAudit = firstMemberAudit.get();
+        for (String member : s.linkedMembers) {
+            if (fullAudit || !s.cachedMembers.contains(member))
+                resources.enqueue("AUDIT_MEMBER", member);
+        }
+        firstMemberAudit.set(false);
 
         // Record pre-existing granted roles, including when SQL was wiped.
         membership.observe(s.guildId, s.observed);

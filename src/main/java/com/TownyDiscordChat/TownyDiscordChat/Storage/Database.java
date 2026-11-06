@@ -174,6 +174,40 @@ public final class Database {
                             +". Check SQLite/MySQL schema errors and restart.");
                 }
             }
+            // Existing, partially migrated databases can have a table name
+            // but lack columns introduced by the durable queue. Do not start
+            // mutating Discord until the schema has been verified.
+            java.util.Map<String,String[]> columns=new java.util.LinkedHashMap<String,String[]>();
+            columns.put("tdc_discord_jobs",new String[]{
+                    "id","job_key","kind","resource_name","status","priority",
+                    "attempts","available_at","lease_until","last_error"});
+            columns.put("tdc_member_intents",new String[]{
+                    "id","guild_id","member_id","role_id","desired","revision",
+                    "priority","status","attempts","available_at","lease_until","last_error"});
+            columns.put("tdc_managed_member_roles",new String[]{
+                    "guild_id","member_id","role_id"});
+            columns.put("tdc_towny_identity",new String[]{
+                    "guild_id","kind","towny_uuid","last_name",
+                    "role_id","text_id","voice_id"});
+            columns.put("tdc_audit_runs",new String[]{"guild_id","last_success_at"});
+            columns.put("tdc_schema_migrations",new String[]{
+                    "version","applied_at","description"});
+            for (java.util.Map.Entry<String,String[]> entry:columns.entrySet()) {
+                java.util.Set<String> present=new java.util.HashSet<String>();
+                try (Statement statement=c.createStatement();
+                     java.sql.ResultSet rs=statement.executeQuery(
+                             "SELECT * FROM "+entry.getKey()+" WHERE 1=0")) {
+                    java.sql.ResultSetMetaData metadata=rs.getMetaData();
+                    for (int i=1;i<=metadata.getColumnCount();i++)
+                        present.add(metadata.getColumnName(i).toLowerCase(Locale.ROOT));
+                }
+                for (String requiredColumn:entry.getValue()) {
+                    if (!present.contains(requiredColumn.toLowerCase(Locale.ROOT)))
+                        throw new SQLException("Storage schema mismatch: "
+                                +entry.getKey()+"."+requiredColumn+" is missing. "
+                                +"Back up the database and check migration logs.");
+                }
+            }
         }
     }
 

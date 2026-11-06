@@ -357,8 +357,12 @@ public final class Queue {
                     && !job.kind.endsWith("CATEGORY")) {
                 String uuid = currentTownyUuid(job.kind,job.name);
                 if (uuid == null) { discard(job); return; }
-                if (!nameOwners.contains(uuid)) {
-                    defer(job, "Waiting for verified Towny UUID ownership of "
+                if (nameOwners.size()!=1 || !nameOwners.contains(uuid)) {
+                    if (nameOwners.size()>1)
+                        plugin.reportAdminWarning("Ambiguous Towny UUID ownership of "
+                                + job.kind + "/" + job.name
+                                + "; repair duplicate stable identity rows before creating.");
+                    defer(job, "Waiting for unique verified Towny UUID ownership of "
                             + job.kind + "/" + job.name);
                     return;
                 }

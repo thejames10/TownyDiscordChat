@@ -46,13 +46,8 @@ public final class DiscordJobStore {
     }
 
     Connection connect() throws SQLException {
-        String host = plugin.getConfig().getString("SQL.host", "localhost");
-        String port = plugin.getConfig().getString("SQL.port", "3306");
-        String database = plugin.getConfig().getString("SQL.database", "");
-        String url = "jdbc:mysql://" + host + ":" + port + "/" + database
-                + "?useUnicode=true&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=10000";
-        return DriverManager.getConnection(url, plugin.getConfig().getString("SQL.username", ""),
-                plugin.getConfig().getString("SQL.password", ""));
+        // All legacy SQL tables and durable stores share the selected backend.
+        return plugin.SQL.openConnection();
     }
 
     public void initialize() throws SQLException {

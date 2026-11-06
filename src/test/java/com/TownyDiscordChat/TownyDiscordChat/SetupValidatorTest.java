@@ -76,6 +76,37 @@ public class SetupValidatorTest {
         }
     }
 
+    @Test public void autoStorageDoesNotRequireMySQLCredentials() throws Exception {
+        YamlConfiguration yaml=configured();
+        yaml.set("storage.type","auto");
+        yaml.set("SQL.database","blank");
+        yaml.set("SQL.username","blank");
+        yaml.set("SQL.password","blank");
+        assertTrue(SetupValidator.validateLocal(yaml).valid(),
+                SetupValidator.validateLocal(yaml).errors().toString());
+    }
+
+    @Test public void mysqlBackendStillRequiresCredentials() throws Exception {
+        YamlConfiguration yaml=configured();
+        yaml.set("storage.type","mysql");
+        yaml.set("SQL.database","blank");
+        assertFalse(SetupValidator.validateLocal(yaml).valid());
+    }
+
+    @Test public void migrationMustUseExplicitSqliteMode() throws Exception {
+        YamlConfiguration yaml=configured();
+        yaml.set("storage.type","mysql");
+        yaml.set("storage.migrateToMySQL",true);
+        assertFalse(SetupValidator.validateLocal(yaml).valid());
+    }
+
+    @Test public void sqlitePathTraversalIsBlocked() throws Exception {
+        YamlConfiguration yaml=configured();
+        yaml.set("storage.type","sqlite");
+        yaml.set("storage.sqlite.file","../outside.db");
+        assertFalse(SetupValidator.validateLocal(yaml).valid());
+    }
+
     @Test public void badTimeZoneAndDatePatternFail() throws Exception {
         YamlConfiguration yaml=configured();
         yaml.set("messages.TimeZone","NoSuch/Zone");

@@ -1,3 +1,19 @@
+# Storage options:
+#   auto   -> use MySQL when legacy SQL credentials are configured,
+#             otherwise use a local SQLite database (no server required).
+#   sqlite -> always use the plugin's local database file.
+#   mysql  -> always connect to the MySQL server below.
+# Existing MySQL installations continue using MySQL with the default 'auto'.
+storage:
+  type: auto
+  sqlite:
+    file: "townydiscordchat.db"
+  # One-time OFFLINE data transfer. Requires a fully configured target MySQL.
+  # Set type: sqlite and migrateToMySQL: true, start the server once, then
+  # after verification change type to mysql and migrateToMySQL to false.
+  migrateToMySQL: false
+
+# Only required when using MySQL or migrating SQLite -> MySQL.
 SQL:
   host: "localhost"
   port: "3306"

@@ -7,6 +7,7 @@ import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.configuration.InvalidConfigurationException;
+import com.TownyDiscordChat.TownyDiscordChat.Storage.Database;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,21 +54,38 @@ public final class SetupValidator {
 
     public static Result validateLocal(FileConfiguration config) {
         Result out = new Result();
-        for (String key : new String[]{"SQL.host","SQL.database","SQL.username"}) {
-            String value = config.getString(key);
-            if (value == null || value.trim().isEmpty() || value.equalsIgnoreCase("blank")
-                    || value.equalsIgnoreCase("change-me"))
-                out.error(key + " must be configured before startup (edit plugins/TownyDiscordChat/config.yml).");
-        }
-        String password = config.getString("SQL.password");
-        if (password == null || password.equalsIgnoreCase("blank")
-                || password.equalsIgnoreCase("change-me"))
-            out.error("SQL.password is still a placeholder. Set your MySQL credentials.");
-        try {
-            int port = Integer.parseInt(config.getString("SQL.port","3306"));
-            if (port < 1 || port > 65535) out.error("SQL.port must be 1–65535.");
-        } catch (NumberFormatException ex) { out.error("SQL.port must be an integer 1–65535."); }
+        String storageType=config.getString("storage.type","auto").trim().toLowerCase(Locale.ROOT);
+        if (!storageType.equals("auto") && !storageType.equals("sqlite")
+                && !storageType.equals("mysql"))
+            out.error("storage.type must be auto, sqlite or mysql.");
+        String sqliteFile=config.getString("storage.sqlite.file","townydiscordchat.db");
+        if (!sqliteFile.matches("[A-Za-z0-9_-]+\\.db"))
+            out.error("storage.sqlite.file must be a simple .db filename (no paths or '..').");
 
+        boolean legacyConfigured=Database.meaningful(config.getString("SQL.database"))
+                || Database.meaningful(config.getString("SQL.username"))
+                || Database.meaningful(config.getString("SQL.password"));
+        boolean migration=config.getBoolean("storage.migrateToMySQL",false);
+        if (!config.isBoolean("storage.migrateToMySQL"))
+            out.error("storage.migrateToMySQL must be true or false.");
+        boolean mysqlRequired=storageType.equals("mysql")
+                || storageType.equals("auto") && legacyConfigured || migration;
+        if (mysqlRequired) {
+            for (String key:new String[]{"SQL.host","SQL.database","SQL.username"}) {
+                if (!Database.meaningful(config.getString(key)))
+                    out.error(key+" must be configured for MySQL (or choose storage.type: sqlite).");
+            }
+            if (!Database.meaningful(config.getString("SQL.password")))
+                out.error("SQL.password is required for MySQL or SQLite-to-MySQL migration.");
+            try {
+                int port=Integer.parseInt(config.getString("SQL.port","3306"));
+                if (port<1 || port>65535) out.error("SQL.port must be 1–65535.");
+            } catch (NumberFormatException e) { out.error("SQL.port must be a valid integer."); }
+        }
+        if (migration && storageType.equals("mysql"))
+            out.error("For migration choose storage.type: sqlite and storage.migrateToMySQL: true; switch to mysql only after migration completes.");
+        if (!mysqlRequired)
+            out.warn("SQLite selected: no MySQL server or credentials are required.");
         String townName = groupName(config,"category.Town.Name",out);
         String nationName = groupName(config,"category.Nation.Name",out);
         groupName(config,"category.Admin.Name",out);

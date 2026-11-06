@@ -7,7 +7,8 @@ import com.TownyDiscordChat.TownyDiscordChat.Listeners.OnboardingListener;
 import com.TownyDiscordChat.TownyDiscordChat.Listeners.AccountChangeListener;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.StableEntityStore;
-import com.TownyDiscordChat.TownyDiscordChat.MySQL.MySQL;
+import com.TownyDiscordChat.TownyDiscordChat.Storage.Database;
+import com.TownyDiscordChat.TownyDiscordChat.Storage.StorageMigration;
 import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.*;
 import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Log.Log;
 import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Players.Players;
@@ -27,7 +28,7 @@ import java.util.*;
 
 public class Main extends JavaPlugin {
 
-    public MySQL SQL;
+    public Database SQL;
     public LogCategory logCategoryDB;
     public LogTextChannel logTextChannelDB;
     public com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.Players playersDB;
@@ -139,7 +140,7 @@ public class Main extends JavaPlugin {
         java.util.Objects.requireNonNull(getCommand("TownyDiscordChat")).setExecutor(new TDCCommand());
         java.util.Objects.requireNonNull(getCommand("tdcqueue")).setExecutor(new TDCSQL());
 
-        this.SQL = new MySQL();
+        this.SQL = new Database(config,getDataFolder());
         this.logCategoryDB = new LogCategory(this);
         this.logTextChannelDB = new LogTextChannel(this);
         this.playersDB = new com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.Players(this);
@@ -163,7 +164,7 @@ public class Main extends JavaPlugin {
 
         try {
             if (SQL != null && SQL.isConnected()) {
-                getLogger().info("Database is connected!");
+                getLogger().info("Storage connected: "+SQL.getBackend());
                 logCategoryDB.createTable();
                 logTextChannelDB.createTable();
                 playersDB.createTable();
@@ -178,6 +179,49 @@ public class Main extends JavaPlugin {
                 queuedTaskDB.createTable();
                 new MemberIntentStore(this).initialize();
                 new StableEntityStore(this).initialize();
+                SQL.ensureIndexes();
+
+                // Explicit offline migration mode. No Discord or Towny
+                // schedulers are started while copying database state.
+                if (config.getBoolean("storage.migrateToMySQL",false)) {
+                    if (SQL.getBackend()!=Database.Backend.SQLITE) {
+                        startupProblem="Migration requires storage.type: sqlite.";
+                        getLogger().severe(startupProblem);
+                    } else {
+                        startupProblem="SQLite to MySQL migration running; "
+                                +"synchronization paused until a server restart.";
+                        getLogger().warning(startupProblem);
+                        getServer().getScheduler().runTaskAsynchronously(this, () -> {
+                            try {
+                                StorageMigration.Result result=StorageMigration.sqliteToMySQL(
+                                        SQL,SQL.getMysqlUrl(),config.getString("SQL.username",""),
+                                        config.getString("SQL.password",""),getLogger());
+                                startupProblem="Migration completed: "+result.rows+" rows across "
+                                        +result.tables+" tables copied to MySQL. "
+                                        +"Set storage.type: mysql and storage.migrateToMySQL: false, "
+                                        +"then restart the server. SQLite remains unchanged.";
+                                getLogger().warning(startupProblem);
+                            } catch (Exception e) {
+                                startupProblem="Migration FAILED; SQLite remains authoritative. "
+                                        +"Fix MySQL connectivity/schema and restart. Cause: "+e.getMessage();
+                                getLogger().severe(startupProblem);
+                                getLogger().log(java.util.logging.Level.SEVERE,
+                                        "Storage migration failed",e);
+                            }
+                        });
+                    }
+                    java.util.Objects.requireNonNull(getCommand("TownyDiscordChat"))
+                            .setExecutor((sender,command,label,args) -> {
+                                sender.sendMessage("[TDC] "+getSafeModeReason());
+                                return true;
+                            });
+                    java.util.Objects.requireNonNull(getCommand("tdcqueue"))
+                            .setExecutor((sender,command,label,args) -> {
+                                sender.sendMessage("[TDC] "+getSafeModeReason());
+                                return true;
+                            });
+                    return;
+                }
 
                 // Do not wait synchronously for DiscordSRV to connect.
                 // Reconciler will start once the guild is available.

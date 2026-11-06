@@ -91,6 +91,8 @@ public final class SetupValidator {
         groupName(config,"category.Admin.Name",out);
         groupName(config,"log.Category.Name",out);
         groupName(config,"log.Channel.Name",out);
+        if (config.isSet("log.Enabled") && !config.isBoolean("log.Enabled"))
+            out.error("log.Enabled must be true or false.");
         if (townName != null && townName.equalsIgnoreCase(nationName))
             out.error("category.Town.Name and category.Nation.Name must be different to prevent cross-town access.");
 
@@ -131,7 +133,7 @@ public final class SetupValidator {
                 && !SNOWFLAKE.matcher(logId).matches())
             out.error("messages.DiscordLogTextChannelId must be 0/auto or a Discord numeric channel ID.");
         else if (!"0".equals(logId) && !"auto".equalsIgnoreCase(logId))
-            out.warn("messages.DiscordLogTextChannelId is not used for SQL queue logging; use log.Channel.Name.");
+            out.warn("messages.DiscordLogTextChannelId is a legacy ID and is ignored; Discord activity logging uses log.Category.Name and log.Channel.Name.");
 
         integerRange(config,out,"category.SubChannelsMax",1,50);
         integerRange(config,out,"queue.startDelaySeconds",1,3600);
@@ -261,7 +263,7 @@ public final class SetupValidator {
         String logId=cfg.getString("messages.DiscordLogTextChannelId","0");
         if (!"0".equals(logId) && !"auto".equalsIgnoreCase(logId)) {
             TextChannel channel=guild.getTextChannelById(logId);
-            if (channel==null) out.warn("Legacy log channel ID "+logId+" no longer exists; SQL queue logging uses names.");
+            if (channel==null) out.warn("Legacy log channel ID "+logId+" no longer exists; Discord activity logging discovers the private channel by log.Category.Name and log.Channel.Name.");
         }
         return out;
     }

@@ -186,7 +186,11 @@ public final class ConfigUpgrade {
      */
     static String mergeWithComments(String defaults,Map<String,Object> overrides)
             throws IOException {
-        // Git checkouts on Windows may use CRLF. Match YAML keys without\n        // trailing carriage returns, then retain the template newline style.\n        String lineEnding=defaults.contains("\r\n") ? "\r\n"\n                : (defaults.contains("\n") ? "\n" : "\r");\n        String[] lines=defaults.split("\\r\\n|\\n|\\r",-1);
+        // Git checkouts on Windows may use CRLF. Match YAML keys without
+        // trailing carriage returns, then retain the template newline style.
+        String lineEnding=defaults.contains("\r\n") ? "\r\n"
+                : (defaults.contains("\n") ? "\n" : "\r");
+        String[] lines=defaults.split("\\r\\n|\\n|\\r",-1);
         List<String> parents=new ArrayList<String>();
         List<Integer> levels=new ArrayList<Integer>();
         Set<String> seen=new HashSet<String>();

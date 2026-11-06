@@ -878,9 +878,13 @@ public final class Queue {
             final String expectedTownUuid = townUuid;
             final String expectedNationUuid = nationUuid;
             final Map<String,String> safeRoleNamesById = new HashMap<String,String>();
+            final Set<String> uniqueSafeRoleIds = new HashSet<String>();
             for (Role candidate : guild.getRoles()) {
-                if (RoleSafety.safeForMembership(candidate))
-                    safeRoleNamesById.put(candidate.getId(),candidate.getName());
+                if (!RoleSafety.safeForMembership(candidate)) continue;
+                String name=candidate.getName();
+                safeRoleNamesById.put(candidate.getId(),name);
+                if (guild.getRolesByName(name,true).size()==1)
+                    uniqueSafeRoleIds.add(candidate.getId());
             }
             final Set<String> actual = new HashSet<String>();
             final Map<String,String> roleNames = new HashMap<String,String>();
@@ -916,10 +920,11 @@ public final class Queue {
                     List<Grant> observed = new ArrayList<Grant>();
                     for (String id : actual) {
                         String name = roleNames.get(id);
-                        boolean recognized = owned.contains(id)
-                                || (name != null && safeRoleNamesById.containsKey(id)
+                        boolean recognized = safeRoleNamesById.containsKey(id)
+                                && (owned.contains(id)
+                                || (name != null && uniqueSafeRoleIds.contains(id)
                                 && ((name.startsWith("town-") && townNames.contains(name.substring(5)))
-                                || (name.startsWith("nation-") && nationNames.contains(name.substring(7)))));
+                                || (name.startsWith("nation-") && nationNames.contains(name.substring(7))))));
                         if (!recognized) continue;
                         observed.add(new Grant(job.name, id));
                         if (!desired.contains(id))

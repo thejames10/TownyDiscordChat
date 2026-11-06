@@ -4,7 +4,8 @@
 Towny membership is authoritative. Discord reports actual guild resources
 and membership. SQL persists IDs, desired membership and in-flight operations.
 DiscordSRV/JDA handles HTTP 429 response scheduling; the plugin retains its
-own durable, single-flight operation queue, callbacks, leases and retries.
+own durable, two-lane operation queue, callbacks, leases and retries. A
+membership revocation is not blocked by a slow channel creation.
 
 For memberships, one row per (guild,member,role) expresses the **latest**
 desired state. A rapid ADD / REMOVE / ADD collapses to the latest state.
@@ -34,14 +35,15 @@ before creating resources or changing membership.
 - The DiscordSRV member cache may be incomplete; the dispatcher fetches
   uncached members by REST rather than assuming their role is absent.
 
-**Known remaining limitations:** the currently implemented scan does not
-automatically delete orphaned Discord guild roles/channels when a Towny
-town or nation is deleted, nor rename them automatically. A prefix is
-not sufficient proof of ownership for destructive deletion. There is
-not yet a bulk complete-guild membership audit for unlinked users, and
-a guild with no retained SQL records and incomplete member cache cannot
-infer all prior grants. Newer DiscordSRV integrations using unshaded
-JDA require a separate adapter.
+**Known remaining limitations:** verified SQL-owned orphan roles/channels
+are deleted when the corresponding Towny entity disappears. Categories
+are deliberately NOT deleted automatically, as they may contain unrelated
+channels. Renames currently take the delete-and-create path, which can
+cause temporary access loss; stable Towny UUID identity will improve this.
+There is no full-guild audit for unlinked users without SQL history.
+The plugin performs rate-limited REST audits for linked members on
+startup and when JDA's member cache is missing entries. Newer DiscordSRV
+integrations using unshaded JDA require a separate adapter.
 
 ## Non-destructive database migration
 Back up your entire schema first. `tdc_schema_migrations` tracks the
@@ -55,11 +57,15 @@ idempotent, but operators should validate historic mappings using a
 test guild before running production reconciliation.
 
 ## Scheduling and prioritization
-1. Revocations (priority 0, up to one per active worker)
-2. Resource creation and adoption
-3. Membership grants (priority 100)
-Both membership directions use durable retries and lease-based
-recovery; DiscordSRV's JDA enforces actual API limits.
+1. Membership revocations (priority 0, membership lane)
+2. Verified SQL-owned role/channel deletions (priority 10, resource lane)
+3. Resource creation, adoption and REST membership audits (priority 100, resource lane)
+4. Membership grants (priority 100, membership lane, only after revocations)
+
+A slow resource mutation does not block membership revocations. Each
+lane submits one request at a time, while JDA handles actual Discord
+API buckets and HTTP 429 responses. Older in-flight callbacks are fenced
+with SQL revisions; the newest desired membership wins.
 
 ## Safe-mode compatibility
 On startup the plugin checks for enabled Towny and DiscordSRV,
@@ -75,3 +81,20 @@ Discord creation and SQL acknowledgement, linked/unlinked membership,
 kicks, rapid join/kick/join, missing permissions, unknown members, offline
 Discord and sustained rate limiting. Examine `/tdcqueue status`
 and use `/tdcqueue retry-dead` only after fixing the cause.
+
+## Discord ownership safety
+A guild role must be uniquely identified by name and must not have guild-
+wide permissions before TDC can adopt it or grant it to a player.
+Categories must deny VIEW_CHANNEL to @everyone. Channels must have the
+expected parent category, the matching role permission override, and a
+VIEW_CHANNEL denial for @everyone. Resource deletions require an exact
+stored Discord ID and matching name/parent; mismatched or repurposed
+resources are retained and reported for manual review.
+
+## Limits of the version check
+DiscordSRV 1.24.0 and Towny 0.97.5.0 are historical **minimum API
+baselines**, not a promise of support on the latest Minecraft versions.
+The guard also checks for specific shaded JDA methods. A modern
+DiscordSRV version may expose an incompatible JDA package and trigger
+safe mode despite passing the numeric version test. Use an integration
+adapter and tested per-version dependency matrix for official releases.

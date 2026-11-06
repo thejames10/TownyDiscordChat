@@ -57,6 +57,211 @@ jobs:
             exit 1
           fi
 
+      - name: Check bundled SQLite and MySQL JDBC drivers
+        run: |
+          jar tf target/TownyDiscordChat-*.jar | grep -q '^org/sqlite/JDBC.class
+        run: |
+          mkdir -p staging
+          cp target/TownyDiscordChat-*.jar staging/TownyDiscordChat-MC-${{ matrix.minecraft }}.jar
+          cp README.md COMPATIBILITY.md SYNC-MIGRATION.md TEST-PLAN.md staging/
+          cp src/main/resources/config.yml staging/config.example.yml
+          cat > staging/BUILD-INFO.txt <<EOF
+          Minecraft API: ${{ matrix.minecraft }}
+          DiscordSRV compile API: 1.30.5
+          Towny compile API: ${{ matrix.towny }}
+          Towny Maven coordinates: ${{ matrix.townyGroup }}:${{ matrix.townyArtifact }}
+          Dependencies are NOT bundled; install compatible server plugins separately.
+          Compilation is not live-server compatibility certification.
+          EOF
+          (cd staging && zip -r ../TownyDiscordChat-MC-${{ matrix.minecraft }}.zip .)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TownyDiscordChat-MC-${{ matrix.minecraft }}
+          path: TownyDiscordChat-MC-${{ matrix.minecraft }}.zip
+          if-no-files-found: error
+
+  # Keep the old API smoke-test for developers, but do NOT publish two
+  # confusing user-facing packages for the same Minecraft version.
+  legacy-api-check:
+    name: Historical API source-compatibility check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Compile against historic plugin APIs (no release artifact)
+        run: |
+          mvn --batch-mode --no-transfer-progress \
+            -Dspigot.version=1.16.5-R0.1-SNAPSHOT \
+            -Ddiscordsrv.version=1.24.0 \
+            -Dtowny.version=0.97.5.0 \
+            -Dtowny.groupId=com.github.TownyAdvanced \
+            -Dtowny.artifactId=Towny \
+            clean verify
+
+  storage-migration:
+    name: SQLite and MySQL migration integration
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: tdc-ci-password
+          MYSQL_DATABASE: tdc_migration_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ptdc-ci-password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+    env:
+      TDC_TEST_MYSQL_URL: jdbc:mysql://127.0.0.1:3306/tdc_migration_test?useSSL=false&allowPublicKeyRetrieval=true
+      TDC_TEST_MYSQL_USER: root
+      TDC_TEST_MYSQL_PASSWORD: tdc-ci-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Verify SQLite SQL operations and full-fidelity MySQL export
+        run: |
+          mvn --batch-mode --no-transfer-progress \
+            -Dspigot.version=1.20.1-R0.1-SNAPSHOT \
+            -Ddiscordsrv.version=1.30.5 \
+            -Dtowny.version=0.103.2.0 \
+            -Dtowny.groupId=com.palmergames.bukkit.towny \
+            -Dtowny.artifactId=towny \
+            clean verify
+
+  release:
+    name: Publish per-Minecraft-version release packages
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, legacy-api-check, storage-migration]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: TownyDiscordChat-MC-*
+          path: packages
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: packages/*.zip
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') }}
+
+          jar tf target/TownyDiscordChat-*.jar | grep -q '^com/mysql/cj/jdbc/Driver.class
+        run: |
+          mkdir -p staging
+          cp target/TownyDiscordChat-*.jar staging/TownyDiscordChat-MC-${{ matrix.minecraft }}.jar
+          cp README.md COMPATIBILITY.md SYNC-MIGRATION.md TEST-PLAN.md staging/
+          cp src/main/resources/config.yml staging/config.example.yml
+          cat > staging/BUILD-INFO.txt <<EOF
+          Minecraft API: ${{ matrix.minecraft }}
+          DiscordSRV compile API: 1.30.5
+          Towny compile API: ${{ matrix.towny }}
+          Towny Maven coordinates: ${{ matrix.townyGroup }}:${{ matrix.townyArtifact }}
+          Dependencies are NOT bundled; install compatible server plugins separately.
+          Compilation is not live-server compatibility certification.
+          EOF
+          (cd staging && zip -r ../TownyDiscordChat-MC-${{ matrix.minecraft }}.zip .)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TownyDiscordChat-MC-${{ matrix.minecraft }}
+          path: TownyDiscordChat-MC-${{ matrix.minecraft }}.zip
+          if-no-files-found: error
+
+  # Keep the old API smoke-test for developers, but do NOT publish two
+  # confusing user-facing packages for the same Minecraft version.
+  legacy-api-check:
+    name: Historical API source-compatibility check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Compile against historic plugin APIs (no release artifact)
+        run: |
+          mvn --batch-mode --no-transfer-progress \
+            -Dspigot.version=1.16.5-R0.1-SNAPSHOT \
+            -Ddiscordsrv.version=1.24.0 \
+            -Dtowny.version=0.97.5.0 \
+            -Dtowny.groupId=com.github.TownyAdvanced \
+            -Dtowny.artifactId=Towny \
+            clean verify
+
+  storage-migration:
+    name: SQLite and MySQL migration integration
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: tdc-ci-password
+          MYSQL_DATABASE: tdc_migration_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ptdc-ci-password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+    env:
+      TDC_TEST_MYSQL_URL: jdbc:mysql://127.0.0.1:3306/tdc_migration_test?useSSL=false&allowPublicKeyRetrieval=true
+      TDC_TEST_MYSQL_USER: root
+      TDC_TEST_MYSQL_PASSWORD: tdc-ci-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Verify SQLite SQL operations and full-fidelity MySQL export
+        run: |
+          mvn --batch-mode --no-transfer-progress \
+            -Dspigot.version=1.20.1-R0.1-SNAPSHOT \
+            -Ddiscordsrv.version=1.30.5 \
+            -Dtowny.version=0.103.2.0 \
+            -Dtowny.groupId=com.palmergames.bukkit.towny \
+            -Dtowny.artifactId=towny \
+            clean verify
+
+  release:
+    name: Publish per-Minecraft-version release packages
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, legacy-api-check, storage-migration]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: TownyDiscordChat-MC-*
+          path: packages
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: packages/*.zip
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') }}
+
+          unzip -p target/TownyDiscordChat-*.jar META-INF/services/java.sql.Driver | grep -q 'org.sqlite.JDBC'
+          unzip -p target/TownyDiscordChat-*.jar META-INF/services/java.sql.Driver | grep -q 'com.mysql.cj.jdbc.Driver'
+
       - name: Package single, version-labeled test download
         run: |
           mkdir -p staging

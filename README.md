@@ -38,7 +38,7 @@
 | `1.20.1`, `1.20.6` | Paper / Purpur | `0.103.2.0` | `1.30.5` |
 | `1.21.1`, `1.21.4`, `1.21.8`, `1.21.10` | Paper / Purpur | `0.103.2.0` | `1.30.5` |
 
-🧪 **Test builds:** These combinations have passed compilation, automated tests, and packaging checks. **Live server, MySQL, and Discord permission testing is still required** before production support can be confirmed.
+🧪 **Test builds:** These combinations have passed compilation, automated tests, and packaging checks. **Live server, SQLite/MySQL storage, and Discord permission testing is still required** before production support can be confirmed.
 
 **Unsupported configurations:** Folia, and Spigot/CraftBukkit with Towny `0.102+`. These are not supported by the current plugin/server scheduler combination.
 
@@ -60,7 +60,7 @@ Older TownyDiscordChat `1.0.x` releases do not include the SQL queue or migratio
 
 Before your first SQL-branch installation, use an isolated Discord guild and a test Minecraft server. The plugin can **create, rename and delete** Towny-managed roles/channels and change access permissions. Back up both your database and your Discord guild's important settings before testing.
 
-You need a compatible **Spigot/Paper/Purpur server** for the selected version (modern Towny: Paper/Purpur), **Towny**, **DiscordSRV**, and a **MySQL database**. Towny and DiscordSRV must be installed as separate plugins. They are **not packaged inside** TownyDiscordChat.
+You need a compatible **Spigot/Paper/Purpur server** for the selected version (modern Towny: Paper/Purpur), **Towny**, **DiscordSRV**, and **local SQLite storage** (created automatically). MySQL is optional. Towny and DiscordSRV must be installed as separate plugins. They are **not packaged inside** TownyDiscordChat.
 
 Official resources:
 - [Towny installation and compatibility](https://github.com/TownyAdvanced/Towny)
@@ -80,20 +80,51 @@ Enable Discord's privileged **Server Members Intent** in the bot's Developer Por
 
 Follow **Downloading a test build** above to locate the correct Minecraft-version ZIP in the latest successful SQL-branch workflow. Each ZIP includes `BUILD-INFO.txt` describing its compile-time dependency versions. Extract the ZIP, then copy **the plugin JAR, not the ZIP**, into `plugins/`.
 
-Start the server once to generate `plugins/TownyDiscordChat/config.yml`, then stop it before editing MySQL credentials. **Do not delete your existing config when upgrading**; back it up and merge newer settings. See the versioned configuration template inside the artifact ZIP.
+Start the server once to generate `plugins/TownyDiscordChat/config.yml`, then stop it before choosing storage settings. **Do not delete your existing config when upgrading**; back it up and merge newer settings. See the versioned configuration template inside the artifact ZIP.
 
-### 4. Configure MySQL and categories
+### 4. Configure storage and categories
 
-Edit `plugins/TownyDiscordChat/config.yml`:
+**No database server is required.** On a fresh installation, TownyDiscordChat
+uses **SQLite** and creates `plugins/TownyDiscordChat/townydiscordchat.db`
+automatically. The queue, Towny identity mappings, retries and audits all
+use the selected storage backend.
+
+In `plugins/TownyDiscordChat/config.yml`, the default is:
 
 ```yaml
+storage:
+  type: auto
+  sqlite:
+    file: "townydiscordchat.db"
+  migrateToMySQL: false
+
 SQL:
   host: "localhost"
   port: "3306"
-  database: "townydiscordchat"
-  username: "your_db_user"
-  password: "your_real_password"
+  database: "blank"
+  username: "blank"
+  password: "blank"
+```
 
+**How selection works:**
+
+- `auto` (default): if MySQL credentials have already been entered in
+  the legacy `SQL` section, continue using **MySQL**. Otherwise use SQLite.
+  Even partially configured real MySQL credentials cause a MySQL startup
+  validation error rather than silently creating a different database.
+- `sqlite`: always use the local `.db` file, even if MySQL credentials
+  are present.
+- `mysql`: require the configured MySQL server; startup checks the
+  connection and enters safe mode if it is unavailable.
+
+For MySQL, set `storage.type: mysql` and fill the existing
+`SQL.host`, `SQL.port`, `SQL.database`, `SQL.username` and
+`SQL.password`. **Do not switch a populated installation's database
+type without migrating its data first.**
+
+Keep your Discord category names configured as before:
+
+```yaml
 category:
   SubChannelsMax: 50
   Town:
@@ -111,17 +142,47 @@ nation:
   VoiceCategoryId: 0
 ```
 
-This is an **excerpt**, not a complete replacement config.
+These snippets are examples, **not full replacement configuration files**.
 
-**Category IDs can stay at `0`.** That means *automatic discovery*. The plugin identifies safe private categories by the names under `category.Town.Name` and `category.Nation.Name`, reuses existing categories, and creates private ones when missing. Several same-name categories are allowed to accommodate Discord's per-category channel limit.
+**Category IDs can remain `0`.** That means automatic discovery by
+`category.Town.Name` and `category.Nation.Name`; verified private
+categories are reused and missing ones created. Nonzero legacy category IDs
+are verified for matching name/privacy before syncing.
 
-If you previously entered a nonzero category ID, startup verifies that it still points to a correctly named, private category. If it is invalid, use `0` to switch back to automatic discovery. Town and nation category names **must be different**.
+The legacy `messages.DiscordLogTextChannelId: 0` is also allowed.
+DiscordSRV/JDA handles actual Discord rate-limit responses, while the
+durable SQLite or MySQL queue handles retries and job priority.
 
-`messages.DiscordLogTextChannelId: 0` is also acceptable; it is an **optional legacy setting**, not a blocker for SQL reconciliation. The old `Discord.Api.RateLimit` guessed limits are no longer used: DiscordSRV's JDA handles actual Discord HTTP rate-limit responses while TownyDiscordChat persists and prioritizes jobs.
+#### Switching from SQLite to MySQL
+
+A direct copy is more efficient and safer for large Discord guilds
+than rebuilding all mappings through Discord API discovery.
+
+1. **Stop the server and back up** `townydiscordchat.db` (include its
+   `-wal` and `-shm` files if present) and your configuration.
+2. Create a **new, empty MySQL schema**. Migration refuses any
+   pre-existing populated `tdc_*` tables and never merges databases.
+3. Keep `storage.type: sqlite`, set
+   `storage.migrateToMySQL: true`, and fill in the target MySQL
+   credentials in `SQL`.
+4. Start the server. TownyDiscordChat enters **migration-only mode**:
+   no Discord synchronization, queue processing, or API calls run.
+   When the console reports the copied table/row counts and success,
+   stop the server again.
+5. Set `storage.type: mysql` and
+   `storage.migrateToMySQL: false`, then restart the server.
+   Check `/tdcqueue status` and reconcile against Discord normally.
+
+The entire active database is copied, including old SQL mapping tables,
+stable Towny UUIDs, queued and failed operations, membership revisions and
+audit checkpoints. SQLite remains unchanged as a fallback backup.
+The MySQL copy is transactional, checked for row-count consistency, and
+aborts if the target already has plugin data. **Do not operate both backends
+as independent servers after migration.** See [storage migration details](SYNC-MIGRATION.md).
 
 ### 5. Restart and verify startup
 
-At startup, TownyDiscordChat validates YAML syntax, SQL settings, category names, role colors, time zones, queue limits, and plugin compatibility **before** beginning synchronization. When DiscordSRV's guild connects, it checks the guild/category privacy and bot permissions.
+At startup, TownyDiscordChat validates YAML syntax, selected storage settings, category names, role colors, time zones, queue limits, and plugin compatibility **before** beginning synchronization. When DiscordSRV's guild connects, it checks the guild/category privacy and bot permissions.
 
 - **Valid configuration:** synchronization starts and adoption/creation proceeds automatically.
 - **Invalid configuration:** no SQL queue is started; the plugin reports safe mode in console and to administrators joining the server.
@@ -167,9 +228,9 @@ We do **not** recommend enabling DiscordSRV's [link-to-join requirement](https:/
 
 ## How syncing and recovery work
 
-The [SQL-backed two-lane dispatcher](SYNC-MIGRATION.md) remembers intended membership and Discord operations across restarts. **Revocations take priority over grants**, while verified deletions precede new resource creation. JDA handles Discord's real rate limits; the SQL worker handles retries, backoff, deduplication and crash recovery.
+The [database-backed two-lane dispatcher](SYNC-MIGRATION.md) remembers intended membership and Discord operations across restarts. **Revocations take priority over grants**, while verified deletions precede new resource creation. JDA handles Discord's real rate limits; the durable queue handles retries, backoff, deduplication and crash recovery.
 
-Towny UUIDs identify towns/nations even when their names change. Existing Discord roles/channels are renamed in place, preserving their IDs. An empty SQL database is not assumed to mean an empty Discord guild; startup checks and safely adopts verified resources instead of recreating everything. Legacy SQL rows are migrated without deleting historic tables.
+Towny UUIDs identify towns/nations even when their names change. Existing Discord roles/channels are renamed in place, preserving their IDs. An empty local database is not assumed to mean an empty Discord guild; startup checks and safely adopts verified resources instead of recreating everything. Legacy SQL rows are migrated without deleting historic tables; SQLite can be copied directly into MySQL without Discord API reconstruction.
 
 **Security note:** Discord access cannot be revoked instantaneously if the bot is offline, permission-blocked, or waiting behind Discord API rate limits. Investigate any failed revocations immediately.
 
@@ -181,7 +242,7 @@ Towny UUIDs identify towns/nations even when their names change. Existing Discor
 - **Bot can't grant or revoke roles:** grant Manage Roles, place its role above managed Towny roles, and verify it has Manage Channels.
 - **Player is linked but cannot see a town channel:** check that they belong to a town, run `/tdc status`, and inspect `/tdcqueue status`. Queue jobs may be pending or dead.
 - **Full guild audit fails:** enable Server Members Intent in both the bot's Developer Portal and DiscordSRV, then run `/tdcqueue audit` again.
-- **After reinstall or migration:** restore a database backup if needed; keep the original `tdc_queued_tasks` table. See [migration details](SYNC-MIGRATION.md) and the [test plan](TEST-PLAN.md).
+- **After reinstall or migration:** restore a database backup if needed; keep the original `tdc_queued_tasks` table. If switching databases, follow the offline SQLite → MySQL process above, not manual config-only switching. See [migration details](SYNC-MIGRATION.md) and the [test plan](TEST-PLAN.md).
 
 For reproducible issues, attach **redacted** startup logs, your Minecraft version/server software, Towny and DiscordSRV versions, TownyDiscordChat version, and the queue status. Never publish database credentials or Discord bot tokens.
 

@@ -150,6 +150,33 @@ public final class Database {
         }
     }
 
+    /**
+     * Older table helpers swallow SQL exceptions for backward compatibility.
+     * This second validation prevents enabling Discord jobs against a
+     * partially initialized schema.
+     */
+    public void verifyRequiredTables() throws SQLException {
+        String[] required={
+            "tdc_log_category","tdc_log_text_channel","tdc_players",
+            "tdc_town_roles","tdc_nation_roles","tdc_town_categories",
+            "tdc_nation_categories","tdc_town_text_channels",
+            "tdc_nation_text_channels","tdc_town_voice_channels",
+            "tdc_nation_voice_channels","tdc_discord_jobs",
+            "tdc_schema_migrations","tdc_member_intents",
+            "tdc_managed_member_roles","tdc_towny_identity","tdc_audit_runs"
+        };
+        try (Connection c=openConnection()) {
+            for (String table:required) {
+                try (java.sql.ResultSet rs=c.getMetaData().getTables(
+                        c.getCatalog(),null,table,new String[]{"TABLE"})) {
+                    if (!rs.next()) throw new SQLException(
+                            "Required storage table missing: "+table
+                            +". Check SQLite/MySQL schema errors and restart.");
+                }
+            }
+        }
+    }
+
     public void disconnect() throws SQLException {
         if (isConnected()) legacyConnection.close();
         legacyConnection=null;

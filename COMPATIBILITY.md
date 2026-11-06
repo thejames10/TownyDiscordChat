@@ -39,11 +39,11 @@ status table.
   Verify its own Java/server requirements for the selected release.
 - Towny 0.102+ does not support Spigot, and this plugin currently
   **does not support Folia's region scheduler**. Use Paper or Purpur.
-- TownyDiscordChat needs a working MySQL database (MySQL 8 preferred).
+- TownyDiscordChat defaults to an embedded **SQLite** database. MySQL 8 is optional.
 
 Towny, DiscordSRV and their bundled JDA are **provided by the server**,
 not bundled with TownyDiscordChat. Install each from its official site.
-MySQL Connector/J and relocated bStats are packaged in the plugin JAR.
+SQLite JDBC, MySQL Connector/J, and relocated bStats are packaged in the plugin JAR.
 
 ## Install a CI artifact for testing
 
@@ -58,8 +58,9 @@ MySQL Connector/J and relocated bStats are packaged in the plugin JAR.
    and enable **Server Members Intent** in the Discord Developer Portal
    and the matching DiscordSRV/JDA configuration. Without that intent,
    complete guild audits cannot run.
-5. Set `SQL.host`, `SQL.port`, `SQL.database`, `SQL.username` and
-   `SQL.password` in `plugins/TownyDiscordChat/config.yml`.
+5. For a new server, leave `storage.type: auto` and the MySQL credentials at
+   their defaults; SQLite will be created automatically. For an existing
+   MySQL server, set `storage.type: mysql` and fill in the `SQL` fields.
 6. Back up the existing database first, start the server, check logs and
    run `/tdcqueue status` as console/operator.
 7. Use `/tdcqueue audit` to start a full-guild audit; it runs through
@@ -81,7 +82,7 @@ safe mode and notifies the console and joining admins.
 
 ## Queuing, migration and security
 
-MySQL stores the latest desired membership and two independent queues:
+SQLite or MySQL stores the latest desired membership and two independent queues:
 security revocations are preferred in the membership lane, while
 resource deletions take priority over additions in the resource lane.
 DiscordSRV/JDA handles actual Discord rate-limit responses.
@@ -112,4 +113,4 @@ See [TEST-PLAN.md](TEST-PLAN.md) for deployment and recovery tests.
 The GitHub Actions matrix generates **one** test ZIP per Minecraft version. A tagged `v*`
 build can publish ZIPs, but **do not tag a public release** until actual
 Paper/Purpur + Towny + DiscordSRV combinations have been tested for
-Discord permissions, MySQL rollback, restarts and rate limits.
+Discord permissions, SQLite/MySQL rollback, restarts and rate limits.

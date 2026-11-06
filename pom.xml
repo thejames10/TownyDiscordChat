@@ -126,6 +126,10 @@
             <goals><goal>shade</goal></goals>
             <configuration>
               <createDependencyReducedPom>false</createDependencyReducedPom>
+              <!-- Preserve JDBC auto-discovery for both drivers in shaded JAR. -->
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
               <shadedArtifactAttached>false</shadedArtifactAttached>
               <filters>
                 <filter>

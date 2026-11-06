@@ -180,6 +180,7 @@ public class Main extends JavaPlugin {
                 new MemberIntentStore(this).initialize();
                 new StableEntityStore(this).initialize();
                 SQL.ensureIndexes();
+                SQL.verifyRequiredTables();
 
                 // Explicit offline migration mode. No Discord or Towny
                 // schedulers are started while copying database state.

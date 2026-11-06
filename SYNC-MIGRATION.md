@@ -8,7 +8,7 @@ auditable intent, ownership mappings and retry history; neither
 an empty DB nor a stale Discord cache is treated as proof that
 resources do not exist.
 
-The plugin retains **its own MySQL queue**, with two independent lanes.
+The plugin retains **its own JDBC-backed SQLite/MySQL queue**, with two independent lanes.
 Revocations take precedence over grants in the membership lane.
 Verified role/channel deletions (priority 10) precede resource
 renames (priority 20) and creations (priority 100) in the resource lane.
@@ -31,6 +31,50 @@ the plugin first runs. If a town was renamed **before the identity
 table existed**, and there is no safe UUID link between the old name
 and new Towny object, automatic inference is impossible. The old
 mapping is left untouched for manual review rather than deleted.
+
+## Storage backends and offline migration
+
+The same durable queue and mapping tables run on embedded **SQLite** or an
+external **MySQL** database. `storage.type: auto` keeps existing MySQL
+installations on MySQL when the legacy `SQL` credentials are configured;
+otherwise it creates `plugins/TownyDiscordChat/townydiscordchat.db`.
+`storage.type: sqlite` or `mysql` selects the backend explicitly.
+
+The storage adapter translates the limited legacy MySQL SQL used by TDC
+(`INSERT IGNORE`, `ON DUPLICATE KEY UPDATE`, `IF`, `FOR UPDATE`
+and `AUTO_INCREMENT`) to SQLite while preserving transactions, unique
+constraints and retry metadata. SQLite enables write-ahead logging,
+a busy timeout and indexes for claim queries. This setup supports a
+**single Minecraft server**, not multiple competing writers/processes.
+
+### Direct SQLite → MySQL transfer
+
+Use `storage.type: sqlite` plus `storage.migrateToMySQL: true` with a
+new **empty** target MySQL database and valid MySQL credentials. Starting
+the plugin initializes SQLite and schedules a **migration-only**
+asynchronous copy without starting Discord workers. The migration reads
+all `tdc_*` tables, creates matching MySQL schemas, transfers all
+records in batches within a transaction, verifies row counts and
+records migration version 6. This includes:
+
+- Legacy role, category, channel, player and queued-task mappings.
+- Durable `tdc_discord_jobs` with IDs, priorities, attempts and retry state.
+- `tdc_member_intents` revisions, `tdc_managed_member_roles` grants.
+- `tdc_towny_identity`, guild audit checkpoints, schema migration markers.
+
+Existing populated destination tables are **rejected**; a failed copy
+rolls back inserts. The original SQLite file is **never modified by the
+transfer** (normal schema initialization may have run beforehand).
+After the console confirms success, stop the server, change to
+`storage.type: mysql`, set `storage.migrateToMySQL: false`, restart
+and check the queue. Keep SQLite as a backup. Never have both storage
+backends processing the same Discord guild concurrently.
+
+Unlike a blank-DB recovery scan, copying the actual mappings consumes
+**zero Discord API requests**, preserves pending revocations, and avoids
+rediscovering every remote resource. Discord reconciliation remains the
+fallback for truly missing or inconsistent records, not the preferred
+way to change databases.
 
 ## State recovery
 
@@ -99,7 +143,7 @@ console and administrators. Targeted audits remain operational.
 
 ## Startup validation and DiscordSRV onboarding
 
-The preflight checks YAML, MySQL credentials, role color formats,
+The preflight checks YAML, selected storage settings, role color formats,
 category names/legacy ID hints, queue intervals and date/time
 patterns before starting SQL. When the guild is connected, it
 validates private category candidates and bot permissions before

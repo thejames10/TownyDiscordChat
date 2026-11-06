@@ -1,7 +1,7 @@
 # Manual integration test plan (SQL branch)
 
 Perform all tests against an **isolated Discord guild**, a throwaway
-Paper/Purpur server, and a disposable MySQL schema. Preserve a backup
+Paper/Purpur server, and a disposable SQLite database or MySQL schema. Preserve a backup
 of any prior TownyDiscordChat tables before migration.
 
 ## Configuration and player onboarding
@@ -26,12 +26,38 @@ of any prior TownyDiscordChat tables before migration.
 - Check an admin joining during config safe mode sees an actionable
   message without repeated spam.
 
+## Storage backend and migration verification
+
+- Fresh install with `storage.type: auto` and blank `SQL` fields:
+  SQLite file should be created, tables initialized, jobs executed
+  without any external database server.
+- Existing MySQL credentials with `storage.type: auto`: verify the
+  installation continues using the original MySQL schema and does
+  not silently create a new SQLite source of truth.
+- Explicit `storage.type: mysql` with bad credentials: ensure
+  startup fails closed; **never** fall back to an empty SQLite file.
+- Queue revocation, creation, a DEAD job and a rename, then shut
+  down. Set `storage.type: sqlite`, `storage.migrateToMySQL: true`
+  and configure a fresh empty MySQL schema. Verify that **no
+  Discord jobs run while the migration is active** and the console
+  prints an exact table/row-count summary.
+- Check that job IDs, status, attempts, timestamps, name mappings,
+  Towny UUIDs, linked/managed role state, and audit checkpoints
+  agree across both storage engines.
+- Attempt migration to a nonempty MySQL schema: verify it aborts
+  before modifying target rows. The SQLite database remains available.
+- After successful copy, change to `storage.type: mysql`, set
+  `storage.migrateToMySQL: false` and restart. Queue continuity
+  must not create duplicate Discord resources.
+- Keep the SQLite DB as a backup, and never run two plugin instances
+  against the same guild on independent backends.
+
 ## Startup / version checks
 
 - Install Towny + DiscordSRV supported for the selected Minecraft server.
 - Enable the Discord bot's **Server Members Intent** in the developer portal
   and configure DiscordSRV to request `GUILD_MEMBERS`.
-- Start with plugin + MySQL correctly configured; confirm `/tdcqueue status`
+- Start with default SQLite or explicitly configured MySQL; confirm `/tdcqueue status`
   lists no unexpected DEAD jobs.
 - Temporarily install an incompatible DiscordSRV in a *throwaway server*.
   Verify inert safe mode, clear console instructions, and admin messages.
@@ -39,9 +65,9 @@ of any prior TownyDiscordChat tables before migration.
 
 ## Database/Discord state matrix
 
-1. Empty MySQL + empty guild: establish one town and one nation and
+1. Empty database (SQLite or MySQL) + empty guild: establish one town and one nation and
    verify role/category/text/voice creation and correct permissions.
-2. Empty MySQL + populated guild: reinstall the plugin with a new
+2. Empty database (SQLite or MySQL) + populated guild: reinstall the plugin with a new
    empty schema and existing managed guild resources. Confirm no duplicate
    roles/channels and that mapped Discord IDs are recovered.
 3. Half-created Discord guild: manually remove one voice channel; verify
@@ -95,7 +121,7 @@ of any prior TownyDiscordChat tables before migration.
 
 ## Observability / read-only SQL diagnostics
 
-Use a MySQL client with your selected schema:
+Use a SQLite or MySQL client with your selected schema:
 
 ```sql
 SELECT status,kind,COUNT(*) AS jobs

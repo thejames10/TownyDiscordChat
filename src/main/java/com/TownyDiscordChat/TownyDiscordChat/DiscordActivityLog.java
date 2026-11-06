@@ -21,11 +21,21 @@ public final class DiscordActivityLog {
     private final AtomicBoolean missingWarned=new AtomicBoolean(false);
     private final AtomicBoolean sendWarned=new AtomicBoolean(false);
     private volatile boolean announced;
+    private volatile String activeChannel;
 
     public DiscordActivityLog(Main plugin) { this.plugin=plugin; }
 
     public boolean enabled() {
         return plugin.getConfig().getBoolean("log.Enabled",true);
+    }
+
+    /** Reports current logging health to administrators. */
+    public String status() {
+        if (!enabled()) return "disabled (log.Enabled: false)";
+        if (sendWarned.get()) return "delivery error; check console";
+        if (missingWarned.get()) return "unavailable; check private channel/permissions";
+        if (announced) return "enabled ("+activeChannel+")";
+        return "waiting for Discord connection";
     }
 
     /** Announce the selected channel once per start after guild preflight. */
@@ -34,6 +44,7 @@ public final class DiscordActivityLog {
         TextChannel channel=findPrivateChannel(guild);
         if (channel==null) return;
         announced=true;
+        activeChannel="#"+channel.getName();
         plugin.getLogger().info("[DISCORD LOG] Sending changes and failures to #"
                 +channel.getName()+" in "+channel.getParent().getName()+".");
         send(channel,"INFO","SQL synchronization logging is active. "
@@ -63,12 +74,18 @@ public final class DiscordActivityLog {
             Category parent=candidate.getParent();
             if (parent==null || !parent.getName().equalsIgnoreCase(categoryName))
                 continue;
-            if (parent.getPermissionOverride(guild.getPublicRole())==null
-                    || !parent.getPermissionOverride(guild.getPublicRole())
-                        .getDenied().contains(Permission.VIEW_CHANNEL)) continue;
-            if (candidate.getPermissionOverride(guild.getPublicRole())!=null
+            // Staff channels may be private through their own override even
+            // when the containing staff category is otherwise public.
+            boolean categoryDenied=parent.getPermissionOverride(guild.getPublicRole())!=null
+                    && parent.getPermissionOverride(guild.getPublicRole())
+                        .getDenied().contains(Permission.VIEW_CHANNEL);
+            boolean channelDenied=candidate.getPermissionOverride(guild.getPublicRole())!=null
                     && candidate.getPermissionOverride(guild.getPublicRole())
-                        .getAllowed().contains(Permission.VIEW_CHANNEL)) continue;
+                        .getDenied().contains(Permission.VIEW_CHANNEL);
+            boolean channelAllowed=candidate.getPermissionOverride(guild.getPublicRole())!=null
+                    && candidate.getPermissionOverride(guild.getPublicRole())
+                        .getAllowed().contains(Permission.VIEW_CHANNEL);
+            if (!channelDenied && (!categoryDenied || channelAllowed)) continue;
             matches.add(candidate);
         }
         if (matches.size()!=1 || !matches.get(0).canTalk()) {
@@ -76,7 +93,7 @@ public final class DiscordActivityLog {
                 plugin.getLogger().warning("[DISCORD LOG] Unable to post: expected "
                     +"exactly one private, writable #"+channelName
                     +" under category "+categoryName+". Check bot View Channel/"
-                    +"Send Messages and the category's @everyone visibility. "
+                    +"Send Messages and the channel/category's @everyone visibility. "
                     +"Queue processing and console logs will continue.");
             return null;
         }
@@ -84,13 +101,16 @@ public final class DiscordActivityLog {
         return matches.get(0);
     }
 
-    private void send(TextChannel channel,String level,String message) {
-        // Queue names are user-configurable; strip line breaks and neutralize
-        // mention syntax so a Towny name can never ping a Discord role/user.
+    /** Never forward mentions or multi-line untrusted resource names to Discord. */
+    public static String format(String level,String message) {
         String safe=message.replace('\r',' ').replace('\n',' ')
                 .replace("@","@\u200B");
         if (safe.length()>1700) safe=safe.substring(0,1700)+"...";
-        channel.sendMessage("[TDC " + level + "] " + safe).queue(
+        return "[TDC "+level+"] "+safe;
+    }
+
+    private void send(TextChannel channel,String level,String message) {
+        channel.sendMessage(format(level,message)).queue(
                 ignored -> sendWarned.set(false),
                 error -> {
                     if (sendWarned.compareAndSet(false,true))

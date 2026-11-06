@@ -56,6 +56,12 @@ public class Main extends JavaPlugin {
     public AccountChangeListener accountListener;
     public OnboardingListener onboarding;
     private boolean operational;
+    private volatile boolean guildValidated;
+    private volatile String startupProblem;
+
+    public boolean isGuildValidated() { return guildValidated; }
+    public void setGuildValidated(boolean ready) { guildValidated=ready; }
+    public String getStartupProblem() { return startupProblem; }
     private volatile String adminWarning;
 
     /** Persistent operator-visible status for recoverable audit failures. */
@@ -79,7 +85,10 @@ public class Main extends JavaPlugin {
     public void clearAdminWarning() { adminWarning = null; }
 
     public boolean isOperational() { return operational; }
-    public String getSafeModeReason() { return compatibility == null ? "Not initialized" : compatibility.problem(); }
+    public String getSafeModeReason() {
+        if (startupProblem!=null) return startupProblem;
+        return compatibility == null ? "Not initialized" : compatibility.problem();
+    }
 
     public static Main plugin;
 
@@ -92,12 +101,25 @@ public class Main extends JavaPlugin {
         reloadConfig();
         config = getConfig();
 
+        SetupValidator.Result fileCheck=SetupValidator.validateFile(
+                new java.io.File(getDataFolder(),"config.yml"));
+        SetupValidator.Result configCheck=SetupValidator.validateLocal(config);
+        for (String warning:configCheck.warnings()) getLogger().warning("[CONFIG] "+warning);
+        if (!fileCheck.valid() || !configCheck.valid()) {
+            for (String error:fileCheck.errors()) getLogger().severe("[CONFIG] "+error);
+            for (String error:configCheck.errors()) getLogger().severe("[CONFIG] "+error);
+            startupProblem="Invalid config.yml: "+fileCheck.errors().size()+" YAML issue(s), "
+                    +configCheck.errors().size()+" setting issue(s). Correct them and restart.";
+        }
+
         // Soft dependencies permit a visible, inert safe mode when outdated or
         // missing plugins would otherwise prevent TownyDiscordChat loading.
         this.compatibility = new CompatibilityGuard(this);
         getServer().getPluginManager().registerEvents(compatibility, this);
-        if (!compatibility.check()) {
-            compatibility.warnConsole();
+        boolean dependenciesReady=compatibility.check();
+        if (!dependenciesReady || startupProblem!=null) {
+            if (!dependenciesReady) compatibility.warnConsole();
+            if (startupProblem!=null) getLogger().severe("SAFE MODE: "+startupProblem);
             java.util.Objects.requireNonNull(getCommand("TownyDiscordChat"))
                     .setExecutor((sender,command,label,args) -> {
                         sender.sendMessage("[TownyDiscordChat] SAFE MODE: " + getSafeModeReason());
@@ -182,6 +204,7 @@ public class Main extends JavaPlugin {
     @Override
     public void onDisable() {
         operational = false;
+        guildValidated = false;
         if (accountListener != null) {
             try { DiscordSRV.api.unsubscribe(accountListener); }
             catch (Throwable e) { getLogger().warning("Could not unsubscribe DiscordSRV listener: " + e); }

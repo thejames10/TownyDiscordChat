@@ -162,6 +162,14 @@ public final class Queue {
                 }
                 return;
             }
+            if (!intent.desired && (!role.getPermissions().isEmpty()
+                    || !(role.getName().startsWith("town-")
+                    || role.getName().startsWith("nation-")))) {
+                plugin.reportAdminWarning("Tracked role " + role.getId()
+                        + " was repurposed. Refusing automated membership changes.");
+                failMember(intent,"Role was repurposed; manual review required");
+                return;
+            }
             if (intent.desired && !role.getPermissions().isEmpty()) {
                 failMember(intent, "Refusing to grant guild permissions through TDC role " + role.getId());
                 return;
@@ -390,7 +398,14 @@ public final class Queue {
             return;
         }
         try {
-            final Set<String> owned = new HashSet<String>(recordedIds);
+            final Set<String> owned = new HashSet<String>();
+            for (String recordedId : recordedIds) {
+                Role role = guild.getRoleById(recordedId);
+                if (role != null && role.getPermissions().isEmpty()
+                        && (role.getName().startsWith("town-")
+                        || role.getName().startsWith("nation-")))
+                    owned.add(recordedId);
+            }
             // A first-time installation has no SQL mappings. Only explicitly
             // named, non-privileged town/nation roles may be auto-adopted.
             Set<String> townNames = new HashSet<String>();
@@ -559,8 +574,8 @@ public final class Queue {
                 Role role = guild.getRoleById(mappedId);
                 if (role == null) { deleted(job, mappedId); return; }
                 String expected = (town ? "town-" : "nation-") + job.name;
-                if (!role.getName().equalsIgnoreCase(expected)) {
-                    fail(job, "Role " + mappedId + " renamed/mismatched; refusing automatic deletion");
+                if (!role.getPermissions().isEmpty() || !role.getName().equalsIgnoreCase(expected)) {
+                    fail(job, "Role " + mappedId + " repurposed/mismatched; refusing automatic deletion");
                     return;
                 }
                 role.delete().queue(ok -> deleted(job,mappedId), error -> fail(job,
@@ -574,7 +589,10 @@ public final class Queue {
                         "category." + (town ? "Town" : "Nation") + ".Name", "");
                 if (!channel.getName().equalsIgnoreCase(job.name) ||
                         channel.getParent() == null ||
-                        !channel.getParent().getName().equalsIgnoreCase(category)) {
+                        !channel.getParent().getName().equalsIgnoreCase(category) ||
+                        channel.getPermissionOverride(guild.getPublicRole()) == null ||
+                        !channel.getPermissionOverride(guild.getPublicRole()).getDenied()
+                            .contains(Permission.VIEW_CHANNEL)) {
                     fail(job, "Text channel " + mappedId + " was repurposed; refusing deletion");
                     return;
                 }

@@ -34,6 +34,23 @@ class SqliteStorageTest {
         }
     }
 
+    @Test void sqliteTransactionsReserveWriterBeforeReadToAvoidBusySnapshot() throws Exception {
+        Database db=sqlite();
+        try (Connection c=db.openConnection()) {
+            // The queue uses SELECT ... then UPDATE under setAutoCommit(false).
+            // WAL's default DEFERRED mode can fail that upgrade with SQLITE_BUSY_SNAPSHOT.
+            org.sqlite.SQLiteConnection raw=
+                    (org.sqlite.SQLiteConnection)c.unwrap(Connection.class);
+            assertEquals(org.sqlite.SQLiteConfig.TransactionMode.IMMEDIATE,
+                    raw.getConnectionConfig().getTransactionMode());
+            c.setAutoCommit(false);
+            try (Statement statement=c.createStatement();
+                 ResultSet rs=statement.executeQuery("SELECT 1")) {
+                assertTrue(rs.next());
+            }
+            c.rollback();
+        }
+    }
     @Test void existingMySQLConfigurationSelectsMySQLWithoutSwitchingData() {
         YamlConfiguration config=new YamlConfiguration();
         config.set("storage.type","auto");

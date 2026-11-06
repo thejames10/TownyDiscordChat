@@ -295,13 +295,38 @@ public final class StableEntityStore {
      * Towny object can adopt the name. The historical legacy tables remain.
      */
     public void retireIfEmpty(String guild,String kind,String uuid) throws SQLException {
-        try (Connection c = jobs.connect(); PreparedStatement ps = c.prepareStatement(
-                "DELETE FROM " + TABLE + " WHERE guild_id=? AND kind=? AND towny_uuid=? "
-                + "AND role_id IS NULL AND text_id IS NULL AND voice_id IS NULL")) {
-            ps.setString(1,guild);
-            ps.setString(2,kind);
-            ps.setString(3,uuid);
-            ps.executeUpdate();
+        try (Connection c=jobs.connect()) {
+            c.setAutoCommit(false);
+            try {
+                Entity existing=findForUpdate(c,guild,kind,uuid);
+                if (existing==null || existing.roleId!=null || existing.textId!=null
+                        || existing.voiceId!=null) {
+                    c.commit();
+                    return;
+                }
+                // A late Discord CREATE may still produce a snowflake. Retain
+                // the UUID/name mapping until that callback can record it.
+                if (hasRunningCreates(c,kind,existing.name)) {
+                    c.commit();
+                    return;
+                }
+                // Old pending/failed creates have no live REST request. Cancel
+                // them so a new UUID with the same name cannot inherit work.
+                cancelObsolete(c,kind,existing.name);
+                try (PreparedStatement ps=c.prepareStatement(
+                        "DELETE FROM " + TABLE
+                        + " WHERE guild_id=? AND kind=? AND towny_uuid=?"
+                        + " AND role_id IS NULL AND text_id IS NULL AND voice_id IS NULL")) {
+                    ps.setString(1,guild);
+                    ps.setString(2,kind);
+                    ps.setString(3,uuid);
+                    ps.executeUpdate();
+                }
+                c.commit();
+            } catch (SQLException e) {
+                c.rollback();
+                throw e;
+            }
         }
     }
 

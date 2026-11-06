@@ -1,7 +1,7 @@
 name: Test Minecraft compatibility
 on:
   push:
-    branches: [SQL]
+    branches: [SQL, main]
     tags: ['v*']
   pull_request:
     branches: [main]
@@ -93,11 +93,14 @@ jobs:
           Compilation is not live-server compatibility certification.
           EOF
           (cd staging && zip -r ../TownyDiscordChat-MC-${{ matrix.minecraft }}.zip .)
+          cp "staging/TownyDiscordChat-MC-${{ matrix.minecraft }}.jar" .
 
       - uses: actions/upload-artifact@v4
         with:
           name: TownyDiscordChat-MC-${{ matrix.minecraft }}
-          path: TownyDiscordChat-MC-${{ matrix.minecraft }}.zip
+          path: |
+            TownyDiscordChat-MC-${{ matrix.minecraft }}.zip
+            TownyDiscordChat-MC-${{ matrix.minecraft }}.jar
           if-no-files-found: error
 
   # Keep the old API smoke-test for developers, but do NOT publish two
@@ -160,20 +163,39 @@ jobs:
             clean verify
 
   release:
-    name: Publish per-Minecraft-version release packages
-    if: startsWith(github.ref, 'refs/tags/v')
+    name: Publish v1.1.0 pre-release (10 JARs and 10 ZIPs)
+    if: github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release: TownyDiscordChat 1.1.0')
     needs: [build, legacy-api-check, storage-migration, repository-audit]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           pattern: TownyDiscordChat-MC-*
           path: packages
           merge-multiple: true
+      - name: Verify all ten JARs and all ten ZIPs
+        run: |
+          grep -q '<version>1.1.0</version>' pom.xml
+          test "$(find packages -maxdepth 1 -name 'TownyDiscordChat-MC-*.jar' | wc -l)" -eq 10
+          test "$(find packages -maxdepth 1 -name 'TownyDiscordChat-MC-*.zip' | wc -l)" -eq 10
+          for mc in 1.16.5 1.17.1 1.18.2 1.19.4 1.20.1 1.20.6 1.21.1 1.21.4 1.21.8 1.21.10; do
+            test -s "packages/TownyDiscordChat-MC-$mc.jar"
+            test -s "packages/TownyDiscordChat-MC-$mc.zip"
+            jar tf "packages/TownyDiscordChat-MC-$mc.jar" | grep -Fq 'plugin.yml'
+            unzip -l "packages/TownyDiscordChat-MC-$mc.zip" | grep -Fq "TownyDiscordChat-MC-$mc.jar"
+          done
       - uses: softprops/action-gh-release@v2
         with:
-          files: packages/*.zip
-          generate_release_notes: true
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          tag_name: v1.1.0
+          target_commitish: ${{ github.sha }}
+          name: Pre-Release Build 1.1.0
+          body_path: .github/release-notes/v1.1.0.md
+          files: |
+            packages/TownyDiscordChat-MC-*.jar
+            packages/TownyDiscordChat-MC-*.zip
+          generate_release_notes: false
+          fail_on_unmatched_files: true
+          prerelease: true

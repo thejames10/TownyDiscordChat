@@ -1,18 +1,18 @@
-# TownyDiscordChat SQL branch — test deployment
+# TownyDiscordChat 1.1.0 — pre-release deployment
 
-**Status: pre-release integration candidate.** Do not deploy to a production
+**Status: public pre-release.** Do not deploy to a production
 guild until you have tested the queue, database migrations and role revocation.
 
 ## Intended test combinations
 
-One ZIP is produced per Minecraft API version. No special `-modern` download is needed.
+Each Minecraft API version gets an individual JAR and an optional documentation ZIP; no `-modern` edition is needed.
 
 | Minecraft API | Server implementation | Towny compile API | DiscordSRV compile API | Status |
 | --- | --- | --- | --- | --- |
-| 1.16.5, 1.17.1, 1.18.2 | Spigot / Paper / Purpur | 0.100.3.0 | 1.30.5 | 🧪 CI test package |
-| 1.19.4 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 🧪 CI test package |
-| 1.20.1, 1.20.6 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 🧪 CI test package |
-| 1.21.1, 1.21.4, 1.21.8, 1.21.10 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 🧪 CI test package |
+| 1.16.5, 1.17.1, 1.18.2 | Spigot / Paper / Purpur | 0.100.3.0 | 1.30.5 | 🧪 Pre-release |
+| 1.19.4 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 🧪 Pre-release |
+| 1.20.1, 1.20.6 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 🧪 Pre-release |
+| 1.21.1, 1.21.4, 1.21.8, 1.21.10 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 🧪 Pre-release |
 
 The `legacy-api-check` workflow job still compiles the source against
 DiscordSRV 1.24.0 and Towny 0.97.5.0 to detect historical API regressions.
@@ -45,33 +45,27 @@ Towny, DiscordSRV and their bundled JDA are **provided by the server**,
 not bundled with TownyDiscordChat. Install each from its official site.
 SQLite JDBC, MySQL Connector/J, and relocated bStats are packaged in the plugin JAR.
 
-## Install a CI artifact for testing
+## Installing the 1.1.0 pre-release
 
-1. Open a successful **Test Minecraft compatibility** run on
-   [the SQL branch](https://github.com/thejames10/TownyDiscordChat/actions?query=branch%3ASQL).
-2. Download `TownyDiscordChat-MC-<version>` for your exact Minecraft
-   version. The ZIP has **no** `-modern` suffix. Read the included
-   `BUILD-INFO.txt` for the exact compile API versions.
-3. Extract the ZIP. Put **only the .jar** inside `plugins/`; do not
-   install the ZIP itself. Before the first server start, copy the
-   included `config.example.yml` to `plugins/TownyDiscordChat/config.yml`
-   and review storage/category names.
-4. Configure DiscordSRV, install the appropriate Towny version,
-   and enable **Server Members Intent** in the Discord Developer Portal
-   and the matching DiscordSRV/JDA configuration. Without that intent,
-   complete guild audits cannot run.
-5. For a new server, leave `storage.type: auto` and the MySQL credentials at
-   their defaults; SQLite will be created automatically. For an existing
-   MySQL server, set `storage.type: mysql` and fill in the `SQL` fields.
-6. Back up the existing database first, start the server, check logs and
-   run `/tdcqueue status` as console/operator.
-7. Use `/tdcqueue audit` to start a full-guild audit; it runs through
-   the durable queue. Use `/tdcqueue retry-dead` only after fixing
-   the reason a job exhausted its retries.
+1. Open the [v1.1.0 release](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.0).
+2. Download `TownyDiscordChat-MC-<version>.jar` for your exact
+   Minecraft version, or the matching ZIP with configuration and guides.
+3. Install only the JAR in `plugins/`. Before starting a new
+   installation, copy `config.example.yml` from the ZIP into
+   `plugins/TownyDiscordChat/config.yml`.
+4. Configure DiscordSRV, Towny, the bot's private channel permissions
+   and privileged Server Members Intent.
+5. For new installations, SQLite is automatic when the MySQL credentials
+   remain as placeholders. Existing MySQL users must preserve their
+   connection settings.
+6. For upgrades, **back up your database**, then read
+   [config.yml.bak upgrades](README.md#automatic-config-upgrade-from-configymlbak).
+   The first successful import remains in safe mode until review/restart.
+7. Verify `/tdcqueue status` and optionally request
+   `/tdcqueue audit`.
 
-**Never point your first test at a live guild that contains irreplaceable
-roles/channels.** This plugin intentionally creates, renames, revokes
-membership from, and deletes recognized Towny-managed Discord resources.
+**CI compilation is not live server certification.** Test with backups
+or an isolated Discord guild before deploying to production.
 
 ## Version and Java policy
 

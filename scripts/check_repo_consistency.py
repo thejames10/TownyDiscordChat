@@ -85,7 +85,7 @@ pom_version = re.search(
 require(pom_version is not None, "pom.xml: project version not found")
 if pom_version:
     require(pom_version.group(1) in compat_section,
-            "README development version must match the Maven project version")
+            "README release version must match the Maven project version")
 require("version: '${project.version}'" in plugin,
         "plugin.yml must obtain its version from Maven resource filtering")
 
@@ -154,6 +154,15 @@ for file in javaRoot.rglob("*.java"):
                       ".createVoiceChannel(", ".createCategory("):
         require(forbidden not in content,
                 f"{file.relative_to(ROOT)} issues Discord REST mutations outside the queue")
+
+# Release assets, documentation and version must remain coupled.
+require((ROOT / ".github/release-notes/v1.1.0.md").is_file(),
+        "Missing release notes for version 1.1.0")
+require("tag_name: v1.1.0" in workflow,
+        "Release workflow must publish permanent v1.1.0 tag")
+require("packages/TownyDiscordChat-MC-*.jar" in workflow
+        and "packages/TownyDiscordChat-MC-*.zip" in workflow,
+        "Release workflow must publish ten JARs and ten setup ZIPs")
 
 # Git tags provide permanent, version-specific documents. Fail fast if a
 # release tag was cut while the checked-in README still says SNAPSHOT.

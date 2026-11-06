@@ -118,6 +118,27 @@ public final class MemberIntentStore {
         }
     }
 
+    /**
+     * If an intent exists from an earlier kick but Towny has since restored
+     * access, update it even if JDA already reports the role present.
+     * Do not enqueue a fresh grant when no outstanding intent exists.
+     */
+    public void supersedeExisting(String guild, String member, String role, boolean desired)
+            throws SQLException {
+        try (Connection c = connect(); PreparedStatement ps = c.prepareStatement(
+                "UPDATE " + TABLE + " SET "
+                + "status=IF(status='RUNNING','RUNNING','PENDING'),"
+                + "attempts=IF(status='RUNNING',attempts,0),"
+                + "available_at=0,revision=revision+1,priority=?,desired=?"
+                + " WHERE guild_id=? AND member_id=? AND role_id=? AND desired<>?")) {
+            ps.setInt(1, desired ? 100 : 0);
+            ps.setBoolean(2, desired);
+            bindTriple(ps, guild, member, role);
+            ps.setBoolean(6, desired);
+            ps.executeUpdate();
+        }
+    }
+
     public Intent claim(boolean revocations) throws SQLException {
         final long now = System.currentTimeMillis();
         final long lease = now + Math.max(60, plugin.getConfig().getLong("queue.leaseSeconds", 300)) * 1000L;

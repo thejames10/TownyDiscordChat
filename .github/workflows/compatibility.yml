@@ -40,6 +40,9 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+      - name: Match plugin version to tagged releases
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: mvn --batch-mode --no-transfer-progress versions:set -DnewVersion="${GITHUB_REF_NAME#v}" -DgenerateBackupPoms=false
       - name: Compile, test, and package for the selected Minecraft API
         run: |
           mvn --batch-mode --no-transfer-progress \

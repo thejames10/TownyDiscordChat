@@ -7,15 +7,15 @@
   <artifactId>TownyDiscordChat</artifactId>
   <version>1.1.0-SNAPSHOT</version>
   <properties>
-    <!-- Java 8 bytecode provides a compatible baseline for 1.16 servers. -->
+    <!-- Java 8 bytecode retains an older-server baseline; compiler uses JDK 21 for modern Towny APIs. -->
     <maven.compiler.release>8</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <spigot.version>1.16.5-R0.1-SNAPSHOT</spigot.version>
-    <!-- Legacy DiscordSRV JDA API is used directly; don't silently upgrade it. -->
-    <discordsrv.version>1.24.0</discordsrv.version>
-    <towny.version>0.97.5.0</towny.version>
-    <towny.groupId>com.github.TownyAdvanced</towny.groupId>
-    <towny.artifactId>Towny</towny.artifactId>
+    <spigot.version>1.20.1-R0.1-SNAPSHOT</spigot.version>
+    <!-- The runtime uses the DiscordSRV-shaded JDA 4 API; CI also checks the historical interface. -->
+    <discordsrv.version>1.30.5</discordsrv.version>
+    <towny.version>0.103.2.0</towny.version>
+    <towny.groupId>com.palmergames.bukkit.towny</towny.groupId>
+    <towny.artifactId>towny</towny.artifactId>
   </properties>
   <repositories>
     <repository>
@@ -101,6 +101,19 @@
     </dependency>
   </dependencies>
   <build>
+    <!-- Only plugin.yml needs Maven version filtering; keep config.yml literal. -->
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>false</filtering>
+        <excludes><exclude>plugin.yml</exclude></excludes>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes><include>plugin.yml</include></includes>
+      </resource>
+    </resources>
     <finalName>TownyDiscordChat-${project.version}</finalName>
     <plugins>
       <plugin>

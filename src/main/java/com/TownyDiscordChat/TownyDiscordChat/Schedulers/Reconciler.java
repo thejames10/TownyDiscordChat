@@ -72,6 +72,7 @@ public final class Reconciler {
         final Set<String> cachedPairs = new HashSet<String>();
         final Set<String> linkedMembers = new HashSet<String>();
         final Set<String> cachedMembers = new HashSet<String>();
+        final Set<String> blockedRoleIds = new HashSet<String>();
         int neededTownChannels, neededNationChannels;
     }
 
@@ -323,6 +324,10 @@ public final class Reconciler {
                     plugin.getConfig().getLong("queue.fullAudit.intervalSeconds",21600L));
         }
 
+        // A newly created town must never inherit a previous town's role.
+        for (String blocked : s.blockedRoleIds)
+            s.desiredPairs.removeIf(key -> key.endsWith("|" + blocked));
+
         // Record pre-existing granted roles, including when SQL was wiped.
         membership.observe(s.guildId, s.observed);
         Set<String> previouslyGranted = new HashSet<String>();
@@ -369,8 +374,16 @@ public final class Reconciler {
                     verifiedId(s.safeTextNamesById,texts.get(name));
             String voiceCandidate = remoteVoice != null ? remoteVoice :
                     verifiedId(s.safeVoiceNamesById,voices.get(name));
-            StableEntityStore.Entity entity = stable.sync(s.guildId,type,uuid,name,
-                    roleCandidate,textCandidate,voiceCandidate);
+            StableEntityStore.Entity entity;
+            try {
+                entity = stable.sync(s.guildId,type,uuid,name,
+                        roleCandidate,textCandidate,voiceCandidate);
+            } catch (SQLException conflict) {
+                if (remoteRole != null) s.blockedRoleIds.add(remoteRole);
+                plugin.reportAdminWarning("Stable identity conflict for " + type + "/" + name
+                        + ": " + conflict.getMessage());
+                continue; // Other towns and access revocations still reconcile.
+            }
 
             // In-place rename by immutable ID. Missing Discord resources are
             // recreated; existing renamed resources are NEVER duplicated.

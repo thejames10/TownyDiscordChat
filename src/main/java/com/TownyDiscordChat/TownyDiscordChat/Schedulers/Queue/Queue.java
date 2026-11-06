@@ -8,6 +8,7 @@ import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore.Intent;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore.Grant;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Member;
+import github.scarsz.discordsrv.dependencies.jda.api.Permission;
 import github.scarsz.discordsrv.dependencies.jda.api.exceptions.ErrorResponseException;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.Nation;
@@ -129,6 +130,10 @@ public final class Queue {
                 else doneMember(intent); // Deleted role cannot grant any access.
                 return;
             }
+            if (intent.desired && !role.getPermissions().isEmpty()) {
+                failMember(intent, "Refusing to grant guild permissions through TDC role " + role.getId());
+                return;
+            }
             Member member = guild.getMemberById(intent.memberId);
             if (member != null && intent.desired) {
                 applyMember(intent, guild, member, role);
@@ -238,7 +243,7 @@ public final class Queue {
                 case "TOWN_ROLE": {
                     Town town = TownyUniverse.getInstance().getTown(job.name);
                     if (town == null) { discard(job); return; }
-                    Role role = first(guild.getRolesByName("town-" + job.name, true));
+                    Role role = uniqueSafeRole(guild, "town-" + job.name);
                     if (role != null) { success(job, role.getId(), null); return; }
                     TDCManager.createDiscordRole(town, id -> result(job, id, null));
                     break;
@@ -246,7 +251,7 @@ public final class Queue {
                 case "NATION_ROLE": {
                     Nation nation = TownyUniverse.getInstance().getNation(job.name);
                     if (nation == null) { discard(job); return; }
-                    Role role = first(guild.getRolesByName("nation-" + job.name, true));
+                    Role role = uniqueSafeRole(guild, "nation-" + job.name);
                     if (role != null) { success(job, role.getId(), null); return; }
                     TDCManager.createDiscordRole(nation, id -> result(job, id, null));
                     break;
@@ -254,7 +259,8 @@ public final class Queue {
                 case "TOWN_CATEGORY":
                 case "NATION_CATEGORY": {
                     for (Category category : guild.getCategoriesByName(job.name, true)) {
-                        if (!categoryIds.contains(category.getId())) {
+                        if (privateCategory(guild, category)
+                                && !categoryIds.contains(category.getId())) {
                             // Reconcile a Discord category created just before a crash.
                             success(job, category.getId(), null);
                             return;
@@ -365,11 +371,11 @@ public final class Queue {
                 try {
                     Town town = resident.getTown();
                     if (town != null) {
-                        Role r = first(guild.getRolesByName("town-" + town.getName(), true));
+                        Role r = uniqueSafeRole(guild, "town-" + town.getName());
                         if (r != null) desired.add(r.getId());
                         if (town.hasNation()) {
                             Nation nation = town.getNation();
-                            Role n = first(guild.getRolesByName("nation-" + nation.getName(), true));
+                            Role n = uniqueSafeRole(guild, "nation-" + nation.getName());
                             if (n != null) desired.add(n.getId());
                         }
                     }
@@ -429,14 +435,17 @@ public final class Queue {
         boolean town = job.kind.startsWith("TOWN");
         boolean text = job.kind.endsWith("TEXT");
         String prefix = town ? "town-" : "nation-";
-        Role role = first(guild.getRolesByName(prefix + job.name, true));
+        Role role = uniqueSafeRole(guild, prefix + job.name);
         if (role == null) {
             defer(job, "Waiting for Discord role " + prefix + job.name);
             return;
         }
         String categoryName = plugin.getConfig().getString(
                 "category." + (town ? "Town" : "Nation") + ".Name", "");
-        List<Category> categories = guild.getCategoriesByName(categoryName, true);
+        List<Category> categories = new ArrayList<Category>();
+        for (Category category : guild.getCategoriesByName(categoryName, true)) {
+            if (privateCategory(guild, category)) categories.add(category);
+        }
         if (categories.isEmpty()) {
             defer(job, "Waiting for " + categoryName + " category");
             return;
@@ -448,7 +457,10 @@ public final class Queue {
             for (TextChannel channel : guild.getTextChannelsByName(job.name, true)) {
                 if (channel.getParent() != null
                         && categoryName.equalsIgnoreCase(channel.getParent().getName())
-                        && channel.getPermissionOverride(role) != null) {
+                        && channel.getPermissionOverride(role) != null
+                        && channel.getPermissionOverride(guild.getPublicRole()) != null
+                        && channel.getPermissionOverride(guild.getPublicRole())
+                            .getDenied().contains(Permission.VIEW_CHANNEL)) {
                     success(job, channel.getId(), channel.getParent().getId());
                     return;
                 }
@@ -482,6 +494,25 @@ public final class Queue {
         else if (town) TDCManager.createTownVoiceChannel(job.name, role.getId(), parent, finished::accept);
         else if (text) TDCManager.createNationTextChannel(job.name, role.getId(), parent, finished::accept);
         else TDCManager.createNationVoiceChannel(job.name, role.getId(), parent, finished::accept);
+    }
+
+    private static boolean privateCategory(Guild guild, Category category) {
+        return category.getPermissionOverride(guild.getPublicRole()) != null
+                && category.getPermissionOverride(guild.getPublicRole())
+                    .getDenied().contains(Permission.VIEW_CHANNEL);
+    }
+
+    private static Role uniqueSafeRole(Guild guild, String name) {
+        List<Role> roles = guild.getRolesByName(name, true);
+        if (roles.size() > 1)
+            throw new IllegalStateException("Multiple Discord roles named " + name
+                    + "; manual administrator mapping is required");
+        if (roles.isEmpty()) return null;
+        Role role = roles.get(0);
+        if (!role.getPermissions().isEmpty())
+            throw new IllegalStateException("Discord role " + name
+                    + " has guild-level permissions; refusing to adopt");
+        return role;
     }
 
     private static <T> T first(List<T> list) {

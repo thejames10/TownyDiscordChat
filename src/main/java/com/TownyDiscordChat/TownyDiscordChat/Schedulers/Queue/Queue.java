@@ -415,8 +415,9 @@ public final class Queue {
             for (Role role : guild.getRoles()) {
                 if (!role.getPermissions().isEmpty()) continue;
                 String name = role.getName();
-                if ((name.startsWith("town-") && townNames.contains(name.substring(5)))
+                if (((name.startsWith("town-") && townNames.contains(name.substring(5)))
                         || (name.startsWith("nation-") && nationNames.contains(name.substring(7))))
+                        && guild.getRolesByName(name,true).size()==1)
                     owned.add(role.getId());
             }
             final List<Grant> observed = Collections.synchronizedList(new ArrayList<Grant>());
@@ -506,6 +507,13 @@ public final class Queue {
                                 .getDenied().contains(Permission.VIEW_CHANNEL))) {
                         fail(job,"Unsafe text channel rename: " + id); return;
                     }
+                    Role accessRole = entity.roleId == null ? null : guild.getRoleById(entity.roleId);
+                    if (accessRole == null || channel.getPermissionOverride(accessRole) == null
+                            || !channel.getPermissionOverride(accessRole).getAllowed()
+                                .contains(Permission.VIEW_CHANNEL)) {
+                        fail(job,"Channel role override no longer matches stable Towny identity: " + id);
+                        return;
+                    }
                     if (channel.getName().equals(entity.name)) { discard(job); return; }
                     channel.getManager().setName(entity.name).queue(done -> discard(job),
                             error -> fail(job,"Discord text rename: " + error.getMessage()));
@@ -518,6 +526,13 @@ public final class Queue {
                             && channel.getPermissionOverride(guild.getPublicRole())
                                 .getDenied().contains(Permission.VIEW_CHANNEL))) {
                         fail(job,"Unsafe voice channel rename: " + id); return;
+                    }
+                    Role accessRole = entity.roleId == null ? null : guild.getRoleById(entity.roleId);
+                    if (accessRole == null || channel.getPermissionOverride(accessRole) == null
+                            || !channel.getPermissionOverride(accessRole).getAllowed()
+                                .contains(Permission.VIEW_CHANNEL)) {
+                        fail(job,"Channel role override no longer matches stable Towny identity: " + id);
+                        return;
                     }
                     if (channel.getName().equals(entity.name)) { discard(job); return; }
                     channel.getManager().setName(entity.name).queue(done -> discard(job),

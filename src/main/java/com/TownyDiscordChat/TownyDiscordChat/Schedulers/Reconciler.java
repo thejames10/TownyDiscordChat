@@ -288,9 +288,13 @@ public final class Reconciler {
             }
         }
         for (String key : s.desiredPairs) {
+            String[] ids = key.split("\\|",2);
             if (!s.cachedPairs.contains(key)) {
-                String[] ids = key.split("\\|",2);
                 membership.desire(s.guildId,ids[0],ids[1],true);
+            } else {
+                // A rejoin must cancel an old queued revocation even if
+                // Discord still shows the role attached.
+                membership.supersedeExisting(s.guildId,ids[0],ids[1],true);
             }
         }
     }

@@ -140,18 +140,34 @@ public final class MemberIntentStore {
     }
 
     public Intent claim(boolean revocations) throws SQLException {
+        return claim(revocations,java.util.Collections.<Long>emptySet());
+    }
+
+    /** Never reclaim an expired job whose REST callback is still in flight. */
+    public Intent claim(boolean revocations, java.util.Set<Long> excluded) throws SQLException {
         final long now = System.currentTimeMillis();
         final long lease = now + Math.max(60, plugin.getConfig().getLong("queue.leaseSeconds", 300)) * 1000L;
         try (Connection c = connect()) {
             c.setAutoCommit(false);
-            try (PreparedStatement ps = c.prepareStatement(
+            StringBuilder sql=new StringBuilder(
                     "SELECT id,guild_id,member_id,role_id,desired,revision,attempts FROM " + TABLE
                     + " WHERE desired=? AND ((status='PENDING' AND available_at<=?)"
-                    + " OR (status='RUNNING' AND lease_until<=?))"
-                    + " ORDER BY priority,available_at,id LIMIT 1 FOR UPDATE")) {
+                    + " OR (status='RUNNING' AND lease_until<=?))");
+            java.util.List<Long> blocked=new java.util.ArrayList<Long>(excluded);
+            if (!blocked.isEmpty()) {
+                sql.append(" AND id NOT IN (");
+                for (int i=0;i<blocked.size();i++) {
+                    if (i>0) sql.append(',');
+                    sql.append('?');
+                }
+                sql.append(')');
+            }
+            sql.append(" ORDER BY priority,available_at,id LIMIT 1 FOR UPDATE");
+            try (PreparedStatement ps = c.prepareStatement(sql.toString())) {
                 ps.setBoolean(1, !revocations);
                 ps.setLong(2, now);
                 ps.setLong(3, now);
+                for (int i=0;i<blocked.size();i++) ps.setLong(i+4,blocked.get(i));
                 try (ResultSet rs = ps.executeQuery()) {
                     if (!rs.next()) { c.commit(); return null; }
                     long id = rs.getLong("id");

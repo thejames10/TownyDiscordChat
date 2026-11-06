@@ -222,16 +222,33 @@ public final class DiscordJobStore {
      * queued work survives process crashes. Only one worker is used per plugin.
      */
     public Job claim() throws SQLException {
+        return claim(Collections.<Long>emptySet());
+    }
+
+    /** Exclude still-live REST calls whose nominal SQL leases have expired. */
+    public Job claim(Set<Long> excluded) throws SQLException {
         long now = System.currentTimeMillis();
         long leaseUntil = now + Math.max(60, plugin.getConfig().getLong("queue.leaseSeconds", 300)) * 1000L;
         try (Connection c = connect()) {
             c.setAutoCommit(false);
-            try (PreparedStatement ps = c.prepareStatement(
+            StringBuilder sql=new StringBuilder(
                     "SELECT id,kind,resource_name,attempts FROM " + TABLE + " WHERE "
-                    + "(status='PENDING' AND available_at<=?) OR "
-                    + "(status='RUNNING' AND lease_until<=?) ORDER BY priority,available_at,id LIMIT 1 FOR UPDATE")) {
+                    + "((status='PENDING' AND available_at<=?) OR "
+                    + "(status='RUNNING' AND lease_until<=?))");
+            java.util.List<Long> blocked=new java.util.ArrayList<Long>(excluded);
+            if (!blocked.isEmpty()) {
+                sql.append(" AND id NOT IN (");
+                for (int i=0;i<blocked.size();i++) {
+                    if (i>0) sql.append(',');
+                    sql.append('?');
+                }
+                sql.append(')');
+            }
+            sql.append(" ORDER BY priority,available_at,id LIMIT 1 FOR UPDATE");
+            try (PreparedStatement ps = c.prepareStatement(sql.toString())) {
                 ps.setLong(1, now);
                 ps.setLong(2, now);
+                for (int i=0;i<blocked.size();i++) ps.setLong(i+3,blocked.get(i));
                 try (ResultSet rs = ps.executeQuery()) {
                     if (!rs.next()) {
                         c.commit();

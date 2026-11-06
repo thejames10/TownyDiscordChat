@@ -683,7 +683,7 @@ public final class Queue {
      * mutable name, is the job key; role/channel Discord IDs remain unchanged.
      */
     private void dispatchRename(Job job, Guild guild, StableEntityStore.Entity entity) {
-        if (entity == null) { discard(job); return; }
+        if (entity == null) { skip(job,"stable Towny identity is no longer mapped"); return; }
         String kind = job.kind.contains("_TOWN_") ? "TOWN" : "NATION";
         String component = job.kind.endsWith("ROLE") ? "ROLE"
                 : job.kind.endsWith("TEXT") ? "TEXT" : "VOICE";
@@ -700,19 +700,19 @@ public final class Queue {
                         && entity.name.equals(nation.getName())) { valid=true; break; }
             }
         }
-        if (!valid) { discard(job); return; }
+        if (!valid) { skip(job,entity.name,"Towny UUID/name no longer matches the current town/nation"); return; }
         String id=entity.idFor(component);
-        if (id==null) { discard(job); return; }
+        if (id==null) { skip(job,entity.name,"no mapped Discord resource ID to rename"); return; }
         try {
             if ("ROLE".equals(component)) {
                 Role role=guild.getRoleById(id);
-                if (role==null) { discard(job); return; }
+                if (role==null) { skip(job,entity.name,"Discord role no longer exists"); return; }
                 if (!RoleSafety.safeForMembership(role) || !role.getName().startsWith(prefix)) {
                     fail(job,"Refusing unsafe role rename: " + id); return;
                 }
                 String desired=prefix+entity.name;
-                if (role.getName().equals(desired)) { discard(job); return; }
-                role.getManager().setName(desired).queue(done -> discard(job),
+                if (role.getName().equals(desired)) { skip(job,entity.name,"role already has the requested name"); return; }
+                role.getManager().setName(desired).queue(done -> renamed(job,entity.name,id),
                         error -> fail(job,"Discord role rename: " + error.getMessage()));
             } else {
                 Category expected=null;
@@ -720,7 +720,7 @@ public final class Queue {
                         "category." + ("TOWN".equals(kind) ? "Town" : "Nation") + ".Name","");
                 if ("TEXT".equals(component)) {
                     TextChannel channel=guild.getTextChannelById(id);
-                    if (channel==null) { discard(job); return; }
+                    if (channel==null) { skip(job,entity.name,"Discord text channel no longer exists"); return; }
                     expected=channel.getParent();
                     if (!safeRenameChannel(guild,expected,categoryName,
                             channel.getPermissionOverride(guild.getPublicRole())!=null
@@ -735,12 +735,14 @@ public final class Queue {
                         fail(job,"Channel role override no longer matches stable Towny identity: " + id);
                         return;
                     }
-                    if (channel.getName().equals(entity.name)) { discard(job); return; }
-                    channel.getManager().setName(entity.name).queue(done -> discard(job),
+                    if (channel.getName().equalsIgnoreCase(entity.name)) {
+                        skip(job,entity.name,"text channel already has the expected Discord-normalized name"); return;
+                    }
+                    channel.getManager().setName(entity.name).queue(done -> renamed(job,entity.name,id),
                             error -> fail(job,"Discord text rename: " + error.getMessage()));
                 } else {
                     VoiceChannel channel=guild.getVoiceChannelById(id);
-                    if (channel==null) { discard(job); return; }
+                    if (channel==null) { skip(job,entity.name,"Discord voice channel no longer exists"); return; }
                     expected=channel.getParent();
                     if (!safeRenameChannel(guild,expected,categoryName,
                             channel.getPermissionOverride(guild.getPublicRole())!=null
@@ -755,8 +757,8 @@ public final class Queue {
                         fail(job,"Channel role override no longer matches stable Towny identity: " + id);
                         return;
                     }
-                    if (channel.getName().equals(entity.name)) { discard(job); return; }
-                    channel.getManager().setName(entity.name).queue(done -> discard(job),
+                    if (channel.getName().equals(entity.name)) { skip(job,entity.name,"voice channel already has the requested name"); return; }
+                    channel.getManager().setName(entity.name).queue(done -> renamed(job,entity.name,id),
                             error -> fail(job,"Discord voice rename: " + error.getMessage()));
                 }
             }
@@ -1119,10 +1121,12 @@ public final class Queue {
         skip(job,"obsolete or already satisfied; no Discord change");
     }
 
-    private void skip(Job job,String reason) {
+    private void skip(Job job,String reason) { skip(job,job.name,reason); }
+
+    private void skip(Job job,String displayName,String reason) {
         // Stale jobs must be acknowledged, not retried indefinitely.
         finalizeAsync(job, () -> store.remove(job),
-                QueueMessages.resource("SKIPPED",job,job.name,null)+": "+reason,false);
+                QueueMessages.resource("SKIPPED",job,displayName,null)+": "+reason,false);
     }
 
     private void defer(Job job, String reason) {

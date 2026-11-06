@@ -1,6 +1,7 @@
 package com.TownyDiscordChat.TownyDiscordChat.Schedulers;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
+import com.TownyDiscordChat.TownyDiscordChat.RoleSafety;
 import com.TownyDiscordChat.TownyDiscordChat.SetupValidator;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.StableEntityStore;
@@ -162,15 +163,21 @@ public final class Reconciler {
             state.nations.add(nation.getName());
             state.nationUuids.put(nation.getUUID().toString(),nation.getName());
         }
+        // Detect duplicate names among ALL roles, including unsafe ones;
+        // an otherwise safe name twin must not be adopted by accident.
+        Set<String> observedRoleNames=new HashSet<String>();
         for (Role role : guild.getRoles()) {
-            if (!role.getPermissions().isEmpty()) continue;
-            state.safeRoleNamesById.put(role.getId(),role.getName());
-            if (state.roleIds.containsKey(role.getName())) {
-                state.ambiguousRoleNames.add(role.getName());
-                state.roleIds.remove(role.getName());
-            } else if (!state.ambiguousRoleNames.contains(role.getName())) {
-                state.roleIds.put(role.getName(), role.getId());
-            }
+            String lower=role.getName().toLowerCase(java.util.Locale.ROOT);
+            if (!observedRoleNames.add(lower))
+                state.ambiguousRoleNames.add(lower);
+            if (RoleSafety.safeForMembership(role))
+                state.safeRoleNamesById.put(role.getId(),role.getName());
+        }
+        for (Role role : guild.getRoles()) {
+            if (RoleSafety.safeForMembership(role)
+                    && !state.ambiguousRoleNames.contains(
+                            role.getName().toLowerCase(java.util.Locale.ROOT)))
+                state.roleIds.put(role.getName(),role.getId());
         }
 
         int capacity = Math.max(1, Math.min(50, plugin.getConfig().getInt("category.SubChannelsMax",50)));
@@ -309,6 +316,10 @@ public final class Reconciler {
         String name = role.getName();
         // Do not appropriate a similarly-prefixed role merely because its
         // name looks like ours. Existing SQL-tracked grants remain revocable.
+        if (!state.safeRoleNamesById.containsKey(role.getId())
+                || state.ambiguousRoleNames.contains(
+                        name.toLowerCase(java.util.Locale.ROOT)))
+            return false;
         return (name.startsWith("town-") && state.towns.contains(name.substring(5)))
                 || (name.startsWith("nation-") && state.nations.contains(name.substring(7)));
     }

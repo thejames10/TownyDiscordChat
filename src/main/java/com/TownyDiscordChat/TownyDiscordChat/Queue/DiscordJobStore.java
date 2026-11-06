@@ -118,7 +118,9 @@ public final class DiscordJobStore {
                     ? Math.max(30L,plugin.getConfig().getLong("queue.deletionGraceSeconds",120L))*1000L : 0L;
             ps.setLong(4,System.currentTimeMillis()+delay);
             ps.setInt(5, kind.startsWith("DELETE_") ? 10
-                    : kind.startsWith("RENAME_") ? 20 : "AUDIT_GUILD".equals(kind) ? 150 : 100);
+                    : kind.startsWith("RENAME_") ? 20
+                    : "AUDIT_GUILD".equals(kind) ? 30
+                    : "AUDIT_MEMBER".equals(kind) ? 40 : 100);
             ps.executeUpdate();
         }
     }

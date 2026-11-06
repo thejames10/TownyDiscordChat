@@ -539,6 +539,25 @@ public final class DiscordJobStore {
         enqueue("AUDIT_GUILD",guildId);
     }
 
+    /** Manual admin request reactivates an exhausted audit without changing other jobs. */
+    public void requestFullAudit(String guildId) throws SQLException {
+        if (guildId == null || !guildId.matches("[0-9]{1,24}"))
+            throw new SQLException("Invalid Discord guild ID");
+        try (Connection c=connect(); PreparedStatement ps=c.prepareStatement(
+                "INSERT INTO " + TABLE
+                + " (job_key,kind,resource_name,status,available_at,priority)"
+                + " VALUES (?,'AUDIT_GUILD',?,'PENDING',0,30)"
+                + " ON DUPLICATE KEY UPDATE"
+                + " attempts=IF(status='DEAD',0,attempts),"
+                + " available_at=IF(status='DEAD',0,available_at),"
+                + " last_error=IF(status='DEAD',NULL,last_error),"
+                + " status=IF(status='DEAD','PENDING',status)")) {
+            ps.setString(1,key("AUDIT_GUILD",guildId));
+            ps.setString(2,guildId);
+            ps.executeUpdate();
+        }
+    }
+
     /** Persist a complete guild audit checkpoint and acknowledge atomically. */
     public void finishFullAudit(Job job) throws SQLException {
         if (!"AUDIT_GUILD".equals(job.kind)) throw new SQLException("Not a guild audit");

@@ -218,12 +218,13 @@ public final class Queue {
                 failMember(intent, "Unsafe role; " + permissionProblem);
                 return;
             }
-            if (!intent.desired && owners.isEmpty()
-                    && !(role.getName().startsWith("town-")
-                    || role.getName().startsWith("nation-"))) {
+            if (!intent.desired && owners.isEmpty()) {
+                // A name prefix by itself is not ownership proof. Once a
+                // legacy role is linked to a Towny UUID reconciliation can
+                // safely revoke it, even when the town no longer exists.
                 plugin.reportAdminWarning("Tracked role " + role.getId()
-                        + " was repurposed. Refusing automated membership changes.");
-                failMember(intent,"Role was repurposed; manual review required");
+                        + " has no verified Towny UUID owner. Refusing automated revocation.");
+                failMember(intent,"Cannot revoke unverified Discord role; manual review required");
                 return;
             }
             Member member = guild.getMemberById(intent.memberId);
@@ -298,19 +299,22 @@ public final class Queue {
                 }, "Cancelled grant after Towny membership changed: " + intent.memberId);
                 return;
             }
+            // Discord role settings may change during the asynchronous REST
+            // lookup. Never grant or revoke a now-privileged/repurposed role.
+            String permissionProblem=RoleSafety.problem(role);
+            if (permissionProblem != null ||
+                    !(role.getName().startsWith("town-")
+                    || role.getName().startsWith("nation-"))) {
+                failMember(intent,"Unsafe role at membership dispatch: "
+                        + (permissionProblem == null ? "role name repurposed" : permissionProblem));
+                return;
+            }
             boolean hasRole = member.getRoles().contains(role);
             if (hasRole == intent.desired) {
                 doneMember(intent);
                 return;
             }
             if (intent.desired) {
-                // A role can be edited while the async member lookup is running.
-                // Recheck immediately before submitting a privilege grant.
-                String permissionProblem=RoleSafety.problem(role);
-                if (permissionProblem != null) {
-                    failMember(intent,"Unsafe role at grant dispatch: " + permissionProblem);
-                    return;
-                }
                 guild.addRoleToMember(member, role).queue(
                         success -> doneMember(intent),
                         failure -> failMember(intent, failure));

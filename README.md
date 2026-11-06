@@ -27,6 +27,41 @@
    </a>
 </p>
 
+
+## What is TownyDiscordChat?
+
+**TownyDiscordChat automatically gives Minecraft towns and nations their own private spaces in Discord.** It's a server-side plugin that connects [Towny](https://github.com/TownyAdvanced/Towny) (which knows who belongs to each Minecraft town and nation) with [DiscordSRV](https://github.com/DiscordSRV/DiscordSRV) (which links Minecraft players to their Discord accounts).
+
+Instead of manually creating Discord roles, organizing private channels and updating access every time a player changes towns, **TownyDiscordChat keeps your Discord server aligned with your Towny server**.
+
+### Why use it?
+
+On an active Towny server, membership changes constantly. Players join towns, move to other towns, form nations, rename settlements and sometimes leave entirely. Maintaining corresponding Discord roles and private discussion channels by hand is time-consuming, and outdated roles can leave people with access to conversations they should no longer see.
+
+TownyDiscordChat solves that administrative problem by using **Towny membership as the source of truth** for Discord access. DiscordSRV handles account linking; TownyDiscordChat manages the town- and nation-specific Discord resources and permissions.
+
+### What does it do?
+
+- **Town and nation roles:** Creates and maintains Discord roles such as `town-Oakvale` and `nation-Northlands` for your Towny communities.
+- **Private text and voice channels:** Organizes town and nation channels inside configured Discord categories, with access restricted to the corresponding roles.
+- **Automatic membership changes:** Grants roles when linked players join a town or nation, and revokes outdated access when they leave or change membership.
+- **Renames and cleanup:** Renames existing managed Discord resources when Towny names change, preserving their IDs; carefully handles deletion and name reuse.
+- **Simple linking:** Uses DiscordSRV's existing Minecraft ↔ Discord account links, with `/tdc status`, `/tdc link` and optional in-game reminders for players.
+- **Recovery and diagnostics:** Saves synchronization work in SQLite (the default) or MySQL, retries interrupted operations, and provides queue status, audits and activity logs for administrators.
+
+### Example: a player joins a town
+
+Suppose your Minecraft server has a town called **Oakvale**, which belongs to the nation **Northlands**.
+
+1. TownyDiscordChat maintains an `town-Oakvale` role and Oakvale's private text/voice channels, plus the corresponding nation role and channels.
+2. A player joins Oakvale in Minecraft and links their Discord account through DiscordSRV.
+3. The plugin assigns the appropriate town and nation roles. The player can now access their community's private Discord channels.
+4. If the player moves to another town or leaves the nation, the plugin updates their roles and removes access they no longer qualify for.
+
+**What it doesn't do:** TownyDiscordChat is **not** a replacement for Towny or DiscordSRV, and it does **not** relay Towny chat messages between Minecraft and Discord. DiscordSRV can handle general Minecraft ↔ Discord chat bridging separately. This plugin focuses on **who gets access to which private Discord spaces**, and on keeping those spaces in sync with Towny.
+
+**Get started:** [Compatibility and downloads](#compatibility) · [Installation](#installation) · [Player linking](#players-linking-minecraft-and-discord) · [Commands](#commands-and-permissions)
+
 ## Compatibility
 
 **Current release:** `TownyDiscordChat 1.1.1` — [Pre-Release Build 1.1.1](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.1).

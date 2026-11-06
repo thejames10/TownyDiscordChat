@@ -114,11 +114,14 @@ public final class Reconciler {
             SetupValidator.Result check=SetupValidator.validateGuild(plugin.getConfig(),guild);
             if (!check.valid()) {
                 plugin.setGuildValidated(false);
-                for (String error:check.errors())
-                    plugin.reportAdminWarning("Discord preflight: "+error);
+                plugin.reportAdminWarning("Discord preflight: "
+                        + String.join("; ",check.errors()));
                 complete();
                 return;
             }
+            if (plugin.getAdminWarning()!=null
+                    && plugin.getAdminWarning().startsWith("Discord preflight:"))
+                plugin.clearAdminWarning();
             if (!plugin.isGuildValidated()) {
                 plugin.setGuildValidated(true);
                 plugin.getLogger().info("Discord preflight passed for guild "+guild.getId()

@@ -57,6 +57,7 @@ public final class Reconciler {
         final List<String> towns = new ArrayList<String>();
         final List<String> nations = new ArrayList<String>();
         final Map<String, String> roleIds = new HashMap<String,String>();
+        final Set<String> ambiguousRoleNames = new HashSet<String>();
         final Map<String,String> channelIds = new HashMap<String,String>();
         final List<CategoryInfo> categories = new ArrayList<CategoryInfo>();
         final List<Grant> observed = new ArrayList<Grant>();
@@ -125,10 +126,21 @@ public final class Reconciler {
         state.nationCategory = plugin.getConfig().getString("category.Nation.Name", "MINECRAFT-NATION-CHAT");
         for (Town town : TownyUniverse.getInstance().getTowns()) state.towns.add(town.getName());
         for (Nation nation : TownyUniverse.getInstance().getNations()) state.nations.add(nation.getName());
-        for (Role role : guild.getRoles()) state.roleIds.put(role.getName(), role.getId());
+        for (Role role : guild.getRoles()) {
+            if (!role.getPermissions().isEmpty()) continue;
+            if (state.roleIds.containsKey(role.getName())) {
+                state.ambiguousRoleNames.add(role.getName());
+                state.roleIds.remove(role.getName());
+            } else if (!state.ambiguousRoleNames.contains(role.getName())) {
+                state.roleIds.put(role.getName(), role.getId());
+            }
+        }
 
         int capacity = Math.max(1, Math.min(50, plugin.getConfig().getInt("category.SubChannelsMax",50)));
         for (Category cat : guild.getCategories()) {
+            if (cat.getPermissionOverride(guild.getPublicRole()) == null
+                    || !cat.getPermissionOverride(guild.getPublicRole()).getDenied()
+                        .contains(Permission.VIEW_CHANNEL)) continue;
             int free = Math.max(0, capacity - cat.getChannels().size());
             if (cat.getName().equalsIgnoreCase(state.townCategory))
                 state.categories.add(new CategoryInfo("TOWN_CATEGORY", state.townCategory, cat.getId(), free));
@@ -162,7 +174,10 @@ public final class Reconciler {
                 if (channel.getParent() != null
                         && channel.getParent().getName().equalsIgnoreCase(category)
                         && channel.getPermissionOverride(role) != null
-                        && channel.getPermissionOverride(role).getAllowed().contains(Permission.VIEW_CHANNEL)) {
+                        && channel.getPermissionOverride(role).getAllowed().contains(Permission.VIEW_CHANNEL)
+                        && channel.getPermissionOverride(guild.getPublicRole()) != null
+                        && channel.getPermissionOverride(guild.getPublicRole()).getDenied()
+                            .contains(Permission.VIEW_CHANNEL)) {
                     id = channel.getId(); break;
                 }
             }

@@ -32,24 +32,30 @@ jobs:
           # Towny 0.100.3.0 is the final historical series for 1.16–1.18.
           # Use Towny's official published JAR, NOT the JitPack parent-only artifact.
           # DiscordSRV 1.30.5 supports the older Minecraft versions too.
-          - { minecraft: '1.16.5', towny: '0.100.3.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny' }
-          - { minecraft: '1.17.1', towny: '0.100.3.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny' }
-          - { minecraft: '1.18.2', towny: '0.100.3.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny' }
+          - { minecraft: '1.16.5', towny: '0.100.3.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '1.16', apiGroup: 'org.spigotmc', apiArtifact: 'spigot-api', apiRelease: '1.16.5-R0.1-SNAPSHOT', jdk: '21' }
+          - { minecraft: '1.17.1', towny: '0.100.3.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '1.17', apiGroup: 'org.spigotmc', apiArtifact: 'spigot-api', apiRelease: '1.17.1-R0.1-SNAPSHOT', jdk: '21' }
+          - { minecraft: '1.18.2', towny: '0.100.3.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '1.18', apiGroup: 'org.spigotmc', apiArtifact: 'spigot-api', apiRelease: '1.18.2-R0.1-SNAPSHOT', jdk: '21' }
           # Newer Minecraft: Towny uses the maintained Maven coordinates.
-          - { minecraft: '1.19.4', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny' }
-          - { minecraft: '1.20.1', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny' }
-          - { minecraft: '1.20.6', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny' }
-          - { minecraft: '1.21.1', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny' }
-          - { minecraft: '1.21.4', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny' }
-          - { minecraft: '1.21.8', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny' }
-          - { minecraft: '1.21.10', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny' }
+          - { minecraft: '1.19.4', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '1.19', apiGroup: 'org.spigotmc', apiArtifact: 'spigot-api', apiRelease: '1.19.4-R0.1-SNAPSHOT', jdk: '21' }
+          - { minecraft: '1.20.1', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '1.20', apiGroup: 'org.spigotmc', apiArtifact: 'spigot-api', apiRelease: '1.20.1-R0.1-SNAPSHOT', jdk: '21' }
+          - { minecraft: '1.20.6', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '1.20.5', apiGroup: 'org.spigotmc', apiArtifact: 'spigot-api', apiRelease: '1.20.6-R0.1-SNAPSHOT', jdk: '21' }
+          - { minecraft: '1.21.1', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '1.21', apiGroup: 'org.spigotmc', apiArtifact: 'spigot-api', apiRelease: '1.21.1-R0.1-SNAPSHOT', jdk: '21' }
+          - { minecraft: '1.21.4', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '1.21', apiGroup: 'org.spigotmc', apiArtifact: 'spigot-api', apiRelease: '1.21.4-R0.1-SNAPSHOT', jdk: '21' }
+          - { minecraft: '1.21.8', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '1.21', apiGroup: 'org.spigotmc', apiArtifact: 'spigot-api', apiRelease: '1.21.8-R0.1-SNAPSHOT', jdk: '21' }
+          - { minecraft: '1.21.10', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '1.21', apiGroup: 'org.spigotmc', apiArtifact: 'spigot-api', apiRelease: '1.21.10-R0.1-SNAPSHOT', jdk: '21' }
+          - { minecraft: '1.21.11', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '1.21', apiGroup: 'org.spigotmc', apiArtifact: 'spigot-api', apiRelease: '1.21.11-R0.1-SNAPSHOT', jdk: '21' }
+          # Paper 26.x requires Java 25 and its build-qualified Maven API.
+          # 26.1.0 has no Paper build, and 26.1.1 has only obsolete alpha builds.
+          - { minecraft: '26.1.2', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '26.1', apiGroup: 'io.papermc.paper', apiArtifact: 'paper-api', apiRelease: '26.1.2.build.74-stable', jdk: '25' }
+          - { minecraft: '26.2', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '26.2', apiGroup: 'io.papermc.paper', apiArtifact: 'paper-api', apiRelease: '26.2.build.129-stable', jdk: '25' }
+          - { minecraft: '26.3', towny: '0.103.2.15', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '26.3', apiGroup: 'io.papermc.paper', apiArtifact: 'paper-api', apiRelease: '26.3.build.218-stable', jdk: '25' }
 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: ${{ matrix.jdk }}
           cache: maven
       - name: Match plugin version to tagged releases
         if: startsWith(github.ref, 'refs/tags/v')
@@ -57,12 +63,20 @@ jobs:
       - name: Compile, test, and package for the selected Minecraft API
         run: |
           mvn --batch-mode --no-transfer-progress \
-            -Dspigot.version=${{ matrix.minecraft }}-R0.1-SNAPSHOT \
+            -Dserver.api.groupId=${{ matrix.apiGroup }} \
+            -Dserver.api.artifactId=${{ matrix.apiArtifact }} \
+            -Dserver.api.version=${{ matrix.apiRelease }} \
+            -Dbukkit.api.version=${{ matrix.apiVersion }} \
             -Ddiscordsrv.version=1.30.5 \
             -Dtowny.version=${{ matrix.towny }} \
             -Dtowny.groupId=${{ matrix.townyGroup }} \
             -Dtowny.artifactId=${{ matrix.townyArtifact }} \
             clean verify
+
+      - name: Verify packaged plugin version and server API
+        run: |
+          unzip -p target/TownyDiscordChat-*.jar plugin.yml | grep -Fq "version: '1.1.1'"
+          unzip -p target/TownyDiscordChat-*.jar plugin.yml | grep -Fq "api-version: '${{ matrix.apiVersion }}'"
 
       - name: Ensure server-provided dependencies are not bundled
         run: |
@@ -85,7 +99,10 @@ jobs:
           cp README.md COMPATIBILITY.md SYNC-MIGRATION.md TEST-PLAN.md staging/
           cp src/main/resources/config.yml staging/config.example.yml
           cat > staging/BUILD-INFO.txt <<EOF
-          Minecraft API: ${{ matrix.minecraft }}
+          Minecraft: ${{ matrix.minecraft }}
+          Server API: ${{ matrix.apiGroup }}:${{ matrix.apiArtifact }}:${{ matrix.apiRelease }}
+          Server plugin.yml api-version: ${{ matrix.apiVersion }}
+          Build JDK: ${{ matrix.jdk }}
           DiscordSRV compile API: 1.30.5
           Towny compile API: ${{ matrix.towny }}
           Towny Maven coordinates: ${{ matrix.townyGroup }}:${{ matrix.townyArtifact }}
@@ -118,7 +135,8 @@ jobs:
       - name: Compile against historic plugin APIs (no release artifact)
         run: |
           mvn --batch-mode --no-transfer-progress \
-            -Dspigot.version=1.16.5-R0.1-SNAPSHOT \
+            -Dserver.api.version=1.16.5-R0.1-SNAPSHOT \
+            -Dbukkit.api.version=1.16 \
             -Ddiscordsrv.version=1.24.0 \
             -Dtowny.version=0.97.5.0 \
             -Dtowny.groupId=com.github.TownyAdvanced \
@@ -155,7 +173,8 @@ jobs:
       - name: Verify SQLite SQL operations and full-fidelity MySQL export
         run: |
           mvn --batch-mode --no-transfer-progress \
-            -Dspigot.version=1.20.1-R0.1-SNAPSHOT \
+            -Dserver.api.version=1.20.1-R0.1-SNAPSHOT \
+            -Dbukkit.api.version=1.20 \
             -Ddiscordsrv.version=1.30.5 \
             -Dtowny.version=0.103.2.0 \
             -Dtowny.groupId=com.palmergames.bukkit.towny \
@@ -163,10 +182,10 @@ jobs:
             clean verify
 
   release:
-    name: Publish v1.1.0 pre-release (10 JARs and 10 ZIPs)
+    name: Publish v1.1.1 pre-release (14 JARs and 14 ZIPs)
     if: >-
       github.ref == 'refs/heads/main' &&
-      startsWith(github.event.head_commit.message, 'release: TownyDiscordChat 1.1.0')
+      startsWith(github.event.head_commit.message, 'release: TownyDiscordChat 1.1.1')
     needs: [build, legacy-api-check, storage-migration, repository-audit]
     runs-on: ubuntu-latest
     permissions:
@@ -178,12 +197,12 @@ jobs:
           pattern: TownyDiscordChat-MC-*
           path: packages
           merge-multiple: true
-      - name: Verify all ten JARs and all ten ZIPs
+      - name: Verify all fourteen JARs and ZIPs
         run: |
-          grep -q '<version>1.1.0</version>' pom.xml
-          test "$(find packages -maxdepth 1 -name 'TownyDiscordChat-MC-*.jar' | wc -l)" -eq 10
-          test "$(find packages -maxdepth 1 -name 'TownyDiscordChat-MC-*.zip' | wc -l)" -eq 10
-          for mc in 1.16.5 1.17.1 1.18.2 1.19.4 1.20.1 1.20.6 1.21.1 1.21.4 1.21.8 1.21.10; do
+          grep -q '<version>1.1.1</version>' pom.xml
+          test "$(find packages -maxdepth 1 -name 'TownyDiscordChat-MC-*.jar' | wc -l)" -eq 14
+          test "$(find packages -maxdepth 1 -name 'TownyDiscordChat-MC-*.zip' | wc -l)" -eq 14
+          for mc in 1.16.5 1.17.1 1.18.2 1.19.4 1.20.1 1.20.6 1.21.1 1.21.4 1.21.8 1.21.10 1.21.11 26.1.2 26.2 26.3; do
             test -s "packages/TownyDiscordChat-MC-$mc.jar"
             test -s "packages/TownyDiscordChat-MC-$mc.zip"
             jar tf "packages/TownyDiscordChat-MC-$mc.jar" | grep -Fq 'plugin.yml'
@@ -191,10 +210,10 @@ jobs:
           done
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.0
+          tag_name: v1.1.1
           target_commitish: ${{ github.sha }}
-          name: Pre-Release Build 1.1.0
-          body_path: .github/release-notes/v1.1.0.md
+          name: Pre-Release Build 1.1.1
+          body_path: .github/release-notes/v1.1.1.md
           files: |
             packages/TownyDiscordChat-MC-*.jar
             packages/TownyDiscordChat-MC-*.zip

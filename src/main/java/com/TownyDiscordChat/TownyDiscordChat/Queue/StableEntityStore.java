@@ -211,8 +211,15 @@ public final class StableEntityStore {
      */
     public java.util.Set<String> ownersOfName(String guild, String kind, String name)
             throws SQLException {
+        try (Connection c=jobs.connect()) {
+            return ownersOfName(c,guild,kind,name);
+        }
+    }
+
+    static java.util.Set<String> ownersOfName(Connection c,String guild,
+                                             String kind,String name) throws SQLException {
         java.util.Set<String> owners = new java.util.HashSet<String>();
-        try (Connection c=jobs.connect(); PreparedStatement ps=c.prepareStatement(
+        try (PreparedStatement ps=c.prepareStatement(
                 "SELECT towny_uuid FROM " + TABLE
                 + " WHERE guild_id=? AND kind=? AND last_name=?")) {
             ps.setString(1,guild);
@@ -288,7 +295,7 @@ public final class StableEntityStore {
         }
     }
 
-    private boolean hasRunningCreates(Connection c,String kind,String name) throws SQLException {
+    static boolean hasRunningCreates(Connection c,String kind,String name) throws SQLException {
         try (PreparedStatement ps=c.prepareStatement(
                 "SELECT COUNT(*) FROM tdc_discord_jobs WHERE status='RUNNING' "
                 + "AND (job_key=? OR job_key=? OR job_key=?)")) {

@@ -417,7 +417,7 @@ public final class DiscordJobStore {
         }
     }
 
-    private boolean stillOwned(Connection c, Job job) throws SQLException {
+    static boolean stillOwned(Connection c, Job job) throws SQLException {
         try (PreparedStatement ps = c.prepareStatement(
                 "SELECT id FROM " + TABLE + " WHERE id=? AND status='RUNNING' AND attempts=? FOR UPDATE")) {
             ps.setLong(1, job.id);

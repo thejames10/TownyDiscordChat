@@ -125,6 +125,7 @@ public final class Reconciler {
                 plugin.clearAdminWarning();
             if (!plugin.isGuildValidated()) {
                 plugin.setGuildValidated(true);
+                if (plugin.activityLog!=null) plugin.activityLog.onGuildReady(guild);
                 plugin.getLogger().info("Discord preflight passed for guild "+guild.getId()
                         + ". SQL synchronization is now enabled.");
                 for (String warning:check.warnings()) plugin.getLogger().info("[DISCOVERY] "+warning);

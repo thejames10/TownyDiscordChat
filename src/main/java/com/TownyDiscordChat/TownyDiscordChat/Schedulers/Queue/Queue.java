@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
- * Single-flight Discord dispatcher. The DB poll runs asynchronously; Towny and
+ * Two-lane durable Discord dispatcher. The DB poll runs asynchronously; Towny and
  * Bukkit lookups happen on the server thread; JDA owns REST rate-limit handling.
  * No blocking .complete(), artificial rate-limit arithmetic, or API calls in a loop.
  */
@@ -36,7 +36,8 @@ public final class Queue {
     private final DiscordJobStore store;
     private final MemberIntentStore memberStore;
     private final BukkitTask scheduler;
-    private final AtomicBoolean busy = new AtomicBoolean(false);
+    private final AtomicBoolean resourceBusy = new AtomicBoolean(false);
+    private final AtomicBoolean memberBusy = new AtomicBoolean(false);
     private volatile Job current;
     private volatile Intent currentIntent;
 
@@ -53,47 +54,52 @@ public final class Queue {
     }
 
     private void tick() {
-        long now = System.currentTimeMillis();
-        Job active = current;
-        Intent activeIntent = currentIntent;
-        if (active != null && now >= active.leaseUntil) {
-            plugin.getLogger().severe("Discord resource job timed out: " + active);
-            current = null;
-            busy.set(false);
-        }
-        if (activeIntent != null && now >= activeIntent.leaseUntil) {
-            plugin.getLogger().severe("Discord membership job timed out: " + activeIntent);
+        // Independent membership and resource lanes. Security revocations
+        // never wait behind slow channel/category creation callbacks.
+        tickMembers();
+        tickResources();
+    }
+
+    private void tickMembers() {
+        Intent active = currentIntent;
+        if (active != null && System.currentTimeMillis() >= active.leaseUntil) {
+            plugin.getLogger().severe("Membership REST operation lease expired: " + active);
             currentIntent = null;
-            busy.set(false);
+            memberBusy.set(false);
         }
-        if (!busy.compareAndSet(false, true)) return;
+        if (!memberBusy.compareAndSet(false, true)) return;
         try {
-            // Security revocations always precede resource creation and grants.
-            Intent revocation = memberStore.claim(true);
-            if (revocation != null) {
-                scheduleMember(revocation);
-                return;
-            }
-            final Job job = store.claim();
-            if (job != null) {
-                current = job;
-                final Set<String> categoryIds = job.kind.endsWith("CATEGORY")
-                        ? store.trackedCategoryIds(job.kind) : Collections.<String>emptySet();
-                Bukkit.getScheduler().runTask(plugin, () -> dispatch(job, categoryIds));
-                return;
-            }
-            Intent grant = memberStore.claim(false);
-            if (grant != null) {
-                scheduleMember(grant);
-                return;
-            }
-            busy.set(false);
+            Intent intent = memberStore.claim(true);
+            if (intent == null) intent = memberStore.claim(false);
+            if (intent == null) { memberBusy.set(false); return; }
+            scheduleMember(intent);
         } catch (Exception e) {
-            plugin.getLogger().warning("Queue poll failed: " + e.getMessage());
-            // Claimed resource jobs retain their lease and can be retried.
-            current = null;
+            plugin.getLogger().severe("Could not claim membership intent: " + e.getMessage());
             currentIntent = null;
-            busy.set(false);
+            memberBusy.set(false);
+        }
+    }
+
+    private void tickResources() {
+        Job active = current;
+        if (active != null && System.currentTimeMillis() >= active.leaseUntil) {
+            plugin.getLogger().warning("Resource REST operation lease expired: " + active);
+            current = null;
+            resourceBusy.set(false);
+        }
+        if (!resourceBusy.compareAndSet(false, true)) return;
+        try {
+            final Job job = store.claim();
+            if (job == null) { resourceBusy.set(false); return; }
+            current = job;
+            final Set<String> categoryIds = job.kind.endsWith("CATEGORY")
+                    ? store.trackedCategoryIds(job.kind) : Collections.<String>emptySet();
+            Bukkit.getScheduler().runTask(plugin, () -> dispatch(job, categoryIds));
+        } catch (Exception e) {
+            plugin.getLogger().warning("Could not claim resource job: " + e.getMessage());
+            // SQL lease safely recovers a claim if the callback never started.
+            current = null;
+            resourceBusy.set(false);
         }
     }
 
@@ -190,7 +196,7 @@ public final class Queue {
             } finally {
                 if (currentIntent == intent) {
                     currentIntent = null;
-                    busy.set(false);
+                    memberBusy.set(false);
                 }
             }
         });
@@ -347,7 +353,7 @@ public final class Queue {
                     // A callback may arrive after a newer attempt has started.
                     if (current == job) {
                         current = null;
-                        busy.set(false);
+                        resourceBusy.set(false);
                     }
                 }
             }

@@ -344,10 +344,14 @@ public final class Queue {
                 }
                 case "TOWN_CATEGORY":
                 case "NATION_CATEGORY": {
+                    int configuredMax = Math.max(1,Math.min(50,
+                            plugin.getConfig().getInt("category.SubChannelsMax",50)));
                     for (Category category : guild.getCategoriesByName(job.name, true)) {
-                        if (privateCategory(guild, category)
-                                && !categoryIds.contains(category.getId())) {
-                            // Reconcile a Discord category created just before a crash.
+                        if (!privateCategory(guild, category)) continue;
+                        if (!categoryIds.contains(category.getId())
+                                || category.getChannels().size() < configuredMax) {
+                            // Adopt an untracked resource OR acknowledge an
+                            // already-satisfied legacy/migration request.
                             success(job, category.getId(), null);
                             return;
                         }

@@ -12,6 +12,8 @@ nation:
   UseCategoryForText: true
   UseCategoryForVoice: true
 
+  # 0 = automatic category discovery by category.<Town/Nation>.Name
+  # Nonzero legacy IDs are verified, but workers select categories by name.
   TextCategoryId: 0
   VoiceCategoryId: 0
 
@@ -24,6 +26,8 @@ town:
   UseCategoryForText: true
   UseCategoryForVoice: true
 
+  # 0 = automatic category discovery by category.<Town/Nation>.Name
+  # Nonzero legacy IDs are verified, but workers select categories by name.
   TextCategoryId: 0
   VoiceCategoryId: 0
 
@@ -45,16 +49,10 @@ log:
   Channel:
     Name: "townydiscordchat-logs"
 
-Discord:
-  Api:
-    RateLimit:
-      Roles: 86
-      Categories: 86
-      Channels: 86
-
 messages:
   TimeZone: "UTC"
   DateFormat: "dd/MM/yyyy - hh:mm a"
+  # Legacy optional setting. The SQL queue does not require a log channel ID.
   DiscordLogTextChannelId: 0
 
   Prefix: "&8[&2TDC Bot&8]"
@@ -156,13 +154,17 @@ queue:
     enabled: true
     intervalSeconds: 21600
 
-# A linked member who leaves a town is always reconciled for revocation.
-# Opt in to revoking TDC-prefixed roles from unlinked Discord members too.
-# This only scans members visible in DiscordSRV's member cache; old grants are
-# also remembered in MySQL for revocation after an unlink.
+# Towny access is revoked when membership is lost.
+# Full guild scans require Discord's privileged Server Members Intent.
 security:
   revokeUnlinkedAccounts: true
 
-# Allow queued deletions to be cancelled by a quick rename/recreation.
-# New persistent sync features. Back up the DB before enabling on production.
-# Deletion grace protects against changes/reinstalls in flight.
+# Player guidance only; DiscordSRV performs the actual account linking.
+# Do not prompt players who are not in a Towny town.
+onboarding:
+  enabled: true
+  remindOnJoin: true
+  remindOnTownJoin: true
+  cooldownMinutes: 60
+  joinDelayTicks: 60
+  message: "&eYour town has private Discord channels. Link using &a/tdc link&e (DiscordSRV: /discord link)."

@@ -24,6 +24,18 @@ public class TDCCommand implements CommandExecutor {
 
         Preconditions.checkNotNull(player);
 
+        // Player self-service intentionally delegates all verification/token
+        // handling to DiscordSRV; TDC merely provides a Towny-aware entrypoint.
+        if (args.length > 0 && args[0].equalsIgnoreCase("link")) {
+            Main.plugin.onboarding.link(player);
+            return true;
+        }
+        if (args.length > 0 && (args[0].equalsIgnoreCase("status")
+                || args[0].equalsIgnoreCase("linked"))) {
+            Main.plugin.onboarding.showStatus(player);
+            return true;
+        }
+
         if (args.length == 0) {
             // No arguments were provided, just "/TownyDiscordChat | /tdc"
 
@@ -37,7 +49,7 @@ public class TDCCommand implements CommandExecutor {
                     , ChatColor.DARK_GREEN + "---------------------------------");
 
             TDCMessages.sendMessageToPlayerGame(player,msg);
-
+            Main.plugin.onboarding.showStatus(player);
             return true;
         }
 

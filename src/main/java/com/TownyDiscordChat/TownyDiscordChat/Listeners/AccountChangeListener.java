@@ -12,14 +12,19 @@ public final class AccountChangeListener {
     public AccountChangeListener(Main plugin) { this.plugin = plugin; }
 
     @Subscribe
-    public void onLinked(AccountLinkedEvent event) { changed(); }
+    public void onLinked(AccountLinkedEvent event) {
+        final java.util.UUID uuid=event.getPlayer().getUniqueId();
+        changed(uuid);
+    }
 
     @Subscribe
-    public void onUnlinked(AccountUnlinkedEvent event) { changed(); }
+    public void onUnlinked(AccountUnlinkedEvent event) { changed(null); }
 
-    private void changed() {
+    private void changed(java.util.UUID linkedUuid) {
         if (plugin.isEnabled()) Bukkit.getScheduler().runTask(plugin, () -> {
             if (plugin.reconciler != null) plugin.reconciler.requestSoon();
+            if (linkedUuid!=null && plugin.onboarding!=null)
+                plugin.onboarding.onAccountLinked(linkedUuid);
         });
     }
 }

@@ -1,6 +1,7 @@
 package com.TownyDiscordChat.TownyDiscordChat.Schedulers;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
+import com.TownyDiscordChat.TownyDiscordChat.SetupValidator;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.StableEntityStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
@@ -106,8 +107,23 @@ public final class Reconciler {
         try {
             Guild guild = DiscordSRV.getPlugin().getMainGuild();
             if (guild == null || DiscordSRV.getPlugin().getAccountLinkManager() == null) {
+                plugin.setGuildValidated(false);
                 complete();
                 return;
+            }
+            SetupValidator.Result check=SetupValidator.validateGuild(plugin.getConfig(),guild);
+            if (!check.valid()) {
+                plugin.setGuildValidated(false);
+                for (String error:check.errors())
+                    plugin.reportAdminWarning("Discord preflight: "+error);
+                complete();
+                return;
+            }
+            if (!plugin.isGuildValidated()) {
+                plugin.setGuildValidated(true);
+                plugin.getLogger().info("Discord preflight passed for guild "+guild.getId()
+                        + ". SQL synchronization is now enabled.");
+                for (String warning:check.warnings()) plugin.getLogger().info("[DISCOVERY] "+warning);
             }
             final Snapshot state = capture(guild);
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {

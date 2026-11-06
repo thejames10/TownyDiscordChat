@@ -3,6 +3,7 @@ package com.TownyDiscordChat.TownyDiscordChat;
 import com.TownyDiscordChat.TownyDiscordChat.Commands.TDCCommand;
 import com.TownyDiscordChat.TownyDiscordChat.Commands.TDCSQL;
 import com.TownyDiscordChat.TownyDiscordChat.Listeners.MembershipChangeListener;
+import com.TownyDiscordChat.TownyDiscordChat.Listeners.OnboardingListener;
 import com.TownyDiscordChat.TownyDiscordChat.Listeners.AccountChangeListener;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.StableEntityStore;
@@ -53,6 +54,7 @@ public class Main extends JavaPlugin {
     public Reconciler reconciler;
     public CompatibilityGuard compatibility;
     public AccountChangeListener accountListener;
+    public OnboardingListener onboarding;
     private boolean operational;
     private volatile String adminWarning;
 
@@ -160,6 +162,8 @@ public class Main extends JavaPlugin {
                         config.getLong("queue.startDelaySeconds", 10L),
                         config.getLong("queue.pollSeconds", 1L), this);
                 getServer().getPluginManager().registerEvents(new MembershipChangeListener(this), this);
+                this.onboarding = new OnboardingListener(this);
+                getServer().getPluginManager().registerEvents(onboarding,this);
                 this.accountListener = new AccountChangeListener(this);
                 DiscordSRV.api.subscribe(accountListener);
                 this.operational = true;

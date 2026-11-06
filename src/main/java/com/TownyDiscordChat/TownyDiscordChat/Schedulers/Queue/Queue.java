@@ -65,6 +65,7 @@ public final class Queue {
     }
 
     private void tick() {
+        if (!plugin.isGuildValidated()) return;
         // Independent membership and resource lanes. Security revocations
         // never wait behind slow channel/category creation callbacks.
         tickMembers();

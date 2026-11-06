@@ -10,9 +10,9 @@ softdepend: [DiscordSRV, Towny]
 
 commands:
   TownyDiscordChat:
-    description: Link Discord and Towny Data
+    description: Towny Discord status, DiscordSRV linking, and administrator reconciliation
     aliases: [tdc]
-    usage: /TownyDiscordChat
+    usage: /tdc [status|link|check]
   tdcqueue:
     description: View or retry the durable Discord task queue
     aliases: [tdcsql]

@@ -293,6 +293,8 @@ The [database-backed two-lane dispatcher](SYNC-MIGRATION.md) remembers intended 
 
 Towny UUIDs identify towns/nations even when their names change. Existing Discord roles/channels are renamed in place, preserving their IDs. An empty local database is not assumed to mean an empty Discord guild; startup checks and safely adopts verified resources instead of recreating everything. Legacy SQL rows are migrated without deleting historic tables; SQLite can be copied directly into MySQL without Discord API reconstruction.
 
+**Existing Discord role permissions:** Legacy `town-*` / `nation-*` roles do **not** need to have zero server-wide permissions. The synchronizer may adopt a uniquely named role associated with a current Towny identity when its permission bits are limited to ordinary member capabilities (for example, sending messages, creating threads, using soundboard or creating events). Existing role permissions are **never removed or rewritten**. Administrator, role/channel management, moderation, other sensitive permissions, and unknown future permission bits are blocked and require administrator review. Identical role names are ambiguous and are never auto-selected. These checks also apply to grants, revocations, audits, renames and deletions. Channel privacy still requires verified `@everyone` View Channel denial and the town/nation role override.
+
 **Security note:** Discord access cannot be revoked instantaneously if the bot is offline, permission-blocked, or waiting behind Discord API rate limits. Investigate any failed revocations immediately.
 
 ### Late Discord responses and restart recovery

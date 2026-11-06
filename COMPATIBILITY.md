@@ -105,10 +105,17 @@ The config upgrade is **not** a database migration. See
 
 ## Legacy logging settings
 
-`log.Category.Name`, `log.Channel.Name`, and
-`messages.DiscordLogTextChannelId` remain in the config for upgrade
-compatibility. The old Discord log-channel scheduler is intentionally
-inactive; critical API/queue errors are printed to the Minecraft console.
+The legacy `messages.DiscordLogTextChannelId` numeric ID is ignored.
+When `log.Enabled: true` (default), the **SQL activity logger** finds
+one existing private text channel by `log.Category.Name` and
+`log.Channel.Name`. The bot must be able to read and write there; a
+category or channel-level `@everyone` View Channel denial is required.
+A startup confirmation, real Discord changes, and queue failures are
+posted asynchronously. Adoption/no-op reconciliation logs only to the
+Minecraft console, so existing guilds are not flooded on startup.
+If the log channel is missing, ambiguous, public, or unwritable,
+`/tdcqueue status` reports its status and the console warns; queue
+processing continues. Logs are best effort and not durably replayed.
 
 ## Runtime and legacy-code boundaries
 

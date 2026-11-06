@@ -134,6 +134,36 @@ of any prior TownyDiscordChat tables before migration.
     verify retries/DEAD tracking, restore permissions, then run
     `/tdcqueue retry-dead`.
 
+## Delayed Discord callbacks, reuse and duplicate prevention
+
+- Artificially delay a role/channel creation response past
+  `queue.leaseSeconds`. Confirm the resource lane pauses and warns
+  admins instead of dispatching another create, while membership
+  revocations in the other lane continue.
+- Let the first API callback finish late. Confirm the original Discord
+  snowflake is persisted and that normal queue activity resumes.
+- Restart after a request is known to have completed remotely but
+  before its callback was saved. Once its lease expires, the worker
+  should safely **adopt** the existing private role/channel rather
+  than send a second create. Inspect the Discord guild for duplicates.
+- Put two matching channels in managed categories, or give one
+  matching channel an unsafe `@everyone` / role override. Confirm
+  automatic adoption refuses the ambiguity/unsafe resource rather
+  than creating a third object. Resolve manually and retry.
+- Rename a Towny town/nation while an old-name CREATE request is
+  still running. Check the stable UUID record remains on the old
+  name until the callback is persisted, then moves to the new
+  name and enqueues an in-place Discord rename with the original ID.
+- Delete a Towny object, then create a different UUID using the
+  old name. Confirm the old UUID's resources are cleaned up before
+  granting the new entity's roles; no access passes to the new UUID.
+- Remove a legacy resource-mapping row while retaining its stable
+  UUID and Discord snowflake. Confirm the resource can be cleaned
+  up using that stable ID without adopting another guild object.
+  Restore backups after the test.
+- Verify only one active REST-mutating scheduler remains. No legacy
+  direct-event listener should perform unqueued role mutations.
+
 ## Crash, rate limits and shutdown
 
 18. Stop the server while an operation is in flight; restart and ensure

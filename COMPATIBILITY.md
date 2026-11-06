@@ -91,6 +91,15 @@ safe mode and notifies the console and joining admins.
 compatibility. The old Discord log-channel scheduler is intentionally
 inactive; critical API/queue errors are printed to the Minecraft console.
 
+## Runtime and legacy-code boundaries
+
+The original polling schedulers, direct Towny/DiscordSRV event handlers
+and task graph have been removed from SQL-branch builds. Only the durable
+queue and reconciliation service may create Discord resources or modify
+managed member roles. **Historic database tables and their migrations
+remain intact**, so removing unused Java classes does not discard old
+town, nation or queue mappings.
+
 ## Queuing, migration and security
 
 SQLite or MySQL stores the latest desired membership and two independent queues:

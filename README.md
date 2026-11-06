@@ -237,6 +237,22 @@ Towny UUIDs identify towns/nations even when their names change. Existing Discor
 
 **Security note:** Discord access cannot be revoked instantaneously if the bot is offline, permission-blocked, or waiting behind Discord API rate limits. Investigate any failed revocations immediately.
 
+### Late Discord responses and restart recovery
+
+If a Discord REST operation exceeds its lease, TownyDiscordChat **does not**
+start a second overlapping request in that lane. It warns Minecraft admins
+and pauses that lane until the existing callback finishes or the plugin
+restarts; the other queue lane continues independently. After a restart,
+expired leases become eligible again and the worker first checks known
+Discord roles/channels for safe adoption. Unsafe, publicly visible or
+ambiguous same-name channels are **not duplicated**: fix them manually
+and run `/tdcqueue retry-dead` if needed. A deleted town's old resource
+is identified by its stable Towny UUID, even when a new town reuses its name.
+
+Do not run two TownyDiscordChat installations against the same guild
+on independent databases. Record any persistent administrator warning
+before restarting for diagnosis.
+
 ## Troubleshooting
 
 - **SAFE MODE: invalid config.yml:** inspect the logged setting names. Correct the file and restart; queue jobs won't run until startup validation succeeds.

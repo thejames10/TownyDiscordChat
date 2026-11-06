@@ -38,6 +38,40 @@ table existed**, and there is no safe UUID link between the old name
 and new Towny object, automatic inference is impossible. The old
 mapping is left untouched for manual review rather than deleted.
 
+## REST callback and ownership race protection
+
+A Discord create or membership request can outlive the configured SQL
+lease. Rather than immediately reopening the worker lane and dispatching
+a duplicate request, the same process retains the in-flight slot and
+alerts administrators when the lease expires. The lane resumes on the
+original callback, or after a restart when no callback can survive.
+On restart an expired database lease is retried **only after checking
+Discord's currently visible roles and channels**. A unique, correctly
+private resource is reused. Ambiguous candidates or resources with
+unexpected role/privacy overrides halt automatic adoption and require
+an operator to resolve the conflict; the worker will not silently
+make a second similarly-named private channel.
+
+For resource CREATE jobs the worker checks that the immutable Towny
+UUID recorded in SQL still owns the requested mutable name. A rename
+does not change the historical SQL name while an old-name CREATE job
+is RUNNING; once that job completes, the next reconcile moves the
+mapping and renames the Discord role/channel **in place**.
+Deletion of a replaced town/nation is allowed to finish when a
+*different UUID* reuses the old name, but will never delete a resource
+still owned by a live UUID. If a legacy name table is missing but
+the stable UUID record remains, deletion uses the unique stable Discord
+snowflake. Conflicting identity rows stop cleanup for manual review.
+
+No Discord REST operation is guaranteed to have exactly-once side effects.
+When Discord acknowledges a create but the application loses its
+callback, a startup rescan and conservative conflict handling minimize
+duplicates, but manual review may still be needed in an ambiguous guild.
+
+The legacy direct-event REST executors, old pollers and Tasks package
+have been removed. Their *database tables* and historical migrations
+remain supported.
+
 ## Storage backends and offline migration
 
 The same durable queue and mapping tables run on embedded **SQLite** or an

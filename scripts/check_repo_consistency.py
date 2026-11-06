@@ -113,6 +113,41 @@ for name in ("README.md", "COMPATIBILITY.md", "SYNC-MIGRATION.md",
              "TEST-PLAN.md", "config.example.yml", "BUILD-INFO.txt"):
     require(name in workflow, f"CI artifact bundle is missing {name}")
 
+# Dormant 2023 scheduler/listener/task graph must not silently reappear
+# and bypass our desired-state queue.
+javaRoot = ROOT / "src/main/java/com/TownyDiscordChat/TownyDiscordChat"
+retiredDirectories = [
+    javaRoot / "Tasks",
+    javaRoot / "Schedulers" / "Categories",
+    javaRoot / "Schedulers" / "Roles",
+    javaRoot / "Schedulers" / "Channels",
+    javaRoot / "Schedulers" / "Log",
+    javaRoot / "Schedulers" / "Players",
+]
+for directory in retiredDirectories:
+    require(not any(directory.rglob("*.java")) if directory.is_dir() else True,
+            f"Dormant Java scheduler/task package was restored: {directory.relative_to(ROOT)}")
+for filename in ("Listeners/TDCTownyListener.java",
+                 "Listeners/TDCDiscordSRVListener.java",
+                 "MySQL/MySQL.java",
+                 "MySQL/Tables/QueuedTask.java"):
+    require(not (javaRoot / filename).exists(),
+            f"Retired executable file was restored: {filename}")
+
+allowedMutators = {
+    javaRoot / "Schedulers" / "Queue" / "Queue.java",
+    javaRoot / "Core" / "TDCManager.java",
+}
+for file in javaRoot.rglob("*.java"):
+    if file in allowedMutators:
+        continue
+    content=file.read_text(encoding="utf-8")
+    for forbidden in ("addRoleToMember(", "removeRoleFromMember(",
+                      ".createRole()", ".createTextChannel(",
+                      ".createVoiceChannel(", ".createCategory("):
+        require(forbidden not in content,
+                f"{file.relative_to(ROOT)} issues Discord REST mutations outside the queue")
+
 # Git tags provide permanent, version-specific documents. Fail fast if a
 # release tag was cut while the checked-in README still says SNAPSHOT.
 ref = os.environ.get("GITHUB_REF", "")

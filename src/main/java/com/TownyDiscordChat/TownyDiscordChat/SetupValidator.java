@@ -204,6 +204,30 @@ public final class SetupValidator {
             out.error("Discord bot needs Manage Roles to grant/revoke town access.");
         if (!guild.getSelfMember().hasPermission(Permission.MANAGE_CHANNEL))
             out.error("Discord bot needs Manage Channels to create/rename private channels.");
+
+        // Manage Roles alone is insufficient: the bot's highest role must
+        // outrank each managed Towny role or revocations will fail.
+        java.util.Set<String> managedNames=new java.util.HashSet<String>();
+        for (com.palmergames.bukkit.towny.object.Town town :
+                com.palmergames.bukkit.towny.TownyUniverse.getInstance().getTowns())
+            managedNames.add(("town-"+town.getName()).toLowerCase(Locale.ROOT));
+        for (com.palmergames.bukkit.towny.object.Nation nation :
+                com.palmergames.bukkit.towny.TownyUniverse.getInstance().getNations())
+            managedNames.add(("nation-"+nation.getName()).toLowerCase(Locale.ROOT));
+        int blockedRoles=0;
+        String example=null;
+        for (github.scarsz.discordsrv.dependencies.jda.api.entities.Role role : guild.getRoles()) {
+            if (managedNames.contains(role.getName().toLowerCase(Locale.ROOT))
+                    && !guild.getSelfMember().canInteract(role)) {
+                blockedRoles++;
+                if (example==null) example=role.getName();
+            }
+        }
+        if (blockedRoles>0)
+            out.error("Discord bot's highest role is below "+blockedRoles
+                    +" managed Towny roles (e.g. "+example+"). Move the bot role above"
+                    +" Towny roles before enabling synchronization.");
+
         for (String group : new String[]{"town","nation"}) {
             String expected=cfg.getString("category."+upper(group)+".Name");
             List<Category> categories=guild.getCategoriesByName(expected,true);

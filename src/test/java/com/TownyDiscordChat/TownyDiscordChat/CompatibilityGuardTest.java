@@ -13,6 +13,8 @@ public class CompatibilityGuardTest {
 
         assertTrue(problem.contains("DiscordSRV missing or disabled"));
         assertTrue(problem.contains("Towny missing or disabled"));
+        assertTrue(problem.contains("Towny 0.97.5.0+"));
+        assertTrue(problem.contains("DiscordSRV 1.24.0+"));
     }
 
     @Test
@@ -28,6 +30,7 @@ public class CompatibilityGuardTest {
         String problem = CompatibilityGuard.missingDependencyProblem(true, false);
 
         assertTrue(problem.contains("Towny missing or disabled"));
+        assertTrue(problem.contains("Towny 0.97.5.0+"));
         assertFalse(problem.contains("DiscordSRV missing or disabled"));
     }
 

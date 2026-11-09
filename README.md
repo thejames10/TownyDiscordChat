@@ -104,6 +104,14 @@ Before installing the 1.1.1 pre-release, use an isolated Discord guild and a tes
 
 You need a compatible **Spigot/Paper/Purpur server** for the selected version (Towny 0.102+: Paper/Purpur), **Towny**, **DiscordSRV**, and **local SQLite storage** (created automatically). MySQL is optional. Towny and DiscordSRV must be installed as separate plugins. They are **not packaged inside** TownyDiscordChat.
 
+**Startup preflight:** TownyDiscordChat checks that both Towny and DiscordSRV are
+installed, enabled, and compatible *before* reading or migrating its configuration
+or selecting a storage backend. When a dependency is missing or incompatible,
+the plugin enters an inert safe mode and does not create or modify
+`config.yml`, connect to a database, or start Discord synchronization.
+Existing configuration and database files are preserved. Install or correct
+the dependencies and restart to continue normal configuration initialization.
+
 Official resources:
 - [Towny installation and compatibility](https://github.com/TownyAdvanced/Towny)
 - [DiscordSRV initial setup](https://docs.discordsrv.com/installation/initial-setup/)

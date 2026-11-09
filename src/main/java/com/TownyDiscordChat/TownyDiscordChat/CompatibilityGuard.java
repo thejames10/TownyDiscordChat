@@ -15,10 +15,12 @@ import java.util.regex.Pattern;
  * allowing console and in-game admin warnings without stack traces.
  */
 public final class CompatibilityGuard implements Listener {
-    private static final String MISSING_DISCORD =
-            "DiscordSRV missing or disabled. Install compatible DiscordSRV 1.24.0+ and restart.";
-    private static final String MISSING_TOWNY =
-            "Towny missing or disabled. Install a compatible Towny release and restart.";
+    private static final String MINIMUM_DISCORD_VERSION = "1.24.0";
+    private static final String MINIMUM_TOWNY_VERSION = "0.97.5.0";
+    private static final String MISSING_DISCORD = "DiscordSRV missing or disabled. "
+            + "Install compatible DiscordSRV " + MINIMUM_DISCORD_VERSION + "+ and restart.";
+    private static final String MISSING_TOWNY = "Towny missing or disabled. "
+            + "Install compatible Towny " + MINIMUM_TOWNY_VERSION + "+ and restart.";
 
     private final Main plugin;
     private String problem;
@@ -39,9 +41,10 @@ public final class CompatibilityGuard implements Listener {
         String discordVersion = discord.getDescription().getVersion();
         String serverName = plugin.getServer().getName().toLowerCase(java.util.Locale.ROOT);
         String townyVersion = towny.getDescription().getVersion();
-        if (compare(discordVersion, "1.24.0") < 0) {
+        if (compare(discordVersion, MINIMUM_DISCORD_VERSION) < 0) {
             problem = "Outdated DiscordSRV " + discordVersion
-                    + ": TownyDiscordChat requires 1.24.0+ with the legacy JDA API.";
+                    + ": TownyDiscordChat requires " + MINIMUM_DISCORD_VERSION
+                    + "+ with the legacy JDA API.";
             return false;
         }
         if (serverName.contains("folia")) {
@@ -61,9 +64,9 @@ public final class CompatibilityGuard implements Listener {
                     + "Use 1.30.5 for testing until compatibility is checked.";
             return false;
         }
-        if (compare(townyVersion, "0.97.5.0") < 0) {
+        if (compare(townyVersion, MINIMUM_TOWNY_VERSION) < 0) {
             problem = "Outdated Towny " + townyVersion
-                    + ": TownyDiscordChat requires Towny 0.97.5.0+.";
+                    + ": TownyDiscordChat requires Towny " + MINIMUM_TOWNY_VERSION + "+.";
             return false;
         }
 
@@ -111,8 +114,15 @@ public final class CompatibilityGuard implements Listener {
     }
 
     public void warnConsole() {
-        if (problem != null) plugin.getLogger().severe(
-                "SAFE MODE: " + problem + " No Towny/Discord role or channel changes will be made.");
+        if (problem == null) {
+            return;
+        }
+        if (problem.contains(MISSING_DISCORD)) {
+            plugin.getLogger().severe("[DEPENDENCY] " + MISSING_DISCORD);
+        }
+        if (problem.contains(MISSING_TOWNY)) {
+            plugin.getLogger().severe("[DEPENDENCY] " + MISSING_TOWNY);
+        }
     }
 
     @EventHandler

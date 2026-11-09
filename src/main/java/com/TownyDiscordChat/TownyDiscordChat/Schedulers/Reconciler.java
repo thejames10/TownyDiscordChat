@@ -3,6 +3,7 @@ package com.TownyDiscordChat.TownyDiscordChat.Schedulers;
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.RoleSafety;
 import com.TownyDiscordChat.TownyDiscordChat.SetupValidator;
+import com.TownyDiscordChat.TownyDiscordChat.GuildSetupValidator;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.StableEntityStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
@@ -112,7 +113,7 @@ public final class Reconciler {
                 complete();
                 return;
             }
-            SetupValidator.Result check=SetupValidator.validateGuild(plugin.getConfig(),guild);
+            SetupValidator.Result check=GuildSetupValidator.validateGuild(plugin.getConfig(),guild);
             if (!check.valid()) {
                 plugin.setGuildValidated(false);
                 plugin.reportAdminWarning("Discord preflight: "

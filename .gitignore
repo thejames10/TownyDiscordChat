@@ -1,3 +1,5 @@
+# Maven, IDEs and local build outputs
+/target/
 target/**
 pom.xml.tag
 pom.xml.releaseBackup
@@ -7,9 +9,7 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
-# https://github.com/takari/maven-wrapper#usage-without-binary-jar
 .mvn/wrapper/maven-wrapper.jar
-/target/
 .settings
 .classpath
 .project
@@ -18,39 +18,26 @@ buildNumber.properties
 .vscode/
 .factorypath
 .floo*
-craftbukkit.jar
-/server/logs/
-/server/world/
-/server/world_nether/
-/server/world_the_end/
-/server/banned-ips.json
-/server/banned-players.json
-/server/bukkit.yml
-/server/commands.yml
-/server/eula.txt
-/server/help.yml
-/server/ops.json
-/server/permissions.yml
-/server/server.properties
-/server/spigot.yml
-/server/usercache.json
-/server/whitelist.json
-/server/plugins/bStats/
-/server/plugins/DiscordSRV/
-/server/plugins/Essentials/
-/server/plugins/LuckPerms/
-/server/plugins/PlaceholderAPI/
-/server/plugins/ProtocolLib/
-/server/plugins/Towny/
-/server/plugins/TownyDiscordChat/
-/server/plugins/Vault/
-/server/plugins/PluginMetrics/
-.vs/ProjectSettings.json
-.vs/slnx.sqlite
-.vs/TownyDiscordChat/v17/.suo
-.vs/VSWorkspaceState.json
-
-# Local test output and editor state are not release source artifacts.
 /.vs/
-/server/crash-reports/
-/server/plugins/TownyDiscordChat.jar
+
+# A Minecraft test server is local runtime data, not plugin source.
+# Do not commit downloaded server JARs, third-party plugins, worlds or player data.
+/server/
+/test-lab-local/
+/lab-results/
+
+# Local credentials, caches and runtime databases
+.env
+.env.*
+!.env.example
+*.log
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+*.pem
+*.key
+.DS_Store
+__pycache__/
+*.pyc

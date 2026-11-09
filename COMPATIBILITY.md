@@ -45,7 +45,7 @@ SQLite JDBC, MySQL Connector/J, and relocated bStats are packaged in the plugin 
 
 ## Installing the 1.1.1 pre-release
 
-1. Open the [v1.1.0 release](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.1).
+1. Open the [v1.1.1 release](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.1).
 2. Download `TownyDiscordChat-MC-<version>.jar` for your exact
    Minecraft version, or the matching ZIP with configuration and guides.
 3. Install only the JAR in `plugins/`. Before starting a new

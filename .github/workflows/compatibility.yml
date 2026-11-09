@@ -20,7 +20,13 @@ jobs:
         with:
           python-version: '3.11'
       - name: Check README, config, Maven and CI release matrix
-        run: python3 scripts/check_repo_consistency.py
+        run: |
+          python3 scripts/check_repo_consistency.py
+          python3 scripts/testlab_matrix.py --check
+          if test -n "$(git ls-files 'server/**')"; then
+            echo "Test server binaries must not be tracked. Use ignored server/ or private TestLab."
+            exit 1
+          fi
 
   build:
     name: MC ${{ matrix.minecraft }} / TDC test package

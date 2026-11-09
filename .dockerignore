@@ -1,0 +1,20 @@
+# Keep disposable runtime state and git history out of container build contexts
+.git
+.gitignore
+.github
+server
+target
+test-lab-local
+lab-results
+**/*.jar
+**/*.zip
+**/*.db
+**/*.sqlite
+**/*.log
+**/*.pem
+**/*.key
+.env
+.env.*
+.idea
+.vs
+.vscode

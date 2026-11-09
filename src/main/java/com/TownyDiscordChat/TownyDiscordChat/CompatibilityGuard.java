@@ -15,6 +15,11 @@ import java.util.regex.Pattern;
  * allowing console and in-game admin warnings without stack traces.
  */
 public final class CompatibilityGuard implements Listener {
+    private static final String MISSING_DISCORD =
+            "DiscordSRV missing or disabled. Install compatible DiscordSRV 1.24.0+ and restart.";
+    private static final String MISSING_TOWNY =
+            "Towny missing or disabled. Install a compatible Towny release and restart.";
+
     private final Main plugin;
     private String problem;
 
@@ -25,12 +30,10 @@ public final class CompatibilityGuard implements Listener {
     public boolean check() {
         Plugin discord = plugin.getServer().getPluginManager().getPlugin("DiscordSRV");
         Plugin towny = plugin.getServer().getPluginManager().getPlugin("Towny");
-        if (discord == null || !discord.isEnabled()) {
-            problem = "DiscordSRV missing or disabled. Install compatible DiscordSRV 1.24.0+ and restart.";
-            return false;
-        }
-        if (towny == null || !towny.isEnabled()) {
-            problem = "Towny missing or disabled. Install a compatible Towny release and restart.";
+        problem = missingDependencyProblem(
+                discord != null && discord.isEnabled(),
+                towny != null && towny.isEnabled());
+        if (problem != null) {
             return false;
         }
         String discordVersion = discord.getDescription().getVersion();
@@ -82,6 +85,16 @@ public final class CompatibilityGuard implements Listener {
         }
         problem = null;
         return true;
+    }
+
+    static String missingDependencyProblem(boolean discordReady, boolean townyReady) {
+        if (discordReady && townyReady) {
+            return null;
+        }
+        if (!discordReady && !townyReady) {
+            return MISSING_DISCORD + " " + MISSING_TOWNY;
+        }
+        return discordReady ? MISSING_TOWNY : MISSING_DISCORD;
     }
 
     private static int compare(String found, String minimum) {

@@ -84,7 +84,7 @@ public class Main extends JavaPlugin {
 
     public static Main plugin;
 
-    public FileConfiguration config = getConfig();
+    public FileConfiguration config;
 
     private void enterSafeMode(String reason) {
         operational = false;
@@ -106,6 +106,16 @@ public class Main extends JavaPlugin {
     @Override
     public void onEnable() {
         plugin = this;
+
+        // Optional plugins must pass preflight before config files or storage are touched.
+        this.compatibility = new CompatibilityGuard(this);
+        getServer().getPluginManager().registerEvents(compatibility, this);
+        if (!compatibility.check()) {
+            compatibility.warnConsole();
+            enterSafeMode(compatibility.problem());
+            return;
+        }
+
         boolean importedBackup = false;
 
         // Upgrade only when the active configuration is absent. Never let a
@@ -177,14 +187,8 @@ public class Main extends JavaPlugin {
             return;
         }
 
-        // Soft dependencies permit a visible, inert safe mode when outdated or
-        // missing plugins would otherwise prevent TownyDiscordChat loading.
-        this.compatibility = new CompatibilityGuard(this);
-        getServer().getPluginManager().registerEvents(compatibility, this);
-        boolean dependenciesReady=compatibility.check();
-        if (!dependenciesReady || startupProblem!=null) {
-            if (!dependenciesReady) compatibility.warnConsole();
-            enterSafeMode(startupProblem!=null ? startupProblem : compatibility.problem());
+        if (startupProblem != null) {
+            enterSafeMode(startupProblem);
             return;
         }
 

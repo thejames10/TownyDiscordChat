@@ -28,6 +28,16 @@
 </p>
 
 
+## Download TownyDiscordChat
+
+**Current version: 1.1.1 (pre-release).** Choose the JAR for your server's exact Minecraft version.
+
+**[Download on Hangar](https://hangar.papermc.io/thejames10/TownyDiscordChat/versions)** · **[Download JARs and ZIPs from GitHub](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.1)** · [All releases](https://github.com/thejames10/TownyDiscordChat/releases) · [Compatibility](#compatibility)
+
+Towny and DiscordSRV are separate required plugins. See [Installation](#installation) before deploying.
+
+---
+
 ## What is TownyDiscordChat?
 
 **TownyDiscordChat automatically gives Minecraft towns and nations their own private spaces in Discord.** It's a server-side plugin that connects [Towny](https://github.com/TownyAdvanced/Towny) (which knows who belongs to each Minecraft town and nation) with [DiscordSRV](https://github.com/DiscordSRV/DiscordSRV) (which links Minecraft players to their Discord accounts).

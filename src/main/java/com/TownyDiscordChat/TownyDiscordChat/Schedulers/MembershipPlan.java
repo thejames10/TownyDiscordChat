@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Pure membership decisions used by the real reconciler and offline Discord simulations.
- * No JDA session, network request, Bukkit scheduler or live guild is required.
+ * Produces deterministic membership decisions for the production reconciler.
+ * The planner does not initiate Discord requests or Bukkit scheduler work.
  */
 public final class MembershipPlan {
     public enum Change {

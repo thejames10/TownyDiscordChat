@@ -420,3 +420,12 @@ Each release tag preserves the **exact README, configuration defaults, dependenc
 We intentionally do **not** maintain separate editable copies of every historical README: tags are immutable release snapshots, which prevents the documentation for older versions changing when the latest README is updated.
 
 Useful references: [Compatibility and artifact details](COMPATIBILITY.md) · [SQL migration and security](SYNC-MIGRATION.md) · [Manual integration test plan](TEST-PLAN.md) · [Towny](https://github.com/TownyAdvanced/Towny) · [DiscordSRV](https://github.com/DiscordSRV/DiscordSRV).
+
+## Contributing and support
+
+- **Questions and setup help:** [TownyDiscordChat Discord](https://discord.gg/ynsCb2p3ac).
+- **Bugs and feature requests:** [open an issue](https://github.com/thejames10/TownyDiscordChat/issues/new/choose) using the templates.
+- **Security problems:** report privately as described in [SECURITY.md](SECURITY.md).
+- **Code contributions:** read [CONTRIBUTING.md](CONTRIBUTING.md) for build, test and style requirements.
+
+TownyDiscordChat is licensed under the [GNU GPL v3](LICENSE).

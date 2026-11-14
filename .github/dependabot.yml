@@ -1,0 +1,10 @@
+version: 2
+updates:
+  # Server APIs and Towny/DiscordSRV versions are pinned per Minecraft target in
+  # the CI matrix and are updated deliberately, so only Actions are automated.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: chore

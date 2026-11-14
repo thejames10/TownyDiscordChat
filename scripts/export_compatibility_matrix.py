@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Export the build matrix without maintaining a second, divergent version list.
+"""Export the supported build matrix directly from the compatibility workflow.
 
 Standard-library only: read GitHub Actions' compatibility.yml inline matrix.
-The 'jdk' field is a BUILD JDK, not proof of Minecraft runtime support.
+The 'jdk' field indicates the build JDK, not the Minecraft runtime requirement.
 """
 from __future__ import annotations
 

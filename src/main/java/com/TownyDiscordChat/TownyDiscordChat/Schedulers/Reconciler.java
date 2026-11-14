@@ -368,49 +368,36 @@ public final class Reconciler {
         // Resolve expected memberships by IMMUTABLE Towny UUID, not role
         // names. During an in-place rename Discord still has the OLD name,
         // but current residents must retain their existing role ID.
+        Map<String, String> townRoleIds = new HashMap<String, String>();
+        Map<String, String> nationRoleIds = new HashMap<String, String>();
+        resolveMemberRoleIds(s, "TOWN", s.expectedTownByMember, townRoleIds);
+        resolveMemberRoleIds(s, "NATION", s.expectedNationByMember, nationRoleIds);
         s.desiredPairs.clear();
-        for (Map.Entry<String,String> member : s.expectedTownByMember.entrySet()) {
-            StableEntityStore.Entity entity=stable.find(s.guildId,"TOWN",member.getValue());
-            if (entity != null && entity.roleId != null) {
-                String remoteName=s.safeRoleNamesById.get(entity.roleId);
-                if (remoteName != null && remoteName.startsWith("town-"))
-                    s.desiredPairs.add(pair(member.getKey(),entity.roleId));
-            }
-        }
-        for (Map.Entry<String,String> member : s.expectedNationByMember.entrySet()) {
-            StableEntityStore.Entity entity=stable.find(s.guildId,"NATION",member.getValue());
-            if (entity != null && entity.roleId != null) {
-                String remoteName=s.safeRoleNamesById.get(entity.roleId);
-                if (remoteName != null && remoteName.startsWith("nation-"))
-                    s.desiredPairs.add(pair(member.getKey(),entity.roleId));
-            }
-        }
+        s.desiredPairs.addAll(MembershipPlan.desiredPairs(
+                townRoleIds, nationRoleIds, s.safeRoleNamesById, s.blockedRoleIds));
 
-        // A newly created town must never inherit a previous town's role.
-        for (String blocked : s.blockedRoleIds)
-            s.desiredPairs.removeIf(key -> key.endsWith("|" + blocked));
-
-        // Record pre-existing granted roles, including when SQL was wiped.
+        // Treat SQL-tracked grants as authoritative even if Discord's cache is incomplete.
         membership.observe(s.guildId, s.observed);
-        Set<String> previouslyGranted = new HashSet<String>();
-        List<Grant> known = membership.tracked(s.guildId);
-        for (Grant grant : known) {
-            String key = pair(grant.memberId,grant.roleId);
-            previouslyGranted.add(key);
-            if (!s.desiredPairs.contains(key)) {
-                // A removed Towny member or previously linked member must
-                // relinquish access even if cached Discord state is incomplete.
-                membership.desire(s.guildId,grant.memberId,grant.roleId,false);
+        for (MembershipPlan.Update update : MembershipPlan.updates(
+                s.desiredPairs, s.cachedPairs, membership.tracked(s.guildId))) {
+            if (update.change == MembershipPlan.Change.SUPERSEDE_GRANT) {
+                membership.supersedeExisting(s.guildId,
+                        update.memberId, update.roleId, true);
+            } else {
+                membership.desire(s.guildId, update.memberId, update.roleId,
+                        update.change == MembershipPlan.Change.GRANT);
             }
         }
-        for (String key : s.desiredPairs) {
-            String[] ids = key.split("\\|",2);
-            if (!s.cachedPairs.contains(key)) {
-                membership.desire(s.guildId,ids[0],ids[1],true);
-            } else {
-                // A rejoin must cancel an old queued revocation even if
-                // Discord still shows the role attached.
-                membership.supersedeExisting(s.guildId,ids[0],ids[1],true);
+    }
+
+    private void resolveMemberRoleIds(Snapshot snapshot, String kind,
+                                      Map<String, String> memberUuids,
+                                      Map<String, String> resolved) throws SQLException {
+        for (Map.Entry<String, String> member : memberUuids.entrySet()) {
+            StableEntityStore.Entity entity = stable.find(
+                    snapshot.guildId, kind, member.getValue());
+            if (entity != null && entity.roleId != null) {
+                resolved.put(member.getKey(), entity.roleId);
             }
         }
     }

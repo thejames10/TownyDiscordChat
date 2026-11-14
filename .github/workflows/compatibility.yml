@@ -19,7 +19,7 @@ jobs:
     name: Documentation and dependency consistency
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -65,7 +65,7 @@ jobs:
           - { minecraft: '26.3', towny: '0.103.2.15', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '26.3', apiGroup: 'io.papermc.paper', apiArtifact: 'paper-api', apiRelease: '26.3.build.218-stable', jdk: '25', adventure: '5.2.0' }
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -142,7 +142,7 @@ jobs:
     name: Historical API source-compatibility check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -180,7 +180,7 @@ jobs:
       TDC_TEST_MYSQL_USER: root
       TDC_TEST_MYSQL_PASSWORD: tdc-ci-password
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -207,7 +207,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v4
         with:
           pattern: TownyDiscordChat-MC-*

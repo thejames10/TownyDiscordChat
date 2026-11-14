@@ -47,6 +47,17 @@ class RoleSafetyTest {
         }
     }
 
+    @Test void rejectsInheritedGuildDefaultsWithUnrecognizedHighBits() {
+        long inheritedPermissions = bit(47) | bit(48);
+        assertFalse(RoleSafety.safePermissionBits(inheritedPermissions));
+        assertFalse(RoleSafety.safeForMembership(role(inheritedPermissions, false, false)));
+        assertTrue(RoleSafety.problem(role(inheritedPermissions, false, false))
+                .contains("0x1800000000000"));
+
+        // New roles must use a zero bitmask rather than weakening this policy.
+        assertTrue(RoleSafety.safeForMembership(role(0L, false, false)));
+    }
+
     @Test void neverManagesEveryoneOrIntegrationRoles() {
         assertFalse(RoleSafety.safeForMembership(role(0L,true,false)));
         assertFalse(RoleSafety.safeForMembership(role(0L,false,true)));

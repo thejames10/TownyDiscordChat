@@ -41,14 +41,14 @@ class TDCManagerTest {
                 });
 
         assertSame(roleAction, TDCManager.newMembershipRole(
-                guild, "town-TestLab", Color.BLUE));
-        assertEquals("town-TestLab", name.get());
+                guild, "town-Example", Color.BLUE));
+        assertEquals("town-Example", name.get());
         assertEquals(0L, permissions.get().longValue());
         assertEquals(1, permissionCalls.get());
 
         assertSame(roleAction, TDCManager.newMembershipRole(
-                guild, "nation-TestLab", Color.GREEN));
-        assertEquals("nation-TestLab", name.get());
+                guild, "nation-Example", Color.GREEN));
+        assertEquals("nation-Example", name.get());
         assertEquals(0L, permissions.get().longValue());
         assertEquals(2, permissionCalls.get());
     }

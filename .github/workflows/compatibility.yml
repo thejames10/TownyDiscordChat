@@ -224,7 +224,7 @@ jobs:
             jar tf "packages/TownyDiscordChat-MC-$mc.jar" | grep -Fq 'plugin.yml'
             unzip -l "packages/TownyDiscordChat-MC-$mc.zip" | grep -Fq "TownyDiscordChat-MC-$mc.jar"
           done
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: v1.1.1
           target_commitish: ${{ github.sha }}

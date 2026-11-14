@@ -20,6 +20,9 @@ jobs:
         with:
           python-version: '3.11'
       - name: Check README, config, Maven and CI release matrix
+        env:
+          PUBLIC_PR_TITLE: ${{ github.event.pull_request.title || '' }}
+          PUBLIC_PR_BODY: ${{ github.event.pull_request.body || '' }}
         run: |
           python3 scripts/check_repo_consistency.py
           python3 scripts/check_public_boundaries.py

@@ -1,0 +1,58 @@
+name: Bug report
+description: Something does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please remove bot tokens, IP addresses and database passwords from anything you paste.
+        Security problems must be reported privately; see SECURITY.md.
+  - type: input
+    id: plugin-version
+    attributes:
+      label: TownyDiscordChat version
+      placeholder: 1.1.1
+    validations:
+      required: true
+  - type: input
+    id: minecraft-version
+    attributes:
+      label: Minecraft version and server software
+      placeholder: Paper 26.3 build 245
+    validations:
+      required: true
+  - type: input
+    id: dependencies
+    attributes:
+      label: Towny and DiscordSRV versions
+      placeholder: Towny 0.103.2.15, DiscordSRV 1.30.5
+    validations:
+      required: true
+  - type: dropdown
+    id: storage
+    attributes:
+      label: Storage backend
+      options: [SQLite, MySQL]
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Create a town with /town new Example
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant console output
+      description: Include the full TownyDiscordChat startup section and any stack trace.
+      render: text

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and setup help
+    url: https://discord.gg/ynsCb2p3ac
+    about: Ask setup and usage questions on the TownyDiscordChat Discord.
+  - name: Report a security vulnerability
+    url: https://github.com/thejames10/TownyDiscordChat/security/advisories/new
+    about: Report security problems privately, never in a public issue.

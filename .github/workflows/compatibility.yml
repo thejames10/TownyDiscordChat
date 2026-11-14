@@ -1,7 +1,7 @@
 name: Test Minecraft compatibility
 on:
   push:
-    branches: [SQL, main, 'release/**']
+    branches: [main, 'release/**']
     tags: ['v*']
   pull_request:
     branches: [main]
@@ -9,6 +9,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: compatibility-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   repository-audit:

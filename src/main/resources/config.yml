@@ -71,6 +71,8 @@ log:
   Channel:
     Name: "townydiscordchat-logs"
 
+# TimeZone accepts any Java zone ID, for example UTC or America/Toronto.
+# DateFormat uses java.time DateTimeFormatter patterns, for example dd/MM/yyyy - hh:mm a.
 messages:
   TimeZone: "UTC"
   DateFormat: "dd/MM/yyyy - hh:mm a"

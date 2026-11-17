@@ -1,0 +1,50 @@
+name: Update README badges
+
+# Downloads and contributors are generated here and served from the badges
+# branch, because the live shields.io GitHub badges intermittently fail when
+# its shared GitHub API token pool is rate limited.
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-badges
+  cancel-in-progress: false
+
+env:
+  BADGE_BRANCH: badges
+  BADGE_DIRECTORY: badge-data
+
+jobs:
+  update:
+    name: Generate badge data
+    if: github.repository == 'thejames10/TownyDiscordChat'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Count release downloads and contributors
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/generate_badge_data.py "$BADGE_DIRECTORY"
+      # A single orphan commit, force-pushed, keeps the branch from growing
+      # one commit per day.
+      - name: Publish to badges branch
+        working-directory: ${{ env.BADGE_DIRECTORY }}
+        run: |
+          git init --quiet --initial-branch "$BADGE_BRANCH"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898289+github-actions[bot]@users.noreply.github.com'
+          git add downloads.json contributors.json
+          git commit --quiet --message 'chore: update badge data'
+          git push --force --quiet \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" \
+            "HEAD:refs/heads/$BADGE_BRANCH"

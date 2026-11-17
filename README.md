@@ -14,13 +14,13 @@
    <img alt="GitHub issues" src="https://img.shields.io/github/issues/thejames10/TownyDiscordChat?color=orange">
    </a>
    <a href="https://github.com/thejames10/TownyDiscordChat/releases">
-   <img src="https://img.shields.io/github/downloads/thejames10/TownyDiscordChat/total.svg?color=brightgreen">
+   <img alt="GitHub release downloads" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fthejames10%2FTownyDiscordChat%2Fbadges%2Fdownloads.json">
    </a>
    <a href="https://github.com/thejames10/TownyDiscordChat/releases">
    <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/thejames10/TownyDiscordChat">
    </a>
    <a href="https://github.com/thejames10/TownyDiscordChat/graphs/contributors">
-   <img src="https://img.shields.io/github/contributors/thejames10/TownyDiscordChat.svg?color=brightgreen">
+   <img alt="GitHub contributors" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fthejames10%2FTownyDiscordChat%2Fbadges%2Fcontributors.json">
    </a>
    <a href="https://github.com/thejames10/TownyDiscordChat/blob/main/LICENSE">
    <img alt="GitHub license" src="https://img.shields.io/github/license/thejames10/TownyDiscordChat">

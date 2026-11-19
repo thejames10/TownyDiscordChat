@@ -35,12 +35,13 @@ For 26.3, Towny 0.103.2.15 is a **pre-release**. Check the corresponding Paper/P
 - [Towny 0.100.3.0](https://github.com/TownyAdvanced/Towny/releases/tag/0.100.3.0)
   is the historical branch recommended by Towny for 1.16–1.18.
   Verify its own Java/server requirements for the selected release.
-- [Towny 0.100.2.0](https://github.com/TownyAdvanced/Towny/releases/tag/0.100.2.0)
-  is required on **1.16.5 Spigot, CraftBukkit and Purpur**. Towny 0.100.3.0
-  calls a log4j 2.11+ method (`FileAppender.Builder.setName`) that only
-  Paper 1.16.5 ships, so it throws `NoSuchMethodError` while enabling on
-  those servers and TownyDiscordChat stays in safe mode. Paper 1.16.5 can
-  use 0.100.3.0.
+- [Towny 0.100.1.0](https://github.com/TownyAdvanced/Towny/releases/tag/0.100.1.0)
+  is required on **1.16.5 Spigot, CraftBukkit and Purpur**. Those servers
+  ship neither log4j 2.11+ nor commons-io. Towny 0.100.3.0 calls a log4j
+  2.11+ method (`FileAppender.Builder.setName`) and 0.100.2.0 needs
+  commons-io through its bundled commons-compress 1.26, so both fail to
+  enable there and TownyDiscordChat stays in safe mode. Paper 1.16.5
+  provides both libraries and can use 0.100.3.0.
 - Towny 0.102+ does not support Spigot, and this plugin currently
   **does not support Folia's region scheduler**. Use Paper or Purpur.
 - TownyDiscordChat defaults to an embedded **SQLite** database. MySQL 8 is optional.

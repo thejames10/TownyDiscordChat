@@ -21,6 +21,8 @@ import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.StableEntityStore;
 import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Queue.Queue;
 import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Reconciler;
+import com.TownyDiscordChat.TownyDiscordChat.Statistics.PluginMetrics;
+import com.TownyDiscordChat.TownyDiscordChat.Statistics.PluginStatus;
 import com.TownyDiscordChat.TownyDiscordChat.Storage.Database;
 import com.TownyDiscordChat.TownyDiscordChat.Storage.StorageMigration;
 import github.scarsz.discordsrv.DiscordSRV;
@@ -45,6 +47,8 @@ import java.util.logging.Level;
 public class Main extends JavaPlugin {
 
     private static final int BSTATS_PLUGIN_ID = 10980;
+    private static final String SQLITE_LABEL = "SQLite";
+    private static final String MYSQL_LABEL = "MySQL";
     private static final String MAIN_COMMAND = "TownyDiscordChat";
     private static final String QUEUE_COMMAND = "tdcqueue";
     private static final String ADMIN_PERMISSION = "TownyDiscordChat.Admin";
@@ -103,6 +107,7 @@ public class Main extends JavaPlugin {
     private boolean operational;
     private volatile boolean guildValidated;
     private volatile String startupProblem;
+    private volatile PluginStatus status = PluginStatus.STARTING;
     private volatile String adminWarning;
 
     private enum BackupImport {
@@ -177,7 +182,7 @@ public class Main extends JavaPlugin {
         getServer().getPluginManager().registerEvents(compatibility, this);
         if (!compatibility.check()) {
             compatibility.warnConsole();
-            enterSafeMode(compatibility.problem());
+            enterSafeMode(PluginStatus.MISSING_DEPENDENCY, compatibility.problem());
             return;
         }
         startAfterDependencyPreflight();
@@ -194,18 +199,30 @@ public class Main extends JavaPlugin {
         // Never start Discord reconciliation on the first boot after importing
         // unknown historical settings: the operator must review and restart once.
         if (backupImport == BackupImport.IMPORTED) {
-            enterSafeMode(startupProblem != null ? startupProblem : CONFIG_IMPORTED_REVIEW);
+            enterSafeMode(PluginStatus.CONFIG_REVIEW,
+                    startupProblem != null ? startupProblem : CONFIG_IMPORTED_REVIEW);
             return;
         }
         if (startupProblem != null) {
-            enterSafeMode(startupProblem);
+            enterSafeMode(PluginStatus.INVALID_CONFIG, startupProblem);
             return;
         }
         startOperationalComponents();
     }
 
     private void startMetrics() {
-        new Metrics(this, BSTATS_PLUGIN_ID);
+        Metrics metrics = new Metrics(this, BSTATS_PLUGIN_ID);
+        PluginMetrics.register(metrics, getServer().getPluginManager(),
+                PluginMetrics.state(() -> status, () -> guildValidated,
+                        this::storageTypeLabel, () -> config));
+    }
+
+    /** Null until storage is configured, so bStats leaves the chart out. */
+    private String storageTypeLabel() {
+        if (SQL == null) {
+            return null;
+        }
+        return SQL.getBackend() == Database.Backend.SQLITE ? SQLITE_LABEL : MYSQL_LABEL;
     }
 
     private void startOperationalComponents() {
@@ -237,7 +254,7 @@ public class Main extends JavaPlugin {
             return BackupImport.IMPORTED;
         } catch (IOException | RuntimeException e) {
             getLogger().severe("[CONFIG UPGRADE] Failed to migrate config.yml.bak: " + e.getMessage());
-            enterSafeMode(CONFIG_MIGRATION_FAILED);
+            enterSafeMode(PluginStatus.CONFIG_UPGRADE_FAILED, CONFIG_MIGRATION_FAILED);
             return BackupImport.FAILED;
         }
     }
@@ -323,7 +340,7 @@ public class Main extends JavaPlugin {
             return true;
         } catch (ClassNotFoundException | SQLException e) {
             getLogger().severe("Database connection failed: " + e.getMessage());
-            enterSafeMode(DATABASE_CONNECTION_FAILED);
+            enterSafeMode(PluginStatus.DATABASE_UNAVAILABLE, DATABASE_CONNECTION_FAILED);
             return false;
         }
     }
@@ -374,6 +391,7 @@ public class Main extends JavaPlugin {
     // Explicit offline migration mode: no Discord or Towny schedulers start
     // while database state is being copied.
     private void startOfflineMigrationMode() {
+        status = PluginStatus.STORAGE_MIGRATION;
         if (SQL.getBackend() != Database.Backend.SQLITE) {
             startupProblem = MIGRATION_REQUIRES_SQLITE;
             getLogger().severe(startupProblem);
@@ -415,11 +433,12 @@ public class Main extends JavaPlugin {
         this.accountListener = new AccountChangeListener(this);
         DiscordSRV.api.subscribe(accountListener);
         this.operational = true;
+        this.status = PluginStatus.RUNNING;
     }
 
     private void handleSchemaFailure(SQLException cause) {
         getLogger().severe("Failed to initialize database/queue schema: " + cause.getMessage());
-        enterSafeMode(DATABASE_SCHEMA_FAILED);
+        enterSafeMode(PluginStatus.DATABASE_SCHEMA_FAILED, DATABASE_SCHEMA_FAILED);
         try {
             if (SQL != null && SQL.isConnected()) {
                 SQL.disconnect();
@@ -430,7 +449,8 @@ public class Main extends JavaPlugin {
         }
     }
 
-    private void enterSafeMode(String reason) {
+    private void enterSafeMode(PluginStatus cause, String reason) {
+        status = cause;
         operational = false;
         guildValidated = false;
         startupProblem = reason;

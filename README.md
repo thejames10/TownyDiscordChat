@@ -421,6 +421,22 @@ We intentionally do **not** maintain separate editable copies of every historica
 
 Useful references: [Compatibility and artifact details](COMPATIBILITY.md) · [SQL migration and security](SYNC-MIGRATION.md) · [Manual integration test plan](TEST-PLAN.md) · [Towny](https://github.com/TownyAdvanced/Towny) · [DiscordSRV](https://github.com/DiscordSRV/DiscordSRV).
 
+## Anonymous statistics
+
+TownyDiscordChat reports anonymous usage statistics to
+[bStats](https://bstats.org/plugin/bukkit/TownyDiscordChat/10980), which shows
+which Minecraft, Towny and DiscordSRV versions to keep supporting. Besides
+bStats' standard server details, it sends:
+
+- whether the plugin is running, waiting for Discord, migrating storage, or in
+  safe mode, and the general cause (never the error message itself);
+- the storage type (SQLite or MySQL);
+- the installed Towny and DiscordSRV versions;
+- which channel, logging and account-security features are switched on.
+
+No player names, Discord IDs, town names or configuration values are sent. To
+opt out, set `enabled: false` in `plugins/bStats/config.yml`.
+
 ## Contributing and support
 
 - **Questions and setup help:** [TownyDiscordChat Discord](https://discord.gg/ynsCb2p3ac).

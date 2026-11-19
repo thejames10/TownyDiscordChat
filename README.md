@@ -85,6 +85,8 @@ Suppose your Minecraft server has a town called **Oakvale**, which belongs to th
 | `26.1.2`, `26.2` | Paper / Purpur | `0.103.2.0` | `1.30.5` | 25+ |
 | `26.3` | Paper / Purpur | `0.103.2.15` (pre-release) | `1.30.5` | 25+ |
 
+**Minecraft 1.16.5 on Spigot, CraftBukkit or Purpur:** install [Towny 0.100.2.0](https://github.com/TownyAdvanced/Towny/releases/tag/0.100.2.0) instead. Towny 0.100.3.0 needs a newer log4j library than those 1.16.5 servers include and fails to enable there; Paper 1.16.5 can use 0.100.3.0.
+
 **Compatibility status:** These are build-verified combinations, **not certified live-server deployments**. Each download is compiled against the corresponding server API and checked by automated tests. Minecraft 26.3 requires a compatible Towny pre-release and a matching Paper/Purpur build.
 
 **Unsupported:** Folia; Spigot/CraftBukkit with Towny 0.102+; Minecraft 26.1.0 (no Paper build) and 26.1.1 (obsolete Paper alpha builds). Use **26.1.2** for the 26.1 series. Minecraft 26.4 has not been released as stable.

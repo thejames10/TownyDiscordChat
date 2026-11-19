@@ -34,6 +34,20 @@ public class StartupPreflightOrderTest {
                 "Do not eagerly read config during plugin construction");
     }
 
+    @Test
+    public void metricsStartBeforeAnyStepThatCanEnterSafeMode() throws IOException {
+        String source = new String(Files.readAllBytes(Paths.get(MAIN_SOURCE)),
+                StandardCharsets.UTF_8);
+        String startup = source.substring(source.indexOf("public void onEnable() {"));
+        int metrics = startup.indexOf("startMetrics();");
+
+        assertTrue(metrics >= 0, "onEnable must start bStats metrics");
+        assertTrue(metrics < startup.indexOf("compatibility.check()"),
+                "Metrics must start before the dependency preflight can enter safe mode");
+        assertTrue(metrics < startup.indexOf("enterSafeMode("),
+                "Metrics must start before any safe-mode return");
+    }
+
     private static void assertBefore(String source, int earlier, String laterText) {
         int later = source.indexOf(laterText);
         assertTrue(later > earlier, laterText + " must occur after compatibility.check()");

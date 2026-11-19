@@ -168,6 +168,9 @@ public class Main extends JavaPlugin {
     @Override
     public void onEnable() {
         plugin = this;
+        // Started before any check that can leave the plugin in safe mode, so
+        // new installs and upgrades that still need configuring are counted.
+        startMetrics();
 
         // Optional plugins must pass preflight before config files or storage are touched.
         this.compatibility = new CompatibilityGuard(this);
@@ -201,8 +204,11 @@ public class Main extends JavaPlugin {
         startOperationalComponents();
     }
 
-    private void startOperationalComponents() {
+    private void startMetrics() {
         new Metrics(this, BSTATS_PLUGIN_ID);
+    }
+
+    private void startOperationalComponents() {
         requireCommand(MAIN_COMMAND).setExecutor(new TDCCommand());
         requireCommand(QUEUE_COMMAND).setExecutor(new TDCSQL());
         createStorageAccessors();

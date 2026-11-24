@@ -1,4 +1,4 @@
-# TownyDiscordChat 1.1.1 — compatibility and deployment
+# TownyDiscordChat 1.1.2 — compatibility and deployment
 
 **Status: public pre-release.** Do not deploy to a production
 guild until you have tested the queue, database migrations and role revocation.
@@ -50,9 +50,9 @@ Towny, DiscordSRV and their bundled JDA are **provided by the server**,
 not bundled with TownyDiscordChat. Install each from its official site.
 SQLite JDBC, MySQL Connector/J, and relocated bStats are packaged in the plugin JAR.
 
-## Installing the 1.1.1 pre-release
+## Installing the 1.1.2 pre-release
 
-1. Open the [v1.1.1 release](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.1).
+1. Open the [v1.1.2 release](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.2).
 2. Download `TownyDiscordChat-MC-<version>.jar` for your exact
    Minecraft version, or the matching ZIP with configuration and guides.
 3. Install only the JAR in `plugins/`. Before starting a new

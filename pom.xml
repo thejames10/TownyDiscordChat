@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.TownyDiscordChat</groupId>
   <artifactId>TownyDiscordChat</artifactId>
-  <version>1.1.1</version>
+  <version>1.1.2</version>
   <properties>
     <!-- Java 8 bytecode supports older servers; CI uses JDK 25 for 26.x Paper APIs. -->
     <maven.compiler.release>8</maven.compiler.release>

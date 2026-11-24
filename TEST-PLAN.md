@@ -1,4 +1,4 @@
-# Manual integration test plan — TownyDiscordChat 1.1.1
+# Manual integration test plan — TownyDiscordChat 1.1.2
 
 Perform all tests against an **isolated Discord guild**, a throwaway
 Paper/Purpur server, and a disposable SQLite database or MySQL schema. Preserve a backup
@@ -88,7 +88,7 @@ of any prior TownyDiscordChat tables before migration.
   server and Towny 0.103.2.15 pre-release. Test linking, private
   channel creation, resource renames and full-guild audits.
 - Confirm unsupported 26.1.0 and 26.1.1 have no published artifacts.
-- Verify all 14 JARs report version 1.1.1 and have matching
+- Verify all 14 JARs report version 1.1.2 and have matching
   Minecraft API declarations; test on an isolated Discord guild.
 
 ## Startup / version checks

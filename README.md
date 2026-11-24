@@ -30,9 +30,9 @@
 
 ## Download TownyDiscordChat
 
-**Current version: 1.1.1 (pre-release).** Choose the JAR for your server's exact Minecraft version.
+**Current version: 1.1.2 (pre-release).** Choose the JAR for your server's exact Minecraft version.
 
-**[Download on Hangar](https://hangar.papermc.io/thejames10/TownyDiscordChat/versions)** · **[Download JARs and ZIPs from GitHub](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.1)** · [All releases](https://github.com/thejames10/TownyDiscordChat/releases) · [Compatibility](#compatibility)
+**[Download on Hangar](https://hangar.papermc.io/thejames10/TownyDiscordChat/versions)** · **[Download JARs and ZIPs from GitHub](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.2)** · [All releases](https://github.com/thejames10/TownyDiscordChat/releases) · [Compatibility](#compatibility)
 
 Towny and DiscordSRV are separate required plugins. See [Installation](#installation) before deploying.
 
@@ -74,7 +74,7 @@ Suppose your Minecraft server has a town called **Oakvale**, which belongs to th
 
 ## Compatibility
 
-**Current release:** `TownyDiscordChat 1.1.1` — [Pre-Release Build 1.1.1](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.1).
+**Current release:** `TownyDiscordChat 1.1.2` — [Pre-Release Build 1.1.2](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.2).
 
 | Minecraft version | Server software | Towny version | DiscordSRV version | Java |
 | --- | --- | --- | --- | --- |
@@ -93,10 +93,10 @@ Suppose your Minecraft server has a town called **Oakvale**, which belongs to th
 
 Minecraft 26.x requires Java 25 and Paper's newer build-qualified API versions. Older Minecraft versions follow their own server, Towny and DiscordSRV Java requirements. The plugin JAR targets Java 8 bytecode for an older-server baseline. See [Paper development requirements](https://docs.papermc.io/paper/dev/project-setup/), [Towny releases](https://github.com/TownyAdvanced/Towny/releases), [DiscordSRV releases](https://github.com/DiscordSRV/DiscordSRV/releases), and [detailed compatibility notes](COMPATIBILITY.md).
 
-### Download TownyDiscordChat 1.1.1
+### Download TownyDiscordChat 1.1.2
 
 Choose the **JAR matching your Minecraft version** from the
-[1.1.1 pre-release](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.1).
+[1.1.2 pre-release](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.2).
 Each listed version has a standalone `TownyDiscordChat-MC-<version>.jar`.
 The optional matching ZIP contains the same JAR, `config.example.yml`,
 README, migration guides and `BUILD-INFO.txt`.
@@ -112,7 +112,7 @@ Before upgrading, read the
 
 ### 1. Prepare a test environment
 
-Before installing the 1.1.1 pre-release, use an isolated Discord guild and a test Minecraft server. The plugin can **create, rename and delete** Towny-managed roles/channels and change access permissions. Back up both your database and your Discord guild's important settings before testing.
+Before installing the 1.1.2 pre-release, use an isolated Discord guild and a test Minecraft server. The plugin can **create, rename and delete** Towny-managed roles/channels and change access permissions. Back up both your database and your Discord guild's important settings before testing.
 
 You need a compatible **Spigot/Paper/Purpur server** for the selected version (Towny 0.102+: Paper/Purpur), **Towny**, **DiscordSRV**, and **local SQLite storage** (created automatically). MySQL is optional. Towny and DiscordSRV must be installed as separate plugins. They are **not packaged inside** TownyDiscordChat.
 
@@ -128,7 +128,7 @@ Official resources:
 - [Towny installation and compatibility](https://github.com/TownyAdvanced/Towny)
 - [DiscordSRV initial setup](https://docs.discordsrv.com/installation/initial-setup/)
 - [DiscordSRV linking commands](https://docs.discordsrv.com/commands/)
-- [TownyDiscordChat 1.1.1 downloads](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.1)
+- [TownyDiscordChat 1.1.2 downloads](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.2)
 
 ### 2. Set up DiscordSRV and the bot
 
@@ -140,7 +140,7 @@ Enable Discord's privileged **Server Members Intent** in the bot's Developer Por
 
 ### 3. Install the TownyDiscordChat build
 
-Follow **Download TownyDiscordChat 1.1.1** above. Choose the JAR for your exact Minecraft version, or the matching ZIP for documentation and `config.example.yml`. Install **only the plugin JAR**, not the ZIP, into `plugins/`.
+Follow **Download TownyDiscordChat 1.1.2** above. Choose the JAR for your exact Minecraft version, or the matching ZIP for documentation and `config.example.yml`. Install **only the plugin JAR**, not the ZIP, into `plugins/`.
 
 **For a new installation:** before the first server start, copy the ZIP's
 `config.example.yml` to `plugins/TownyDiscordChat/config.yml` (create
@@ -417,7 +417,7 @@ For reproducible issues, attach **redacted** startup logs, your Minecraft versio
 
 ## Versioned documentation
 
-Each release tag preserves the **exact README, configuration defaults, dependency matrix and migration instructions from that release**. To see instructions for an installed version, open its [GitHub release](https://github.com/thejames10/TownyDiscordChat/releases), select its tag, and view `README.md` from that tag (for example `blob/v1.1.1/README.md`). Installation ZIPs also include a snapshot of the README and relevant setup guides.
+Each release tag preserves the **exact README, configuration defaults, dependency matrix and migration instructions from that release**. To see instructions for an installed version, open its [GitHub release](https://github.com/thejames10/TownyDiscordChat/releases), select its tag, and view `README.md` from that tag (for example `blob/v1.1.2/README.md`). Installation ZIPs also include a snapshot of the README and relevant setup guides.
 
 We intentionally do **not** maintain separate editable copies of every historical README: tags are immutable release snapshots, which prevents the documentation for older versions changing when the latest README is updated.
 

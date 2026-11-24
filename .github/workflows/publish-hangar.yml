@@ -12,9 +12,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing GitHub release tag to publish (e.g. v1.1.1)'
+        description: 'Existing GitHub release tag to publish (e.g. v1.1.2)'
         required: true
-        default: 'v1.1.1'
+        default: 'v1.1.2'
       prerelease:
         description: 'Use the Beta channel (requires a Beta channel on Hangar)'
         required: true

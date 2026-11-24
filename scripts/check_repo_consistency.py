@@ -164,10 +164,10 @@ for file in javaRoot.rglob("*.java"):
                 f"{file.relative_to(ROOT)} issues Discord REST mutations outside the queue")
 
 # Release assets, documentation and version must remain coupled.
-require((ROOT / ".github/release-notes/v1.1.1.md").is_file(),
-        "Missing release notes for version 1.1.1")
-require("tag_name: v1.1.1" in workflow,
-        "Release workflow must publish permanent v1.1.1 tag")
+require((ROOT / ".github/release-notes/v1.1.2.md").is_file(),
+        "Missing release notes for version 1.1.2")
+require("tag_name: v1.1.2" in workflow,
+        "Release workflow must publish permanent v1.1.2 tag")
 require("packages/TownyDiscordChat-MC-*.jar" in workflow
         and "packages/TownyDiscordChat-MC-*.zip" in workflow,
         "Release workflow must publish 14 JARs and 14 setup ZIPs")

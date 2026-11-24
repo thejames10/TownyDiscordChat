@@ -125,7 +125,7 @@ jobs:
       - name: Verify packaged plugin version and server API
         if: env.BUILD_TARGET == 'true'
         run: |
-          unzip -p target/TownyDiscordChat-*.jar plugin.yml | grep -Fq "version: '1.1.1'"
+          unzip -p target/TownyDiscordChat-*.jar plugin.yml | grep -Fq "version: '1.1.2'"
           unzip -p target/TownyDiscordChat-*.jar plugin.yml | grep -Fq "api-version: '${{ matrix.apiVersion }}'"
 
       - name: Ensure server-provided dependencies are not bundled
@@ -241,10 +241,10 @@ jobs:
             clean verify
 
   release:
-    name: Publish v1.1.1 pre-release (14 JARs and 14 ZIPs)
+    name: Publish v1.1.2 pre-release (14 JARs and 14 ZIPs)
     if: >-
       github.ref == 'refs/heads/main' &&
-      startsWith(github.event.head_commit.message, 'release: TownyDiscordChat 1.1.1')
+      startsWith(github.event.head_commit.message, 'release: TownyDiscordChat 1.1.2')
     needs: [build, legacy-api-check, storage-migration, repository-audit]
     runs-on: ubuntu-latest
     permissions:
@@ -258,7 +258,7 @@ jobs:
           merge-multiple: true
       - name: Verify all fourteen JARs and ZIPs
         run: |
-          grep -q '<version>1.1.1</version>' pom.xml
+          grep -q '<version>1.1.2</version>' pom.xml
           test "$(find packages -maxdepth 1 -name 'TownyDiscordChat-MC-*.jar' | wc -l)" -eq 14
           test "$(find packages -maxdepth 1 -name 'TownyDiscordChat-MC-*.zip' | wc -l)" -eq 14
           for mc in 1.16.5 1.17.1 1.18.2 1.19.4 1.20.1 1.20.6 1.21.1 1.21.4 1.21.8 1.21.10 1.21.11 26.1.2 26.2 26.3; do
@@ -269,10 +269,10 @@ jobs:
           done
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.1
+          tag_name: v1.1.2
           target_commitish: ${{ github.sha }}
-          name: Pre-Release Build 1.1.1
-          body_path: .github/release-notes/v1.1.1.md
+          name: Pre-Release Build 1.1.2
+          body_path: .github/release-notes/v1.1.2.md
           files: |
             packages/TownyDiscordChat-MC-*.jar
             packages/TownyDiscordChat-MC-*.zip

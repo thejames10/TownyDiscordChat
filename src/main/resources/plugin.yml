@@ -6,7 +6,7 @@ authors:
 - thejames10
 - Hugo5000
 
-softdepend: [DiscordSRV, Towny]
+softdepend: [DiscordSRV, Towny, TownyChat]
 folia-supported: true
 
 commands:

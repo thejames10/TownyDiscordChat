@@ -1,5 +1,7 @@
 package com.TownyDiscordChat.TownyDiscordChat;
 
+import com.TownyDiscordChat.TownyDiscordChat.ChatBridge.ChannelDirectory;
+import com.TownyDiscordChat.TownyDiscordChat.ChatBridge.ChatBridge;
 import com.TownyDiscordChat.TownyDiscordChat.Commands.QueueCommand;
 import com.TownyDiscordChat.TownyDiscordChat.Commands.TownyDiscordChatCommand;
 import com.TownyDiscordChat.TownyDiscordChat.Diagnostics.DebugReport;
@@ -122,6 +124,8 @@ public class Main extends JavaPlugin {
     private MessageCatalog messages;
     private UpdateChecker updateChecker;
     private volatile RoleNames roleNames = RoleNames.defaults();
+    private volatile ChannelDirectory channelDirectory = ChannelDirectory.empty();
+    private ChatBridge chatBridge;
 
     private boolean operational;
     private volatile boolean guildValidated;
@@ -158,6 +162,15 @@ public class Main extends JavaPlugin {
     /** Role name templates from the loaded config.yml. */
     public RoleNames roleNames() {
         return roleNames;
+    }
+
+    /** Bridged town and nation channels from the latest reconcile snapshot. */
+    public ChannelDirectory channelDirectory() {
+        return channelDirectory;
+    }
+
+    public void updateChannelDirectory(ChannelDirectory directory) {
+        this.channelDirectory = directory;
     }
 
     public String statusLabel() {
@@ -592,6 +605,7 @@ public class Main extends JavaPlugin {
         getServer().getPluginManager().registerEvents(onboarding, this);
         this.accountListener = new AccountChangeListener(this);
         DiscordSRV.api.subscribe(accountListener);
+        this.chatBridge = ChatBridge.start(this);
         this.operational = true;
         this.status = PluginStatus.RUNNING;
     }
@@ -627,6 +641,7 @@ public class Main extends JavaPlugin {
         guildValidated = false;
         unsubscribeAccountListener();
         accountListener = null;
+        stopChatBridge();
         unregisterListener(membershipListener);
         unregisterListener(onboarding);
         membershipListener = null;
@@ -684,6 +699,7 @@ public class Main extends JavaPlugin {
         operational = false;
         guildValidated = false;
         unsubscribeAccountListener();
+        stopChatBridge();
         if (queueScheduler != null) {
             queueScheduler.cancel();
         }
@@ -692,6 +708,13 @@ public class Main extends JavaPlugin {
         }
         disconnectStorage();
         getLogger().info("TownyDiscordChat has been Disabled!");
+    }
+
+    private void stopChatBridge() {
+        if (chatBridge != null) {
+            chatBridge.stop();
+            chatBridge = null;
+        }
     }
 
     private void unsubscribeAccountListener() {

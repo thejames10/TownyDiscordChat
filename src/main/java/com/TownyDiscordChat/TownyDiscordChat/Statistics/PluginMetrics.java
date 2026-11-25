@@ -100,6 +100,7 @@ public final class PluginMetrics {
         features.put("Revoke unlinked accounts", "security.revokeUnlinkedAccounts");
         features.put("Archive channels", "archive.enabled");
         features.put("Rank moderation", "ranks.enabled");
+        features.put("Chat bridge", "chatBridge.enabled");
         return Collections.unmodifiableMap(features);
     }
 

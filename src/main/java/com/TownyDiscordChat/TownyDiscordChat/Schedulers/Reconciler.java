@@ -1,5 +1,6 @@
 package com.TownyDiscordChat.TownyDiscordChat.Schedulers;
 
+import com.TownyDiscordChat.TownyDiscordChat.ChatBridge.ChannelDirectory;
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.Naming.RoleNames;
 import com.TownyDiscordChat.TownyDiscordChat.RoleSafety;
@@ -222,6 +223,7 @@ public final class Reconciler {
         snapshotMembership(guild, state);
         state.ranks = RankSnapshot.capture(guild, RankSettings.fromConfig(plugin.getConfig()),
                 state.channelIds, state.discordByPlayer, state.cachedMembers);
+        plugin.updateChannelDirectory(ChannelDirectory.of(state.townUuids, state.nationUuids, state.channelIds));
         return state;
     }
 

@@ -100,6 +100,10 @@ public final class GuildSetupValidator {
                 && !guild.getSelfMember().hasPermission(RankPermissions.all()))
             out.error("ranks.enabled needs the Discord bot to have Manage Messages, Mute Members,"
                     +" Deafen Members and Move Members, because Discord only lets it grant permissions it has.");
+        if (cfg.getBoolean("chatBridge.enabled",false) && cfg.getBoolean("chatBridge.useWebhooks",true)
+                && !guild.getSelfMember().hasPermission(Permission.MANAGE_WEBHOOKS))
+            out.error("chatBridge.useWebhooks needs the Discord bot to have Manage Webhooks."
+                    +" Grant it or set chatBridge.useWebhooks to false.");
         if (ChannelArchive.enabled(cfg) && ChannelArchive.hasPublicCategory(guild,cfg))
             out.error("A category named "+ChannelArchive.categoryName(cfg)
                     +" lets @everyone see it. Deny @everyone View Channel before archiving town channels there.");

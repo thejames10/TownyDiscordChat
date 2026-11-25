@@ -66,6 +66,21 @@ category:
   Admin:
     Name: "MINECRAFT-STAFF"
 
+# Relay TownyChat's town and nation channels to the matching private Discord
+# text channels and back. Needs TownyChat with "hooked: true" on its town and
+# nation channels in channels.yml. Discord messages reach the game only from
+# linked players who are current members of that town or nation.
+chatBridge:
+  enabled: false
+  town: true
+  nation: true
+  # Post through DiscordSRV's webhooks with the player's name and skin. The
+  # bot needs Manage Webhooks. When false, toDiscordFormat is used instead.
+  useWebhooks: true
+  toDiscordFormat: "**{player}**: {message}"
+  # Longer messages are cut short in both directions (16-900).
+  maxMessageLength: 256
+
 # Let town and nation leaders moderate their own Discord channels. Mayors and
 # kings always qualify; list extra Towny ranks (from townyperms.yml) below.
 # Text channels get Manage Messages. Voice channels get Mute, Deafen and Move

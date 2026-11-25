@@ -29,6 +29,7 @@ import com.TownyDiscordChat.TownyDiscordChat.Statistics.PluginMetrics;
 import com.TownyDiscordChat.TownyDiscordChat.Statistics.PluginStatus;
 import com.TownyDiscordChat.TownyDiscordChat.Storage.Database;
 import com.TownyDiscordChat.TownyDiscordChat.Storage.StorageMigration;
+import com.TownyDiscordChat.TownyDiscordChat.Updates.UpdateChecker;
 import github.scarsz.discordsrv.DiscordSRV;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
@@ -117,6 +118,7 @@ public class Main extends JavaPlugin {
     private MembershipChangeListener membershipListener;
     private TaskScheduler scheduler;
     private MessageCatalog messages;
+    private UpdateChecker updateChecker;
 
     private boolean operational;
     private volatile boolean guildValidated;
@@ -230,7 +232,9 @@ public class Main extends JavaPlugin {
         }
         loadConfiguration();
         loadMessages();
+        reportConfigurationChanges();
         validateConfiguration();
+        startUpdateChecks();
 
         // Never start Discord reconciliation on the first boot after importing
         // unknown historical settings: the operator must review and restart once.
@@ -329,6 +333,27 @@ public class Main extends JavaPlugin {
         config = getConfig();
     }
 
+    private void reportConfigurationChanges() {
+        List<String> obsolete = ConfigReport.obsoleteSettings(config);
+        if (!obsolete.isEmpty()) {
+            getLogger().info("[CONFIG] config.yml has settings this version no longer reads; "
+                    + "you can delete them: " + String.join(", ", obsolete));
+        }
+        List<String> missing = ConfigReport.missingSections(config);
+        if (!missing.isEmpty()) {
+            getLogger().info("[CONFIG] config.yml has no " + String.join(", ", missing)
+                    + " section(s), so their defaults are used. To add them with explanations, "
+                    + "rename config.yml to config.yml.bak and restart; your values are kept.");
+        }
+    }
+
+    private void startUpdateChecks() {
+        if (updateChecker == null) {
+            updateChecker = new UpdateChecker(this);
+        }
+        updateChecker.start();
+    }
+
     private void loadMessages() {
         try {
             messages = MessageCatalog.load(this, legacyMessageSource());
@@ -366,6 +391,7 @@ public class Main extends JavaPlugin {
         FileConfiguration previous = config;
         loadConfiguration();
         loadMessages();
+        startUpdateChecks();
         messages().send(sender, "reload.success");
         List<String> restartOnly = RestartOnlySettings.changed(previous, config);
         if (!restartOnly.isEmpty()) {

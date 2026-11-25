@@ -107,3 +107,10 @@ onboarding:
   cooldownMinutes: 60
   joinDelayTicks: 60
   # The reminder text is onboarding.reminder in messages.yml.
+
+# Checks GitHub for a newer TownyDiscordChat release every 12 hours and tells
+# the console and players with townydiscordchat.notify. Nothing is downloaded.
+updates:
+  check: true
+  # Also announce pre-releases (test builds published before a release).
+  includePreReleases: false

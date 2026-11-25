@@ -144,7 +144,8 @@ public final class SetupValidator {
         integerRange(config,out,"onboarding.cooldownMinutes",1,10080);
         integerRange(config,out,"onboarding.joinDelayTicks",1,1200);
         for (String key : new String[]{"security.revokeUnlinkedAccounts","queue.fullAudit.enabled",
-                "onboarding.enabled","onboarding.remindOnJoin","onboarding.remindOnTownJoin"}) {
+                "onboarding.enabled","onboarding.remindOnJoin","onboarding.remindOnTownJoin",
+                "updates.check","updates.includePreReleases"}) {
             if (!config.isBoolean(key)) out.error(key+" must be true or false.");
         }
         try { ZoneId.of(config.getString("messages.TimeZone","UTC")); }

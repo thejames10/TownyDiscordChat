@@ -93,6 +93,60 @@ of any prior TownyDiscordChat tables before migration.
   and passes the CI API link check for all 14 targets; test on an
   isolated Discord guild.
 
+## Folia
+
+- Start the release JAR on a Folia server with Folia-compatible Towny and
+  DiscordSRV. Confirm it enables without `UnsupportedOperationException`,
+  creates town roles and channels, grants and revokes membership, and
+  shows the join reminder.
+- Run `/tdc reload` and `/tdc check` on Folia, then stop the server and
+  confirm no scheduler errors appear on shutdown.
+
+## Admin commands and messages
+
+- Edit a message in `messages.yml` and a setting in `config.yml`, then run
+  `/tdc reload`. Both apply without a restart. Change `storage.type` and
+  confirm reload reports that it needs a restart.
+- Break `config.yml` and run `/tdc reload`: the running settings stay in
+  place and the problem is reported.
+- Run `/tdc debug`. The report lists versions, settings, Discord checks and
+  recent failures, and contains no SQL host, username, password or token.
+- Start with a 1.1.x `config.yml` that customised `messages.Prefix` and
+  `onboarding.message`; confirm both appear in the new `messages.yml`.
+- Give a player only `townydiscordchat.player`: tab completion offers
+  `status`, `link` and `help`, and admin commands are refused. Confirm the
+  old `TownyDiscordChat.Admin` node still grants admin commands.
+- Set `updates.includePreReleases: true` on an older build and confirm the
+  console and a joining admin are told about the newer release.
+
+## Role names, archive and rank moderation
+
+- Change `names.townRole` to `Town {name}` and reload. Existing roles are
+  renamed in place and members keep their access. Names without fixed text
+  around `{name}` are rejected.
+- Enable `archive.enabled` and delete a town. Its text channel moves into
+  the private archive category, the town role loses access, and its role
+  and voice channel are deleted. Make the archive category public and
+  confirm the next archive is refused with an admin warning.
+- Enable `ranks.enabled`. The mayor gets Manage Messages in the town text
+  channel and Mute, Deafen and Move Members in the voice channel; an
+  `assistant` gets the same. Remove the rank, transfer the mayor, and
+  disable the feature: each time the recorded permissions are removed.
+- Give a member Manage Messages by hand, and deny another; confirm rank
+  sync neither removes the first nor overrides the second.
+
+## TownyChat bridge
+
+- Mark TownyChat's town and nation channels `hooked: true` and enable
+  `chatBridge`. Town chat reaches the town's Discord channel through a
+  webhook; with `useWebhooks: false` it uses `toDiscordFormat`.
+- Post from Discord as a linked town member: online town members see it.
+  Post as an unlinked admin and as a linked player from another town:
+  nothing is relayed.
+- Send `@everyone`, Markdown, colour codes and a message longer than
+  `maxMessageLength` in each direction; none ping, format or colour, and
+  long messages are cut short.
+
 ## Startup / version checks
 
 - Install Towny + DiscordSRV supported for the selected Minecraft server.

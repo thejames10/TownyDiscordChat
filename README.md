@@ -58,6 +58,9 @@ TownyDiscordChat solves that administrative problem by using **Towny membership 
 - **Renames and cleanup:** Renames existing managed Discord resources when Towny names change, preserving their IDs; carefully handles deletion and name reuse.
 - **Simple linking:** Uses DiscordSRV's existing Minecraft ↔ Discord account links, with `/tdc status`, `/tdc link` and optional in-game reminders for players.
 - **Recovery and diagnostics:** Saves synchronization work in SQLite (the default) or MySQL, retries interrupted operations, and provides queue status, audits and activity logs for administrators.
+- **Admin tools:** `/tdc reload` applies config and message changes without a restart, `/tdc debug` writes a support report with credentials removed, and the plugin tells admins when a new release is out.
+- **Optional extras**, all off by default: a [TownyChat bridge](#townychat-bridge) for town and nation chat, [moderation for mayors and kings](#moderation-for-town-and-nation-leaders) in their own channels, and [archiving](#archiving-deleted-town-channels) a deleted town's text channel instead of deleting it.
+- **Paper, Purpur and Folia:** one JAR for every supported version. On Folia, the plugin's work runs on Folia's global and async schedulers.
 
 ### Example: a player joins a town
 
@@ -68,7 +71,7 @@ Suppose your Minecraft server has a town called **Oakvale**, which belongs to th
 3. The plugin assigns the appropriate town and nation roles. The player can now access their community's private Discord channels.
 4. If the player moves to another town or leaves the nation, the plugin updates their roles and removes access they no longer qualify for.
 
-**What it doesn't do:** TownyDiscordChat is **not** a replacement for Towny or DiscordSRV, and it does **not** relay Towny chat messages between Minecraft and Discord. DiscordSRV can handle general Minecraft ↔ Discord chat bridging separately. This plugin focuses on **who gets access to which private Discord spaces**, and on keeping those spaces in sync with Towny.
+**What it doesn't do:** TownyDiscordChat is **not** a replacement for Towny or DiscordSRV. DiscordSRV still handles global Minecraft ↔ Discord chat. This plugin focuses on **who gets access to which private Discord spaces**, and on keeping those spaces in sync with Towny. Its optional [TownyChat bridge](#townychat-bridge) only covers town and nation chat.
 
 **Get started:** [Compatibility and downloads](#compatibility) · [Installation](#installation) · [Player linking](#players-linking-minecraft-and-discord) · [Commands](#commands-and-permissions)
 
@@ -90,7 +93,9 @@ Suppose your Minecraft server has a town called **Oakvale**, which belongs to th
 
 **Compatibility status:** One plugin JAR is built against the oldest listed server and Towny APIs. Automated tests compile the code against every listed version and check that each call the JAR makes still exists in that version's server, Towny and DiscordSRV APIs. Before release, that same JAR is also started on real servers for each listed version and server type, on its own, alongside Towny and alongside DiscordSRV; Discord role and channel management is tested against a test Discord server on Paper 26.3. This is not a guarantee for every server configuration. Minecraft 26.3 requires a compatible Towny pre-release and a matching Paper/Purpur build.
 
-**Unsupported:** Folia; Spigot/CraftBukkit with Towny 0.102+; Minecraft 26.1.0 (no Paper build) and 26.1.1 (obsolete Paper alpha builds). Use **26.1.2** for the 26.1 series. Minecraft 26.4 has not been released as stable.
+**Folia** is supported from the next release, on the versions Folia publishes builds for, with Towny and DiscordSRV releases that support Folia. TownyDiscordChat 1.1.2 and earlier do not run on Folia.
+
+**Unsupported:** Spigot/CraftBukkit with Towny 0.102+; Minecraft 26.1.0 (no Paper build) and 26.1.1 (obsolete Paper alpha builds). Use **26.1.2** for the 26.1 series. Minecraft 26.4 has not been released as stable.
 
 Minecraft 26.x requires Java 25 and Paper's newer build-qualified API versions. Older Minecraft versions follow their own server, Towny and DiscordSRV Java requirements. The plugin JAR targets Java 8 bytecode for an older-server baseline. See [Paper development requirements](https://docs.papermc.io/paper/dev/project-setup/), [Towny releases](https://github.com/TownyAdvanced/Towny/releases), [DiscordSRV releases](https://github.com/DiscordSRV/DiscordSRV/releases), and [detailed compatibility notes](COMPATIBILITY.md).
 
@@ -356,20 +361,53 @@ Players in a town can receive a **configurable, cooldown-limited reminder** when
 
 We do **not** recommend enabling DiscordSRV's [link-to-join requirement](https://docs.discordsrv.com/installation/link-to-join-setup/) just to use TownyDiscordChat: that separate option may prevent unlinked players from joining Minecraft at all.
 
+## Optional features
+
+Each feature below is off by default and is switched on in `config.yml`. `/tdc reload` applies the change without a restart.
+
+### TownyChat bridge
+
+`chatBridge` relays [TownyChat](https://github.com/TownyAdvanced/TownyChat)'s town and nation channels to the matching private Discord text channel, and Discord messages back to the town or nation members who are online.
+
+1. Install TownyChat. In its `channels.yml`, add `hooked: true` to the town and nation channels. TownyChat only shares messages from hooked channels.
+2. Set `chatBridge.enabled: true`. `chatBridge.town` and `chatBridge.nation` choose which channels are relayed.
+3. By default messages are posted through DiscordSRV's webhooks, with the player's name and skin. The bot then needs **Manage Webhooks**. With `chatBridge.useWebhooks: false`, the bot posts the message itself using `chatBridge.toDiscordFormat`.
+
+A Discord message reaches the game only if its author is linked through DiscordSRV and belongs to that town or nation right now, so a stale Discord role can't speak in town chat. Colour codes, Markdown and `@` mentions are neutralised in both directions, and messages longer than `chatBridge.maxMessageLength` are cut short. The in-game line is `chat-bridge.from-discord` in `messages.yml`.
+
+### Moderation for town and nation leaders
+
+With `ranks.enabled: true`, mayors and kings can moderate their own channels. Text channels get **Manage Messages**. Voice channels get **Mute**, **Deafen** and **Move Members**. To include more Towny ranks, list them under `ranks.town` and `ranks.nation` (rank names come from Towny's `townyperms.yml`; `assistant` is listed by default).
+
+The bot needs those four permissions itself, because Discord only lets it grant permissions it has. The plugin records every permission it grants and only ever removes those, so moderation an admin set by hand is left alone, and an explicit deny on a member is respected. When a player loses their rank or leaves, or the feature is switched off, the recorded permissions are removed.
+
+### Archiving deleted town channels
+
+With `archive.enabled: true`, a deleted town or nation's text channel is moved into the `archive.categoryName` category instead of being deleted, and takes that category's permissions. The town's members lose access, and whoever can read the archive category can read the history. The category is created private (hidden from `@everyone`) when missing; a public category with that name is refused. Roles and voice channels are still deleted.
+
+### Role names and messages
+
+`names.townRole` and `names.nationRole` set the Discord role names, with `{name}` standing for the Towny name. Changing them renames the existing roles in place, so members keep their access.
+
+Every player and admin message is in `plugins/TownyDiscordChat/messages.yml`, with `&` colour codes and placeholders such as `{town}`. Messages customised in an older `config.yml` are copied over on first start.
+
 ## Commands and permissions
 
-| Command | Who can use it | Purpose |
+| Command | Permission | Purpose |
 | --- | --- | --- |
-| `/tdc` | Players | Plugin information and linking status |
-| `/tdc status` | Players | See Towny membership and DiscordSRV linking status |
-| `/tdc link` | Players with `discordsrv.link` | Launch DiscordSRV's own account linking |
-| `/discord linked` | Players with `discordsrv.linked` | Verify your link using DiscordSRV |
-| `/tdcqueue status` | Admins (`TownyDiscordChat.Admin`) | View durable queue and membership intent counts |
-| `/tdcqueue audit` | Admins | Request a full guild audit; requires Server Members Intent |
-| `/tdcqueue retry-dead` | Admins | Retry failed jobs after fixing the underlying issue |
-| `/tdc Check ...` | Authorized admins / legacy permissions | Request reconciliation; not required for initial setup |
+| `/tdc`, `/tdc help` | `townydiscordchat.player` | Plugin information and the commands you can use |
+| `/tdc status` | `townydiscordchat.player` | Your town, nation and DiscordSRV link status |
+| `/tdc link` | `townydiscordchat.player` and DiscordSRV's `discordsrv.link` | Start DiscordSRV's own account linking |
+| `/tdc reload` | `townydiscordchat.reload` | Reload `config.yml` and `messages.yml`; storage and queue timing still need a restart |
+| `/tdc debug` | `townydiscordchat.debug` | Write a support report with versions, settings, Discord checks and recent failures to `plugins/TownyDiscordChat/debug`, with credentials removed |
+| `/tdc check` | `townydiscordchat.reconcile` | Check every town and nation against Discord now |
+| `/tdcqueue status` | `townydiscordchat.queue` | Queue and membership counts |
+| `/tdcqueue audit` | `townydiscordchat.queue` | Request a full guild audit; needs Server Members Intent |
+| `/tdcqueue retry-dead` | `townydiscordchat.queue` | Retry failed jobs after fixing the cause |
 
-`TownyDiscordChat.Admin` defaults to server operators. Standard players do not need administrative permissions for the linking flow. DiscordSRV controls its own linking permission nodes.
+`townydiscordchat.player` is given to everyone. `townydiscordchat.admin` (operators by default) includes every node above and `townydiscordchat.notify`, which shows safe-mode, admin-warning and update notices in game. Tab completion only offers commands you can use. The old `TownyDiscordChat.Admin` node still works, because Bukkit permission names ignore case, and the old `townydiscordchat.check.*` nodes still grant `/tdc check`. DiscordSRV controls its own linking permissions.
+
+`updates.check` looks for a newer GitHub release every 12 hours. It only announces it; nothing is downloaded.
 
 ## How syncing and recovery work
 
@@ -418,9 +456,11 @@ plugin installations against the same guild using independent databases.
 - **Bot can't grant or revoke roles:** grant Manage Roles, place its role above managed Towny roles, and verify it has Manage Channels.
 - **Player is linked but cannot see a town channel:** check that they belong to a town, run `/tdc status`, and inspect `/tdcqueue status`. Queue jobs may be pending or dead.
 - **Full guild audit fails:** enable Server Members Intent in both the bot's Developer Portal and DiscordSRV, then run `/tdcqueue audit` again.
+- **Chat bridge relays nothing from Minecraft:** add `hooked: true` to the town and nation channels in TownyChat's `channels.yml`, then `/townychat reload`.
+- **A leader didn't get moderation permissions:** give the bot Manage Messages, Mute Members, Deafen Members and Move Members, and check the player is linked. An explicit deny on that member in the channel blocks the grant on purpose.
 - **After reinstall or migration:** restore a database backup if needed; keep the original `tdc_queued_tasks` table. If switching databases, follow the offline SQLite → MySQL process above, not manual config-only switching. See [migration details](SYNC-MIGRATION.md) and the [test plan](TEST-PLAN.md).
 
-For reproducible issues, attach **redacted** startup logs, your Minecraft version/server software, Towny and DiscordSRV versions, TownyDiscordChat version, and the queue status. Never publish database credentials or Discord bot tokens.
+For reproducible issues, run `/tdc debug` and attach the report it writes, or **redacted** startup logs, your Minecraft version/server software, Towny and DiscordSRV versions, TownyDiscordChat version, and the queue status. Never publish database credentials or Discord bot tokens.
 
 ## Versioned documentation
 
@@ -441,7 +481,7 @@ bStats' standard server details, it sends:
   safe mode, and the general cause (never the error message itself);
 - the storage type (SQLite or MySQL);
 - the installed Towny and DiscordSRV versions;
-- which channel, logging and account-security features are switched on.
+- which channel, logging, account-security, archive, rank-moderation and chat-bridge features are switched on.
 
 No player names, Discord IDs, town names or configuration values are sent. To
 opt out, set `enabled: false` in `plugins/bStats/config.yml`.

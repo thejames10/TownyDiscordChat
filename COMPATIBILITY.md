@@ -20,7 +20,9 @@ From the next release, one JAR covers every listed version: it is built against 
 
 **CI** compiles the code and runs the automated tests against each listed version, and checks that every class, method and field the released JAR uses exists in that version's server, Towny and DiscordSRV APIs. **Real servers:** before release, that JAR is started on each listed server type for each version, on its own and alongside Towny or DiscordSRV. **Discord:** role and channel management, membership grants and revocations, and cleanup are tested against a test Discord server on Paper 26.3. None of this is a guarantee for every server configuration. Java runtime requirements for older versions follow the selected Minecraft server and Towny/DiscordSRV installation.
 
-Minecraft 26.x uses Java 25 and Paper's build-qualified API versions. Minecraft 26.1.0 has no Paper build, and 26.1.1 is obsolete (alpha-only); use 26.1.2 instead. Folia and modern Towny on Spigot/CraftBukkit are not supported.
+Minecraft 26.x uses Java 25 and Paper's build-qualified API versions. Minecraft 26.1.0 has no Paper build, and 26.1.1 is obsolete (alpha-only); use 26.1.2 instead. Modern Towny on Spigot/CraftBukkit is not supported.
+
+**Folia** is supported from the next release, on the versions Folia publishes builds for. The plugin schedules all of its work through Folia's global region and async schedulers (the Bukkit scheduler throws on Folia), and declares `folia-supported: true`. Use Towny and DiscordSRV releases that also support Folia. 1.1.2 and earlier do not run on Folia.
 
 For 26.3, Towny 0.103.2.15 is a **pre-release**. Check the corresponding Paper/Purpur server build carefully before updating a production server.
 
@@ -44,8 +46,10 @@ For 26.3, Towny 0.103.2.15 is a **pre-release**. Check the corresponding Paper/P
   commons-io through its bundled commons-compress 1.26, so both fail to
   enable there and TownyDiscordChat stays in safe mode. Paper 1.16.5
   provides both libraries and can use 0.100.3.0.
-- Towny 0.102+ does not support Spigot, and this plugin currently
-  **does not support Folia's region scheduler**. Use Paper or Purpur.
+- Towny 0.102+ does not support Spigot. Use Paper, Purpur or Folia.
+- [TownyChat](https://github.com/TownyAdvanced/TownyChat) is optional. It is
+  only needed for the chat bridge (`chatBridge`), which TownyDiscordChat
+  reaches by reflection, so no particular TownyChat version is compiled in.
 - TownyDiscordChat defaults to an embedded **SQLite** database. MySQL 8 is optional.
 
 Towny, DiscordSRV and their bundled JDA are **provided by the server**,
@@ -83,7 +87,10 @@ Towny/DiscordSRV versions determine the actual minimum Java version**.
 Towny 0.103.x requires Java 17+. Minecraft 1.21 uses Java 21; 26.x uses Java 25. CompatibilityGuard checks the plugin versions and
 selected shaded-JDA methods. The live guild preflight also verifies
 Manage Roles, Manage Channels, private category permissions, and the
-bot's role hierarchy above current town/nation roles. If incompatible it starts in an inert
+bot's role hierarchy above current town/nation roles. With the optional
+features on, it also checks Manage Webhooks (chat bridge), the four
+permissions rank moderation grants, and that the archive category is
+private. If incompatible it starts in an inert
 safe mode and notifies the console and joining admins.
 
 ## Configuration upgrades
@@ -104,6 +111,11 @@ MySQL credentials are retained for existing MySQL users; the new
 `storage.type: auto` selects MySQL when legacy credentials are present.
 The config upgrade is **not** a database migration. See
 [README.md](README.md#automatic-config-upgrade-from-configymlbak).
+
+From the next release, player and admin messages live in `messages.yml`.
+Messages customised in a 1.1.x `config.yml` (`messages.Prefix`,
+`messages.Commands.*` and `onboarding.message`) are copied into it on first
+start, and the unused message blocks are dropped from `config.yml`.
 
 ## Legacy logging settings
 
@@ -152,8 +164,16 @@ or ambiguous old resources.
 - `/tdcqueue status` — counts of pending/running/dead jobs and intentions.
 - `/tdcqueue audit` — queue a full guild member scan.
 - `/tdcqueue retry-dead` — retry exhausted work after resolving root cause.
+- `/tdc reload` — reload `config.yml` and `messages.yml`. Storage, SQL and
+  queue timing settings are reported as needing a restart.
+- `/tdc debug` — write a support report, with credentials removed, to
+  `plugins/TownyDiscordChat/debug`.
+- `/tdc check` — check every town and nation against Discord now.
 
-All three require `TownyDiscordChat.Admin` (operator by default).
+`/tdcqueue` needs `townydiscordchat.queue`; the `/tdc` admin commands need
+`townydiscordchat.reload`, `townydiscordchat.debug` and
+`townydiscordchat.reconcile`. `townydiscordchat.admin` (operator by default)
+includes all of them, and the old `TownyDiscordChat.Admin` node still works.
 See [TEST-PLAN.md](TEST-PLAN.md) for deployment and recovery tests.
 
 ## Release policy

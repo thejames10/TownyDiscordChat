@@ -1,6 +1,7 @@
 package com.TownyDiscordChat.TownyDiscordChat.Schedulers;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
+import com.TownyDiscordChat.TownyDiscordChat.Naming.RoleNames;
 import com.TownyDiscordChat.TownyDiscordChat.RoleSafety;
 import com.TownyDiscordChat.TownyDiscordChat.SetupValidator;
 import com.TownyDiscordChat.TownyDiscordChat.GuildSetupValidator;
@@ -77,6 +78,7 @@ public final class Reconciler {
         final Map<String,String> expectedNationByMember = new HashMap<String,String>();
         final Set<String> cachedMembers = new HashSet<String>();
         final Set<String> blockedRoleIds = new HashSet<String>();
+        RoleNames roleNames;
         int neededTownChannels, neededNationChannels;
     }
 
@@ -153,6 +155,7 @@ public final class Reconciler {
     private Snapshot capture(Guild guild) {
         Snapshot state = new Snapshot();
         state.guildId = guild.getId();
+        state.roleNames = plugin.roleNames();
         state.townCategory = plugin.getConfig().getString("category.Town.Name", "MINECRAFT-TOWN-CHAT");
         state.nationCategory = plugin.getConfig().getString("category.Nation.Name", "MINECRAFT-NATION-CHAT");
         for (Town town : TownyUniverse.getInstance().getTowns()) {
@@ -220,12 +223,14 @@ public final class Reconciler {
 
     private void snapshotChannels(Guild guild, Snapshot state) {
         for (String name : state.towns) {
-            checkChannel(guild, state, "TOWN_TEXT", name, state.townCategory, "town-" + name);
-            checkChannel(guild, state, "TOWN_VOICE", name, state.townCategory, "town-" + name);
+            String roleName = state.roleNames.town().format(name);
+            checkChannel(guild, state, "TOWN_TEXT", name, state.townCategory, roleName);
+            checkChannel(guild, state, "TOWN_VOICE", name, state.townCategory, roleName);
         }
         for (String name : state.nations) {
-            checkChannel(guild, state, "NATION_TEXT", name, state.nationCategory, "nation-" + name);
-            checkChannel(guild, state, "NATION_VOICE", name, state.nationCategory, "nation-" + name);
+            String roleName = state.roleNames.nation().format(name);
+            checkChannel(guild, state, "NATION_TEXT", name, state.nationCategory, roleName);
+            checkChannel(guild, state, "NATION_VOICE", name, state.nationCategory, roleName);
         }
     }
 
@@ -320,8 +325,8 @@ public final class Reconciler {
                 || state.ambiguousRoleNames.contains(
                         name.toLowerCase(java.util.Locale.ROOT)))
             return false;
-        return (name.startsWith("town-") && state.towns.contains(name.substring(5)))
-                || (name.startsWith("nation-") && state.nations.contains(name.substring(7)));
+        return state.towns.contains(state.roleNames.town().townyName(name))
+                || state.nations.contains(state.roleNames.nation().townyName(name));
     }
 
     private static <T> T first(List<T> entries) {
@@ -403,13 +408,13 @@ public final class Reconciler {
     private void reconcileStable(Snapshot s, String type, Map<String,String> live,
                                  Map<String,String> roles, Map<String,String> texts,
                                  Map<String,String> voices) throws SQLException {
-        String prefix = type.toLowerCase(java.util.Locale.ROOT) + "-";
+        com.TownyDiscordChat.TownyDiscordChat.Naming.RoleNameTemplate roleName = s.roleNames.forType(type);
         for (Map.Entry<String,String> entry : live.entrySet()) {
             String uuid = entry.getKey(), name = entry.getValue();
             String roleKind = type + "_ROLE";
             String textKind = type + "_TEXT";
             String voiceKind = type + "_VOICE";
-            String remoteRole = s.roleIds.get(prefix + name);
+            String remoteRole = s.roleIds.get(roleName.format(name));
             String remoteText = s.channelIds.get(textKind + ":" + name);
             String remoteVoice = s.channelIds.get(voiceKind + ":" + name);
 
@@ -437,10 +442,10 @@ public final class Reconciler {
                 continue;
             }
 
-            // In-place rename by immutable ID. Missing Discord resources are
-            // recreated; existing renamed resources are NEVER duplicated.
+            // In-place rename by immutable ID, after a Towny rename or a change
+            // of names.townRole/nationRole. Existing resources are NEVER duplicated.
             if (entity.roleId != null && s.safeRoleNamesById.containsKey(entity.roleId)) {
-                if (!(prefix + name).equals(s.safeRoleNamesById.get(entity.roleId)))
+                if (!roleName.format(name).equals(s.safeRoleNamesById.get(entity.roleId)))
                     resources.enqueue("RENAME_" + roleKind,uuid);
                 else if (!eq(roles.get(name),entity.roleId))
                     resources.enqueue(roleKind,name); // repair legacy mapping

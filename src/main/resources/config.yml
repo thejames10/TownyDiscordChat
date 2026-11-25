@@ -50,6 +50,13 @@ town:
   CreateRoleIfNoneExists: true
   RoleCreateColorCode: "0x006798"
 
+# Discord role names. {name} is the Towny town or nation name.
+# Changing these renames the existing roles in place (same role, same members).
+# Keep some text around {name}: it is how the plugin tells its roles apart.
+names:
+  townRole: "town-{name}"
+  nationRole: "nation-{name}"
+
 category:
   SubChannelsMax: 50
   Town:

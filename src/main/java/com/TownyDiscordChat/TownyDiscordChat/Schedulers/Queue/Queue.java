@@ -2,6 +2,8 @@ package com.TownyDiscordChat.TownyDiscordChat.Schedulers.Queue;
 
 import com.TownyDiscordChat.TownyDiscordChat.Core.TDCManager;
 import com.TownyDiscordChat.TownyDiscordChat.Main;
+import com.TownyDiscordChat.TownyDiscordChat.Naming.RoleNameTemplate;
+import com.TownyDiscordChat.TownyDiscordChat.Naming.RoleNames;
 import com.TownyDiscordChat.TownyDiscordChat.RoleSafety;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.QueueMessages;
@@ -62,6 +64,21 @@ public final class Queue {
     private final java.util.concurrent.ConcurrentMap<Long,Job> unresolvedResources =
             new java.util.concurrent.ConcurrentHashMap<Long,Job>();
 
+    /** Towny UUIDs owning a role, by kind: the kind decides whose members may hold it. */
+    private static final class RoleOwners {
+        final Set<String> towns;
+        final Set<String> nations;
+
+        RoleOwners(Set<String> towns, Set<String> nations) {
+            this.towns = towns;
+            this.nations = nations;
+        }
+
+        boolean isEmpty() {
+            return towns.isEmpty() && nations.isEmpty();
+        }
+    }
+
     public Queue(long startDelaySeconds, long intervalDelaySeconds, Main plugin) {
         this.plugin = plugin;
         this.store = new DiscordJobStore(plugin);
@@ -104,9 +121,9 @@ public final class Queue {
             Intent intent = memberStore.claim(true,excluded);
             if (intent == null) intent = memberStore.claim(false,excluded);
             if (intent == null) { memberBusy.set(false); return; }
-            Set<String> owners = new HashSet<String>();
-            owners.addAll(stable.ownersOfId(intent.guildId,"TOWN_ROLE",intent.roleId));
-            owners.addAll(stable.ownersOfId(intent.guildId,"NATION_ROLE",intent.roleId));
+            RoleOwners owners = new RoleOwners(
+                    stable.ownersOfId(intent.guildId,"TOWN_ROLE",intent.roleId),
+                    stable.ownersOfId(intent.guildId,"NATION_ROLE",intent.roleId));
             scheduleMember(intent,owners);
         } catch (Exception e) {
             plugin.getLogger().severe("Could not claim membership intent: " + e.getMessage());
@@ -177,12 +194,12 @@ public final class Queue {
         }
     }
 
-    private void scheduleMember(Intent intent, Set<String> owners) {
+    private void scheduleMember(Intent intent, RoleOwners owners) {
         currentIntent = intent;
         plugin.scheduler().runGlobal(() -> dispatchMember(intent,owners));
     }
 
-    private void dispatchMember(Intent intent, Set<String> owners) {
+    private void dispatchMember(Intent intent, RoleOwners owners) {
         try {
             Guild guild = DiscordSRV.getPlugin().getMainGuild();
             if (guild == null || !guild.getId().equals(intent.guildId)) {
@@ -253,12 +270,8 @@ public final class Queue {
      * A name-reused role owned by a deleted town is never granted to the
      * replacement town, even if Discord still caches it under the same name.
      */
-    private boolean authorizedNow(Intent intent, Role role, Set<String> owners) {
+    private boolean authorizedNow(Intent intent, Role role, RoleOwners owners) {
         if (owners.isEmpty()) return false;
-        String roleName = role.getName();
-        boolean townRole = roleName.startsWith("town-");
-        boolean nationRole = roleName.startsWith("nation-");
-        if (!townRole && !nationRole) return false;
         try {
             java.util.Map<String,UUID> accounts=DiscordSRV.getPlugin()
                     .getAccountLinkManager().getLinkedAccounts();
@@ -270,10 +283,10 @@ public final class Queue {
             if (resident==null || !resident.hasTown()) return false;
             Town town=resident.getTown();
             if (town==null) return false;
-            if (townRole) return owners.contains(town.getUUID().toString());
+            if (owners.towns.contains(town.getUUID().toString())) return true;
             if (!town.hasNation()) return false;
             Nation nation=town.getNation();
-            return nation != null && owners.contains(nation.getUUID().toString());
+            return nation != null && owners.nations.contains(nation.getUUID().toString());
         } catch (com.palmergames.bukkit.towny.exceptions.NotRegisteredException e) {
             return false;
         }
@@ -285,7 +298,7 @@ public final class Queue {
     }
 
     private void applyMember(Intent intent, Guild guild, Member member, Role role,
-                             Set<String> owners) {
+                             RoleOwners owners) {
         try {
             // A kick/unlink may occur while Discord's REST lookup is in flight.
             // Verify again immediately before queuing a permission grant.
@@ -298,12 +311,11 @@ public final class Queue {
             }
             // Discord role settings may change during the asynchronous REST
             // lookup. Never grant or revoke a now-privileged/repurposed role.
+            // Ownership comes from the stable UUID mapping, not the name, so a
+            // role keeps working while names.townRole/nationRole renames it.
             String permissionProblem=RoleSafety.problem(role);
-            if (permissionProblem != null ||
-                    !(role.getName().startsWith("town-")
-                    || role.getName().startsWith("nation-"))) {
-                failMember(intent,"Unsafe role at membership dispatch: "
-                        + (permissionProblem == null ? "role name repurposed" : permissionProblem));
+            if (permissionProblem != null) {
+                failMember(intent,"Unsafe role at membership dispatch: " + permissionProblem);
                 return;
             }
             boolean hasRole = member.getRoles().contains(role);
@@ -440,7 +452,7 @@ public final class Queue {
                 case "TOWN_ROLE": {
                     Town town = TownyUniverse.getInstance().getTown(job.name);
                     if (town == null) { discard(job); return; }
-                    Role role = uniqueSafeRole(guild, "town-" + job.name);
+                    Role role = uniqueSafeRole(guild, plugin.roleNames().town().format(job.name));
                     if (role != null) { success(job, role.getId(), null); return; }
                     TDCManager.createDiscordRole(town, id -> result(job, id, null));
                     break;
@@ -448,7 +460,7 @@ public final class Queue {
                 case "NATION_ROLE": {
                     Nation nation = TownyUniverse.getInstance().getNation(job.name);
                     if (nation == null) { discard(job); return; }
-                    Role role = uniqueSafeRole(guild, "nation-" + job.name);
+                    Role role = uniqueSafeRole(guild, plugin.roleNames().nation().format(job.name));
                     if (role != null) { success(job, role.getId(), null); return; }
                     TDCManager.createDiscordRole(nation, id -> result(job, id, null));
                     break;
@@ -506,7 +518,7 @@ public final class Queue {
             return;
         }
         boolean town=job.kind.startsWith("TOWN_");
-        String roleName=(town ? "town-" : "nation-")+job.name;
+        String roleName=plugin.roleNames().forType(town ? "TOWN" : "NATION").format(job.name);
         if (job.kind.endsWith("ROLE")) {
             Role role=uniqueSafeRole(guild,roleName);
             if (role==null) discard(job);
@@ -617,9 +629,7 @@ public final class Queue {
             final Set<String> owned = new HashSet<String>();
             for (String recordedId : recordedIds) {
                 Role role = guild.getRoleById(recordedId);
-                if (role != null && RoleSafety.safeForMembership(role)
-                        && (role.getName().startsWith("town-")
-                        || role.getName().startsWith("nation-")))
+                if (role != null && RoleSafety.safeForMembership(role))
                     owned.add(recordedId);
             }
             // A first-time installation has no SQL mappings. Only explicitly
@@ -628,11 +638,11 @@ public final class Queue {
             Set<String> nationNames = new HashSet<String>();
             for (Town town : TownyUniverse.getInstance().getTowns()) townNames.add(town.getName());
             for (Nation nation : TownyUniverse.getInstance().getNations()) nationNames.add(nation.getName());
+            RoleNames roleNames = plugin.roleNames();
             for (Role role : guild.getRoles()) {
                 if (!RoleSafety.safeForMembership(role)) continue;
                 String name = role.getName();
-                if (((name.startsWith("town-") && townNames.contains(name.substring(5)))
-                        || (name.startsWith("nation-") && nationNames.contains(name.substring(7))))
+                if (namesCurrentTownOrNation(roleNames, name, townNames, nationNames)
                         && guild.getRolesByName(name,true).size()==1)
                     owned.add(role.getId());
             }
@@ -675,6 +685,12 @@ public final class Queue {
         }
     }
 
+    private static boolean namesCurrentTownOrNation(RoleNames roleNames, String roleName,
+                                                    Set<String> townNames, Set<String> nationNames) {
+        return townNames.contains(roleNames.town().townyName(roleName))
+                || nationNames.contains(roleNames.nation().townyName(roleName));
+    }
+
     /**
      * Rename the existing Discord resource in-place. Towny UUID, not the
      * mutable name, is the job key; role/channel Discord IDs remain unchanged.
@@ -684,7 +700,7 @@ public final class Queue {
         String kind = job.kind.contains("_TOWN_") ? "TOWN" : "NATION";
         String component = job.kind.endsWith("ROLE") ? "ROLE"
                 : job.kind.endsWith("TEXT") ? "TEXT" : "VOICE";
-        String prefix = "TOWN".equals(kind) ? "town-" : "nation-";
+        RoleNameTemplate roleName = plugin.roleNames().forType(kind);
         boolean valid = false;
         if ("TOWN".equals(kind)) {
             for (Town town : TownyUniverse.getInstance().getTowns()) {
@@ -704,10 +720,12 @@ public final class Queue {
             if ("ROLE".equals(component)) {
                 Role role=guild.getRoleById(id);
                 if (role==null) { skip(job,entity.name,"Discord role no longer exists"); return; }
-                if (!RoleSafety.safeForMembership(role) || !role.getName().startsWith(prefix)) {
+                // The ID comes from the stable mapping; the name may still follow an
+                // older names.townRole/nationRole template that this rename replaces.
+                if (!RoleSafety.safeForMembership(role)) {
                     fail(job,"Refusing unsafe role rename: " + id); return;
                 }
-                String desired=prefix+entity.name;
+                String desired=roleName.format(entity.name);
                 if (role.getName().equals(desired)) { skip(job,entity.name,"role already has the requested name"); return; }
                 role.getManager().setName(desired).queue(done -> renamed(job,entity.name,id),
                         error -> fail(job,"Discord role rename: " + error.getMessage()));
@@ -805,7 +823,7 @@ public final class Queue {
             if (job.kind.endsWith("ROLE")) {
                 Role role = guild.getRoleById(mappedId);
                 if (role == null) { deleted(job, mappedId,false); return; }
-                String expected = (town ? "town-" : "nation-") + job.name;
+                String expected = plugin.roleNames().forType(town ? "TOWN" : "NATION").format(job.name);
                 if (!RoleSafety.safeForMembership(role) || !role.getName().equalsIgnoreCase(expected)) {
                     fail(job, "Role " + mappedId + " repurposed/mismatched; refusing automatic deletion");
                     return;
@@ -903,6 +921,7 @@ public final class Queue {
             }
             final String expectedTownUuid = townUuid;
             final String expectedNationUuid = nationUuid;
+            final RoleNames roleNames = plugin.roleNames();
             final Map<String,String> safeRoleNamesById = new HashMap<String,String>();
             final Set<String> uniqueSafeRoleIds = new HashSet<String>();
             for (Role candidate : guild.getRoles()) {
@@ -931,16 +950,14 @@ public final class Queue {
                         StableEntityStore.Entity expected = stable.find(
                                 guild.getId(), "TOWN", expectedTownUuid);
                         if (expected != null && expected.roleId != null
-                                && safeRoleNamesById.containsKey(expected.roleId)
-                                && safeRoleNamesById.get(expected.roleId).startsWith("town-"))
+                                && safeRoleNamesById.containsKey(expected.roleId))
                             desired.add(expected.roleId);
                     }
                     if (expectedNationUuid != null) {
                         StableEntityStore.Entity expected = stable.find(
                                 guild.getId(), "NATION", expectedNationUuid);
                         if (expected != null && expected.roleId != null
-                                && safeRoleNamesById.containsKey(expected.roleId)
-                                && safeRoleNamesById.get(expected.roleId).startsWith("nation-"))
+                                && safeRoleNamesById.containsKey(expected.roleId))
                             desired.add(expected.roleId);
                     }
                     List<Grant> observed = new ArrayList<Grant>();
@@ -949,8 +966,7 @@ public final class Queue {
                         boolean recognized = safeRoleNamesById.containsKey(id)
                                 && (owned.contains(id)
                                 || (name != null && uniqueSafeRoleIds.contains(id)
-                                && ((name.startsWith("town-") && townNames.contains(name.substring(5)))
-                                || (name.startsWith("nation-") && nationNames.contains(name.substring(7))))));
+                                && namesCurrentTownOrNation(roleNames, name, townNames, nationNames)));
                         if (!recognized) continue;
                         observed.add(new Grant(job.name, id));
                         if (!desired.contains(id))
@@ -983,10 +999,10 @@ public final class Queue {
     private void dispatchChannel(Job job, Guild guild) {
         boolean town = job.kind.startsWith("TOWN");
         boolean text = job.kind.endsWith("TEXT");
-        String prefix = town ? "town-" : "nation-";
-        Role role = uniqueSafeRole(guild, prefix + job.name);
+        String roleName = plugin.roleNames().forType(town ? "TOWN" : "NATION").format(job.name);
+        Role role = uniqueSafeRole(guild, roleName);
         if (role == null) {
-            defer(job, "Waiting for Discord role " + prefix + job.name);
+            defer(job, "Waiting for Discord role " + roleName);
             return;
         }
         String categoryName = plugin.getConfig().getString(

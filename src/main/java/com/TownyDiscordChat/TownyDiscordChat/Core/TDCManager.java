@@ -47,7 +47,7 @@ public final class TDCManager {
 
     public static void createDiscordRole(Town town, Consumer<String> callback) {
         try {
-            newMembershipRole(guild(), "town-" + town.getName(),
+            newMembershipRole(guild(), Main.plugin.roleNames().town().format(town.getName()),
                     Color.decode(Main.plugin.config.getString("town.RoleCreateColorCode")))
                     .queue(role -> callback.accept(role.getId()),
                             error -> fail("create town role", error, callback));
@@ -56,7 +56,7 @@ public final class TDCManager {
 
     public static void createDiscordRole(Nation nation, Consumer<String> callback) {
         try {
-            newMembershipRole(guild(), "nation-" + nation.getName(),
+            newMembershipRole(guild(), Main.plugin.roleNames().nation().format(nation.getName()),
                     Color.decode(Main.plugin.config.getString("nation.RoleCreateColorCode")))
                     .queue(role -> callback.accept(role.getId()),
                             error -> fail("create nation role", error, callback));

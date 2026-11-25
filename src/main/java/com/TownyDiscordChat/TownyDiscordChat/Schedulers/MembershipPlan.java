@@ -35,24 +35,27 @@ public final class MembershipPlan {
     private MembershipPlan() {
     }
 
+    /**
+     * Role IDs come from the stable Towny UUID mapping, which already proves
+     * ownership. Names are not checked: while names.townRole or nationRole
+     * changes, roles keep their old names until renamed, and members must keep
+     * their access in the meantime.
+     */
     public static Set<String> desiredPairs(Map<String, String> townRoles,
                                             Map<String, String> nationRoles,
                                             Map<String, String> safeNames,
                                             Set<String> blockedRoleIds) {
         Set<String> desired = new HashSet<String>();
-        addExpected(desired, townRoles, safeNames, blockedRoleIds, "town-");
-        addExpected(desired, nationRoles, safeNames, blockedRoleIds, "nation-");
+        addExpected(desired, townRoles, safeNames, blockedRoleIds);
+        addExpected(desired, nationRoles, safeNames, blockedRoleIds);
         return desired;
     }
 
     private static void addExpected(Set<String> desired, Map<String, String> roles,
-                                    Map<String, String> safeNames, Set<String> blocked,
-                                    String prefix) {
+                                    Map<String, String> safeNames, Set<String> blocked) {
         for (Map.Entry<String, String> member : roles.entrySet()) {
             String roleId = member.getValue();
-            String roleName = safeNames.get(roleId);
-            if (roleName == null || !roleName.startsWith(prefix)
-                    || blocked.contains(roleId)) {
+            if (!safeNames.containsKey(roleId) || blocked.contains(roleId)) {
                 continue;
             }
             desired.add(member.getKey() + "|" + roleId);

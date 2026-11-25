@@ -131,6 +131,9 @@ public final class SetupValidator {
         else if (!"0".equals(logId) && !"auto".equalsIgnoreCase(logId))
             out.warn("messages.DiscordLogTextChannelId is a legacy ID and is ignored; Discord activity logging uses log.Category.Name and log.Channel.Name.");
 
+        String namesProblem=com.TownyDiscordChat.TownyDiscordChat.Naming.RoleNames.problem(config);
+        if (namesProblem != null) out.error(namesProblem);
+
         integerRange(config,out,"category.SubChannelsMax",1,50);
         integerRange(config,out,"queue.startDelaySeconds",1,3600);
         integerRange(config,out,"queue.pollSeconds",1,3600);

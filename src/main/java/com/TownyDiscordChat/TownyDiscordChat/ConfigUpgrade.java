@@ -33,7 +33,8 @@ public final class ConfigUpgrade {
     private static final Set<String> ROOTS =
             Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
                     "SQL","storage","town","nation","category","log",
-                    "messages","queue","onboarding","security","updates")));
+                    "messages","queue","onboarding","security","updates",
+                    "names")));
 
     public static final class Result {
         public final boolean migrated;

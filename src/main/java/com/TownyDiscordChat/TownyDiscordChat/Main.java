@@ -7,6 +7,7 @@ import com.TownyDiscordChat.TownyDiscordChat.Listeners.AccountChangeListener;
 import com.TownyDiscordChat.TownyDiscordChat.Listeners.MembershipChangeListener;
 import com.TownyDiscordChat.TownyDiscordChat.Listeners.OnboardingListener;
 import com.TownyDiscordChat.TownyDiscordChat.Messages.MessageCatalog;
+import com.TownyDiscordChat.TownyDiscordChat.Naming.RoleNames;
 import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.LogCategory;
 import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.LogTextChannel;
 import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.NationCategories;
@@ -119,6 +120,7 @@ public class Main extends JavaPlugin {
     private TaskScheduler scheduler;
     private MessageCatalog messages;
     private UpdateChecker updateChecker;
+    private volatile RoleNames roleNames = RoleNames.defaults();
 
     private boolean operational;
     private volatile boolean guildValidated;
@@ -150,6 +152,11 @@ public class Main extends JavaPlugin {
             }
         }
         return messages;
+    }
+
+    /** Role name templates from the loaded config.yml. */
+    public RoleNames roleNames() {
+        return roleNames;
     }
 
     public String statusLabel() {
@@ -331,6 +338,7 @@ public class Main extends JavaPlugin {
         saveDefaultConfig();
         reloadConfig();
         config = getConfig();
+        roleNames = RoleNames.fromConfig(config);
     }
 
     private void reportConfigurationChanges() {

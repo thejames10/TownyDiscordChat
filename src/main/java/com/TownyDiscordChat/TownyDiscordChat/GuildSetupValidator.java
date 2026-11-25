@@ -27,6 +27,8 @@ public final class GuildSetupValidator {
      * Multiple same-name categories are normal after filling 50 slots.
      */
     public static SetupValidator.Result validateGuild(FileConfiguration cfg,Guild guild) {
+        com.TownyDiscordChat.TownyDiscordChat.Naming.RoleNames roleNames =
+                com.TownyDiscordChat.TownyDiscordChat.Naming.RoleNames.fromConfig(cfg);
         SetupValidator.Result out=new SetupValidator.Result();
         if (guild==null) { out.error("DiscordSRV has no connected main guild yet."); return out; }
         if (guild.getSelfMember()==null) {
@@ -43,10 +45,10 @@ public final class GuildSetupValidator {
         java.util.Set<String> managedNames=new java.util.HashSet<String>();
         for (com.palmergames.bukkit.towny.object.Town town :
                 com.palmergames.bukkit.towny.TownyUniverse.getInstance().getTowns())
-            managedNames.add(("town-"+town.getName()).toLowerCase(Locale.ROOT));
+            managedNames.add(roleNames.town().format(town.getName()).toLowerCase(Locale.ROOT));
         for (com.palmergames.bukkit.towny.object.Nation nation :
                 com.palmergames.bukkit.towny.TownyUniverse.getInstance().getNations())
-            managedNames.add(("nation-"+nation.getName()).toLowerCase(Locale.ROOT));
+            managedNames.add(roleNames.nation().format(nation.getName()).toLowerCase(Locale.ROOT));
         int blockedRoles=0;
         String example=null;
         for (github.scarsz.discordsrv.dependencies.jda.api.entities.Role role : guild.getRoles()) {

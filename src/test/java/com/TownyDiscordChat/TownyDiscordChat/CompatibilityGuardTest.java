@@ -38,4 +38,29 @@ public class CompatibilityGuardTest {
     public void doesNotReportMissingDependenciesWhenBothAreReady() {
         assertNull(CompatibilityGuard.missingDependencyProblem(true, true));
     }
+
+    @Test
+    public void reactsOnlyToRequiredDependencies() {
+        assertTrue(CompatibilityGuard.isRequiredDependency("DiscordSRV"));
+        assertTrue(CompatibilityGuard.isRequiredDependency("Towny"));
+        assertFalse(CompatibilityGuard.isRequiredDependency("TownyChat"));
+        assertFalse(CompatibilityGuard.isRequiredDependency("TownyDiscordChat"));
+    }
+
+    @Test
+    public void disabledDiscordSrvPointsAtTheBotToken() {
+        String problem = CompatibilityGuard.disabledAfterStartupProblem("DiscordSRV");
+
+        assertTrue(problem.startsWith("DiscordSRV was disabled after TownyDiscordChat started"));
+        assertTrue(problem.contains("bot token"));
+        assertTrue(problem.contains("restart the server"));
+    }
+
+    @Test
+    public void disabledTownyDoesNotMentionDiscordTokens() {
+        String problem = CompatibilityGuard.disabledAfterStartupProblem("Towny");
+
+        assertTrue(problem.startsWith("Towny was disabled after TownyDiscordChat started"));
+        assertFalse(problem.contains("bot token"));
+    }
 }

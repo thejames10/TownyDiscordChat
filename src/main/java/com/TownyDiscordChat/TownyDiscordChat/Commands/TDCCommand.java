@@ -2,7 +2,6 @@ package com.TownyDiscordChat.TownyDiscordChat.Commands;
 
 import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.Messages.TDCMessages;
-import github.scarsz.discordsrv.dependencies.google.common.base.Preconditions;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -18,9 +17,7 @@ public class TDCCommand implements CommandExecutor {
         if (!(sender instanceof Player))
             return true;
 
-        Player player = ((Player) sender).getPlayer();
-
-        Preconditions.checkNotNull(player);
+        Player player = (Player) sender;
 
         // Player self-service intentionally delegates all verification/token
         // handling to DiscordSRV; TDC merely provides a Towny-aware entrypoint.

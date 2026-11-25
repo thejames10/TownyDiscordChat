@@ -33,6 +33,8 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.ByteArrayOutputStream;
@@ -103,6 +105,7 @@ public class Main extends JavaPlugin {
     public CompatibilityGuard compatibility;
     public AccountChangeListener accountListener;
     public OnboardingListener onboarding;
+    private MembershipChangeListener membershipListener;
 
     private boolean operational;
     private volatile boolean guildValidated;
@@ -427,7 +430,8 @@ public class Main extends JavaPlugin {
         this.queueScheduler = new Queue(
                 config.getLong(QUEUE_START_DELAY_KEY, DEFAULT_QUEUE_START_DELAY_SECONDS),
                 config.getLong(QUEUE_POLL_KEY, DEFAULT_QUEUE_POLL_SECONDS), this);
-        getServer().getPluginManager().registerEvents(new MembershipChangeListener(this), this);
+        this.membershipListener = new MembershipChangeListener(this);
+        getServer().getPluginManager().registerEvents(membershipListener, this);
         this.onboarding = new OnboardingListener(this);
         getServer().getPluginManager().registerEvents(onboarding, this);
         this.accountListener = new AccountChangeListener(this);
@@ -446,6 +450,34 @@ public class Main extends JavaPlugin {
         } catch (SQLException closeError) {
             getLogger().warning("Could not close database after startup failure: "
                     + closeError.getMessage());
+        }
+    }
+
+    /** Called by CompatibilityGuard when Towny or DiscordSRV stops while the server runs. */
+    void handleDependencyDisabled(String dependency) {
+        stopSynchronizationServices();
+        String reason = CompatibilityGuard.disabledAfterStartupProblem(dependency);
+        getLogger().severe("[DEPENDENCY] " + reason);
+        enterSafeMode(PluginStatus.MISSING_DEPENDENCY, reason);
+    }
+
+    private void stopSynchronizationServices() {
+        operational = false;
+        guildValidated = false;
+        unsubscribeAccountListener();
+        accountListener = null;
+        unregisterListener(membershipListener);
+        unregisterListener(onboarding);
+        membershipListener = null;
+        // Cancels the queue, reconciler and onboarding reminders in one step.
+        getServer().getScheduler().cancelTasks(this);
+        queueScheduler = null;
+        reconciler = null;
+    }
+
+    private static void unregisterListener(Listener listener) {
+        if (listener != null) {
+            HandlerList.unregisterAll(listener);
         }
     }
 

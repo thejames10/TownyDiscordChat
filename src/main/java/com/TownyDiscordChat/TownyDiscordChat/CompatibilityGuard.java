@@ -4,6 +4,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 import java.util.regex.Matcher;
@@ -21,6 +22,10 @@ public final class CompatibilityGuard implements Listener {
             + "Install compatible DiscordSRV " + MINIMUM_DISCORD_VERSION + "+ and restart.";
     private static final String MISSING_TOWNY = "Towny missing or disabled. "
             + "Install compatible Towny " + MINIMUM_TOWNY_VERSION + "+ and restart.";
+    private static final String DISCORDSRV = "DiscordSRV";
+    private static final String TOWNY = "Towny";
+    private static final String DISCORDSRV_USUAL_CAUSE =
+            " (a missing or invalid bot token is the most common cause)";
 
     private final Main plugin;
     private String problem;
@@ -123,6 +128,33 @@ public final class CompatibilityGuard implements Listener {
         if (problem.contains(MISSING_TOWNY)) {
             plugin.getLogger().severe("[DEPENDENCY] " + MISSING_TOWNY);
         }
+    }
+
+    /**
+     * A dependency can pass preflight and then disable itself, for example
+     * DiscordSRV without a bot token. Its classes become unloadable, so every
+     * Discord-facing component must stop instead of failing on first use.
+     * Bukkit disables this plugin before its dependencies at shutdown, so this
+     * only fires for a dependency that stops while the server is running.
+     */
+    @EventHandler
+    public void dependencyDisabled(PluginDisableEvent event) {
+        String name = event.getPlugin().getName();
+        if (!isRequiredDependency(name) || !plugin.isEnabled()) {
+            return;
+        }
+        plugin.handleDependencyDisabled(name);
+    }
+
+    static boolean isRequiredDependency(String pluginName) {
+        return DISCORDSRV.equals(pluginName) || TOWNY.equals(pluginName);
+    }
+
+    static String disabledAfterStartupProblem(String pluginName) {
+        String usualCause = DISCORDSRV.equals(pluginName) ? DISCORDSRV_USUAL_CAUSE : "";
+        return pluginName + " was disabled after TownyDiscordChat started, so synchronization "
+                + "has stopped. Check " + pluginName + "'s messages above" + usualCause
+                + ", fix it and restart the server.";
     }
 
     @EventHandler

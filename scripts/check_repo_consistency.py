@@ -172,6 +172,17 @@ require("packages/TownyDiscordChat-MC-*.jar" in workflow
         and "packages/TownyDiscordChat-MC-*.zip" in workflow,
         "Release workflow must publish 14 JARs and 14 setup ZIPs")
 
+# GitHub turns a bare @name in release notes into a mention: it notifies that
+# account and lists it as a release contributor (for example Discord's
+# "@everyone"). Mentions are only allowed inside code spans or blocks.
+CODE_PATTERN = re.compile(r"```.*?```|`[^`\n]*`", re.DOTALL)
+MENTION_PATTERN = re.compile(r"(?<![\w`/])@[A-Za-z0-9][A-Za-z0-9-]*")
+for notes in sorted((ROOT / ".github/release-notes").glob("*.md")):
+    prose = CODE_PATTERN.sub("", notes.read_text(encoding="utf-8"))
+    mentions = sorted(set(MENTION_PATTERN.findall(prose)))
+    require(not mentions,
+            f"{notes.name} mentions {', '.join(mentions)}; wrap it in backticks")
+
 # Git tags provide permanent, version-specific documents. Fail fast if a
 # release tag was cut while the checked-in README still says SNAPSHOT.
 ref = os.environ.get("GITHUB_REF", "")

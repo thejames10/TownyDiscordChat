@@ -921,7 +921,7 @@ public final class Queue {
             }
             final String expectedTownUuid = townUuid;
             final String expectedNationUuid = nationUuid;
-            final RoleNames roleNames = plugin.roleNames();
+            final RoleNames templates = plugin.roleNames();
             final Map<String,String> safeRoleNamesById = new HashMap<String,String>();
             final Set<String> uniqueSafeRoleIds = new HashSet<String>();
             for (Role candidate : guild.getRoles()) {
@@ -932,14 +932,14 @@ public final class Queue {
                     uniqueSafeRoleIds.add(candidate.getId());
             }
             final Set<String> actual = new HashSet<String>();
-            final Map<String,String> roleNames = new HashMap<String,String>();
+            final Map<String,String> memberRoleNamesById = new HashMap<String,String>();
             final Set<String> townNames = new HashSet<String>();
             final Set<String> nationNames = new HashSet<String>();
             for (Town town : TownyUniverse.getInstance().getTowns()) townNames.add(town.getName());
             for (Nation nation : TownyUniverse.getInstance().getNations()) nationNames.add(nation.getName());
             for (Role role : member.getRoles()) {
                 actual.add(role.getId());
-                roleNames.put(role.getId(), role.getName());
+                memberRoleNamesById.put(role.getId(), role.getName());
             }
             plugin.scheduler().runAsync(() -> {
                 try {
@@ -962,11 +962,11 @@ public final class Queue {
                     }
                     List<Grant> observed = new ArrayList<Grant>();
                     for (String id : actual) {
-                        String name = roleNames.get(id);
+                        String name = memberRoleNamesById.get(id);
                         boolean recognized = safeRoleNamesById.containsKey(id)
                                 && (owned.contains(id)
                                 || (name != null && uniqueSafeRoleIds.contains(id)
-                                && namesCurrentTownOrNation(roleNames, name, townNames, nationNames)));
+                                && namesCurrentTownOrNation(templates, name, townNames, nationNames)));
                         if (!recognized) continue;
                         observed.add(new Grant(job.name, id));
                         if (!desired.contains(id))

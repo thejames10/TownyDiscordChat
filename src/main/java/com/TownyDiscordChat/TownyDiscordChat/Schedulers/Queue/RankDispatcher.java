@@ -178,10 +178,17 @@ final class RankDispatcher {
             forget(target, outcome, message(CLEARED, target, channel, guild) + " (already absent)");
             return;
         }
-        boolean nothingElse = (override.getAllowedRaw() & ~managed) == 0 && override.getDeniedRaw() == 0;
-        RestAction<Void> removal = nothingElse ? override.delete() : override.getManager().clear(managed);
-        removal.queue(ok -> forget(target, outcome, message(REVOKED, target, channel, guild)),
+        removal(override, managed).queue(ok -> forget(target, outcome, message(REVOKED, target, channel, guild)),
                 error -> outcome.fail("could not remove rank permissions: " + error.getMessage()));
+    }
+
+    /** Deletes an override that held nothing else, so no empty override is left behind. */
+    private static RestAction<?> removal(PermissionOverride override, long managed) {
+        boolean nothingElse = (override.getAllowedRaw() & ~managed) == 0 && override.getDeniedRaw() == 0;
+        if (nothingElse) {
+            return override.delete();
+        }
+        return override.getManager().clear(managed);
     }
 
     private void finish(RestAction<?> action, String message, Outcome outcome) {

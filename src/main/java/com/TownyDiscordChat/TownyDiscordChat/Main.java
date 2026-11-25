@@ -21,6 +21,8 @@ import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.StableEntityStore;
 import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Queue.Queue;
 import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Reconciler;
+import com.TownyDiscordChat.TownyDiscordChat.Scheduling.TaskScheduler;
+import com.TownyDiscordChat.TownyDiscordChat.Scheduling.TaskSchedulers;
 import com.TownyDiscordChat.TownyDiscordChat.Statistics.PluginMetrics;
 import com.TownyDiscordChat.TownyDiscordChat.Statistics.PluginStatus;
 import com.TownyDiscordChat.TownyDiscordChat.Storage.Database;
@@ -106,6 +108,7 @@ public class Main extends JavaPlugin {
     public AccountChangeListener accountListener;
     public OnboardingListener onboarding;
     private MembershipChangeListener membershipListener;
+    private TaskScheduler scheduler;
 
     private boolean operational;
     private volatile boolean guildValidated;
@@ -121,6 +124,10 @@ public class Main extends JavaPlugin {
 
     public boolean isOperational() {
         return operational;
+    }
+
+    public TaskScheduler scheduler() {
+        return scheduler;
     }
 
     public boolean isGuildValidated() {
@@ -161,7 +168,7 @@ public class Main extends JavaPlugin {
             activityLog.publish("WARNING", "Administrator action required: " + warning, true);
         }
         if (isEnabled()) {
-            Bukkit.getScheduler().runTask(this, () -> notifyOnlineAdministrators(warning));
+            scheduler.runGlobal(() -> notifyOnlineAdministrators(warning));
         }
     }
 
@@ -176,6 +183,7 @@ public class Main extends JavaPlugin {
     @Override
     public void onEnable() {
         plugin = this;
+        scheduler = TaskSchedulers.create(this);
         // Started before any check that can leave the plugin in safe mode, so
         // new installs and upgrades that still need configuring are counted.
         startMetrics();
@@ -401,7 +409,7 @@ public class Main extends JavaPlugin {
         } else {
             startupProblem = MIGRATION_RUNNING;
             getLogger().warning(startupProblem);
-            getServer().getScheduler().runTaskAsynchronously(this, this::migrateSqliteToMySql);
+            scheduler.runAsync(this::migrateSqliteToMySql);
         }
         replyWithStatusOnly(MIGRATION_REPLY_PREFIX);
     }
@@ -475,7 +483,7 @@ public class Main extends JavaPlugin {
         unregisterListener(onboarding);
         membershipListener = null;
         // Cancels the queue, reconciler and onboarding reminders in one step.
-        getServer().getScheduler().cancelTasks(this);
+        scheduler.cancelAll();
         queueScheduler = null;
         reconciler = null;
     }

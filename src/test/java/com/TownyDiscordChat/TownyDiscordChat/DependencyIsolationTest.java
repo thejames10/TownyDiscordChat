@@ -47,7 +47,7 @@ public class DependencyIsolationTest {
         assertTrue(body.contains("unsubscribeAccountListener()"));
         assertTrue(body.contains("unregisterListener(membershipListener)"));
         assertTrue(body.contains("unregisterListener(onboarding)"));
-        assertTrue(body.contains("getServer().getScheduler().cancelTasks(this)"));
+        assertTrue(body.contains("scheduler.cancelAll()"));
     }
 
     @Test

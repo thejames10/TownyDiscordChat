@@ -21,8 +21,7 @@ import github.scarsz.discordsrv.dependencies.jda.api.entities.Role;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.VoiceChannel;
 import github.scarsz.discordsrv.dependencies.jda.api.Permission;
-import org.bukkit.Bukkit;
-import org.bukkit.scheduler.BukkitTask;
+import com.TownyDiscordChat.TownyDiscordChat.Scheduling.RepeatingTask;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,7 +43,7 @@ public final class Reconciler {
     private final DiscordJobStore resources;
     private final MemberIntentStore membership;
     private final StableEntityStore stable;
-    private final BukkitTask periodic;
+    private final RepeatingTask periodic;
     private final AtomicBoolean reconciling = new AtomicBoolean(false);
     private final AtomicBoolean scheduled = new AtomicBoolean(false);
     private final AtomicBoolean rerun = new AtomicBoolean(false);
@@ -87,15 +86,14 @@ public final class Reconciler {
         this.membership = new MemberIntentStore(plugin);
         this.stable = new StableEntityStore(plugin);
         long seconds = Math.max(30, plugin.getConfig().getLong("queue.reconcileSeconds", 180));
-        periodic = Bukkit.getScheduler().runTaskTimer(plugin, () -> snapshot(),
-                100L, seconds * 20L);
+        periodic = plugin.scheduler().runGlobalTimer(this::snapshot, 100L, seconds * 20L);
     }
 
     /** Event-driven coalesced scan; kicks don't wait for the full periodic interval. */
     public void requestSoon() {
         if (!plugin.isEnabled()) return;
         if (!scheduled.compareAndSet(false, true)) return;
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        plugin.scheduler().runGlobalLater(() -> {
             scheduled.set(false);
             snapshot();
         }, 2L);
@@ -132,7 +130,7 @@ public final class Reconciler {
                 for (String warning:check.warnings()) plugin.getLogger().info("[DISCOVERY] "+warning);
             }
             final Snapshot state = capture(guild);
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            plugin.scheduler().runAsync(() -> {
                 try {
                     reconcile(state);
                 } catch (SQLException e) {

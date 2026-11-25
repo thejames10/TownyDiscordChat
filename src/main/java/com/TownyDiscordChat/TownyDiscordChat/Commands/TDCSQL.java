@@ -4,7 +4,6 @@ import com.TownyDiscordChat.TownyDiscordChat.Main;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
 import github.scarsz.discordsrv.DiscordSRV;
-import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -32,7 +31,7 @@ public class TDCSQL implements CommandExecutor {
         final String guildId = audit && DiscordSRV.getPlugin().getMainGuild() != null
                 ? DiscordSRV.getPlugin().getMainGuild().getId() : null;
         final Main plugin = Main.plugin;
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+        plugin.scheduler().runAsync(new Runnable() {
             @Override public void run() {
                 final String message;
                 try {
@@ -74,7 +73,7 @@ public class TDCSQL implements CommandExecutor {
     }
 
     private static void sendOnMain(Main plugin, CommandSender sender, String message) {
-        if (plugin.isEnabled()) Bukkit.getScheduler().runTask(plugin, () -> {
+        if (plugin.isEnabled()) plugin.scheduler().runGlobal(() -> {
             for (String line:message.split("\\n")) sender.sendMessage(line);
         });
     }

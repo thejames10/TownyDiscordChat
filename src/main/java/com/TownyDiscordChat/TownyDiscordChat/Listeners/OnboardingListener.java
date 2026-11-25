@@ -45,7 +45,7 @@ public final class OnboardingListener implements Listener {
         if (!plugin.isOperational()
                 || !plugin.getConfig().getBoolean("onboarding.enabled",true)) return;
         long delay=plugin.getConfig().getLong("onboarding.joinDelayTicks",60L);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> remindIfNeeded(player), delay);
+        plugin.scheduler().runGlobalLater(() -> remindIfNeeded(player), delay);
     }
 
     public boolean hasTown(Player player) {

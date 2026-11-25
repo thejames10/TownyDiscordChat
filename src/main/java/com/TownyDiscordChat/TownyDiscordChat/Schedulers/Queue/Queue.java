@@ -23,8 +23,7 @@ import github.scarsz.discordsrv.dependencies.jda.api.entities.Guild;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Role;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.VoiceChannel;
-import org.bukkit.Bukkit;
-import org.bukkit.scheduler.BukkitTask;
+import com.TownyDiscordChat.TownyDiscordChat.Scheduling.RepeatingTask;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashSet;
@@ -47,7 +46,7 @@ public final class Queue {
     private final DiscordJobStore store;
     private final StableEntityStore stable;
     private final MemberIntentStore memberStore;
-    private final BukkitTask scheduler;
+    private final RepeatingTask scheduler;
     private final AtomicBoolean resourceBusy = new AtomicBoolean(false);
     private final AtomicBoolean memberBusy = new AtomicBoolean(false);
     private volatile Job current;
@@ -70,10 +69,7 @@ public final class Queue {
         this.memberStore = new MemberIntentStore(plugin);
         long delay = Math.max(1, startDelaySeconds);
         long period = Math.max(1, intervalDelaySeconds);
-        this.scheduler = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin,
-                new Runnable() {
-                    @Override public void run() { tick(); }
-                }, delay * 20L, period * 20L);
+        this.scheduler = plugin.scheduler().runAsyncTimer(this::tick, delay * 20L, period * 20L);
     }
 
     private void tick() {
@@ -171,7 +167,7 @@ public final class Queue {
                     ? stable.ownersOfName(guild.getId(),
                             job.kind.startsWith("TOWN_") ? "TOWN" : "NATION",job.name)
                     : Collections.<String>emptySet();
-            Bukkit.getScheduler().runTask(plugin, () -> dispatch(job, categoryIds, mappedId,
+            plugin.scheduler().runGlobal(() -> dispatch(job, categoryIds, mappedId,
                     stableOwners,identity,auditIds,nameOwners));
         } catch (Exception e) {
             plugin.getLogger().warning("Could not claim resource job: " + e.getMessage());
@@ -183,7 +179,7 @@ public final class Queue {
 
     private void scheduleMember(Intent intent, Set<String> owners) {
         currentIntent = intent;
-        Bukkit.getScheduler().runTask(plugin, () -> dispatchMember(intent,owners));
+        plugin.scheduler().runGlobal(() -> dispatchMember(intent,owners));
     }
 
     private void dispatchMember(Intent intent, Set<String> owners) {
@@ -237,7 +233,7 @@ public final class Queue {
                 // off-thread: return to Bukkit before touching Towny state.
                 guild.retrieveMemberById(intent.memberId).queue(
                     found -> {
-                        if (plugin.isEnabled()) Bukkit.getScheduler().runTask(plugin,
+                        if (plugin.isEnabled()) plugin.scheduler().runGlobal(
                                 () -> applyMember(intent, guild, found, role, owners));
                     },
                     failure -> {
@@ -360,7 +356,7 @@ public final class Queue {
 
     private void finalizeMemberAsync(Intent intent, SQLAction action, String message) {
         if (!plugin.isEnabled()) return;
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.scheduler().runAsync(() -> {
             try {
                 action.run();
                 if (!intent.desired && message.startsWith("[QUEUE] FAILED"))
@@ -432,7 +428,7 @@ public final class Queue {
                     // On a clean reinstall JDA's cache may omit linked users.
                     // Fetch the member from Discord instead of trusting cache.
                     guild.retrieveMemberById(job.name).queue(
-                        member -> Bukkit.getScheduler().runTask(plugin,
+                        member -> plugin.scheduler().runGlobal(
                             () -> inspectLinkedMember(job, guild, member)),
                         failure -> {
                             if (isUnknownMember(failure)) discard(job);
@@ -648,13 +644,13 @@ public final class Queue {
                 }
             }).onSuccess(complete -> {
                 if (!plugin.isEnabled()) return;
-                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                plugin.scheduler().runAsync(() -> {
                     try {
                         memberStore.observe(guild.getId(),observed);
                         store.finishFullAudit(job);
                         plugin.getLogger().info("Complete guild audit recorded "
                                 + observed.size() + " managed grants. Reconciliation will revoke stale access.");
-                        Bukkit.getScheduler().runTask(plugin, () -> {
+                        plugin.scheduler().runGlobal(() -> {
                             if (plugin.reconciler != null) plugin.reconciler.requestSoon();
                         });
                     } catch (SQLException e) {
@@ -926,7 +922,7 @@ public final class Queue {
                 actual.add(role.getId());
                 roleNames.put(role.getId(), role.getName());
             }
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            plugin.scheduler().runAsync(() -> {
                 try {
                     Set<String> owned = new HashSet<String>(store.mappedIds("TOWN_ROLE").values());
                     owned.addAll(store.mappedIds("NATION_ROLE").values());
@@ -1149,7 +1145,7 @@ public final class Queue {
     private void finalizeAsync(final Job job, final SQLAction action,
                                final String message, final boolean toDiscord) {
         if (!plugin.isEnabled()) return; // lease will be recovered after restart
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+        plugin.scheduler().runAsync(new Runnable() {
             @Override public void run() {
                 try {
                     action.run();

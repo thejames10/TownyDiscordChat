@@ -4,7 +4,6 @@ import com.TownyDiscordChat.TownyDiscordChat.Main;
 import github.scarsz.discordsrv.api.Subscribe;
 import github.scarsz.discordsrv.api.events.AccountLinkedEvent;
 import github.scarsz.discordsrv.api.events.AccountUnlinkedEvent;
-import org.bukkit.Bukkit;
 
 /** Request a single reconciled final state after account linking/unlinking. */
 public final class AccountChangeListener {
@@ -21,7 +20,7 @@ public final class AccountChangeListener {
     public void onUnlinked(AccountUnlinkedEvent event) { changed(null); }
 
     private void changed(java.util.UUID linkedUuid) {
-        if (plugin.isEnabled()) Bukkit.getScheduler().runTask(plugin, () -> {
+        if (plugin.isEnabled()) plugin.scheduler().runGlobal(() -> {
             if (plugin.reconciler != null) plugin.reconciler.requestSoon();
             if (linkedUuid!=null && plugin.onboarding!=null)
                 plugin.onboarding.onAccountLinked(linkedUuid);

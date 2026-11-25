@@ -5,7 +5,7 @@ guild until you have tested the queue, database migrations and role revocation.
 
 ## Compatibility matrix
 
-Each listed Minecraft version has a separately compiled JAR and a matching optional setup ZIP.
+From the next release, one JAR covers every listed version: it is built against the oldest listed server and Towny APIs, which newer servers still load. The 1.1.2 pre-release has one JAR and setup ZIP per Minecraft version.
 
 | Minecraft | Server | Towny | DiscordSRV | Java | Validation |
 | --- | --- | --- | --- | --- | --- |
@@ -18,11 +18,11 @@ Each listed Minecraft version has a separately compiled JAR and a matching optio
 | 26.1.2, 26.2 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 25+ | CI, real servers |
 | 26.3 | Paper / Purpur | 0.103.2.15 (pre-release) | 1.30.5 | 25+ | CI, real servers, Discord (Paper) |
 
-**CI** confirms compilation, automated tests and packaging. **Real servers:** before release, every build is started on each listed server type for that version, on its own and alongside Towny or DiscordSRV. **Discord:** role and channel management, membership grants and revocations, and cleanup are tested against a test Discord server on Paper 26.3. None of this is a guarantee for every server configuration. Java runtime requirements for older versions follow the selected Minecraft server and Towny/DiscordSRV installation.
+**CI** compiles the code and runs the automated tests against each listed version, and checks that every class, method and field the released JAR uses exists in that version's server, Towny and DiscordSRV APIs. **Real servers:** before release, that JAR is started on each listed server type for each version, on its own and alongside Towny or DiscordSRV. **Discord:** role and channel management, membership grants and revocations, and cleanup are tested against a test Discord server on Paper 26.3. None of this is a guarantee for every server configuration. Java runtime requirements for older versions follow the selected Minecraft server and Towny/DiscordSRV installation.
 
 Minecraft 26.x uses Java 25 and Paper's build-qualified API versions. Minecraft 26.1.0 has no Paper build, and 26.1.1 is obsolete (alpha-only); use 26.1.2 instead. Folia and modern Towny on Spigot/CraftBukkit are not supported.
 
-For 26.3, Towny 0.103.2.15 is a **pre-release**. Check the corresponding Paper/Purpur server build carefully before updating a production server. The matching ZIP's `BUILD-INFO.txt` records the exact Paper/Spigot, Towny and DiscordSRV compile APIs.
+For 26.3, Towny 0.103.2.15 is a **pre-release**. Check the corresponding Paper/Purpur server build carefully before updating a production server.
 
 ## Required server plugins
 
@@ -56,9 +56,11 @@ SQLite JDBC, MySQL Connector/J, and relocated bStats are packaged in the plugin 
 
 1. Open the [v1.1.2 release](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.2).
 2. Download `TownyDiscordChat-MC-<version>.jar` for your exact
-   Minecraft version, or the matching ZIP with configuration and guides.
+   Minecraft version (1.1.2 only; later releases have one
+   `TownyDiscordChat-<version>.jar` for every version), or the matching
+   ZIP with `config.example.yml`.
 3. Install only the JAR in `plugins/`. Before starting a new
-   installation, copy `config.example.yml` from the ZIP into
+   installation, copy `config.example.yml` into
    `plugins/TownyDiscordChat/config.yml`.
 4. Configure DiscordSRV, Towny, the bot's private channel permissions
    and privileged Server Members Intent.
@@ -156,8 +158,9 @@ See [TEST-PLAN.md](TEST-PLAN.md) for deployment and recovery tests.
 
 ## Release policy
 
-A versioned GitHub Release provides **one standalone JAR and one setup ZIP
-per listed Minecraft version**. Automated checks verify API compilation,
-database migration tests, version metadata, and documentation links before
-publishing the artifacts. Live Paper/Purpur, Towny and DiscordSRV
+A versioned GitHub Release provides **one plugin JAR for every listed
+Minecraft version** and `config.example.yml` (1.1.2 and earlier have one JAR
+and setup ZIP per version). Automated checks verify compilation and the
+JAR's API calls against every listed version, database migration tests,
+version metadata, and documentation links before publishing. Live Paper/Purpur, Towny and DiscordSRV
 integration testing remains necessary before production certification.

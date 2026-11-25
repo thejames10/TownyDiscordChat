@@ -7,9 +7,14 @@ import re
 import sys
 from pathlib import Path
 
+from export_compatibility_matrix import read_matrix
+
 ROOT = Path(__file__).resolve().parents[1]
 README = ROOT / "README.md"
 WORKFLOW = ROOT / ".github/workflows/compatibility.yml"
+HANGAR_WORKFLOW = ROOT / ".github/workflows/publish-hangar.yml"
+LINK_CHECK = ROOT / "scripts/ApiLinkCheck.java"
+PER_VERSION_ARTIFACT = "TownyDiscordChat-MC-"
 POM = ROOT / "pom.xml"
 PLUGIN_YML = ROOT / "src/main/resources/plugin.yml"
 CONFIG = ROOT / "src/main/resources/config.yml"
@@ -33,6 +38,7 @@ def read(path: Path) -> str:
 docs = {p: read(p) for p in GUIDES}
 readme = docs[README]
 workflow = read(WORKFLOW)
+hangar_workflow = read(HANGAR_WORKFLOW)
 pom = read(POM)
 plugin = read(PLUGIN_YML)
 config = read(CONFIG)
@@ -70,14 +76,22 @@ for mc, towny in matrix:
 build_dep = re.search(r"-Ddiscordsrv\.version=([0-9.]+)", matrix_section)
 require(build_dep is not None and build_dep.group(1) == "1.30.5",
         "CI: user-facing builds must use documented DiscordSRV 1.30.5")
-for key, expected in [
-    ("server.api.version", "1.20.1-R0.1-SNAPSHOT"),
-    ("towny.version", "0.103.2.0"),
-    ("discordsrv.version", "1.30.5"),
-]:
-    actual = re.search(rf"<{re.escape(key)}>([^<]+)</{re.escape(key)}>", pom)
-    require(actual is not None and actual.group(1) == expected,
-            f"pom.xml {key} should be {expected}, matching current development default")
+# One JAR is released for every version, built with the pom.xml defaults.
+# They must name the oldest target, the only APIs it can be linked against.
+try:
+    exported = read_matrix()
+except ValueError as problem:
+    exported = []
+    errors.append(f"pom.xml defaults must match exactly one CI target: {problem}")
+if exported:
+    release_builds = [row["minecraft"] for row in exported if row["release_build"]]
+    require(release_builds == [exported[0]["minecraft"]],
+            f"pom.xml defaults must build the oldest target {exported[0]['minecraft']}, "
+            f"not {', '.join(release_builds)}")
+require(LINK_CHECK.is_file() and "scripts/ApiLinkCheck.java" in matrix_section,
+        "CI must check the released JAR's calls against every target's APIs")
+require(PER_VERSION_ARTIFACT not in workflow and PER_VERSION_ARTIFACT not in hangar_workflow,
+        "Releases publish one JAR for every version, not one per Minecraft version")
 
 pom_version = re.search(
     r"<artifactId>TownyDiscordChat</artifactId>\s*<version>([^<]+)</version>", pom
@@ -124,9 +138,8 @@ for doc in (README, ROOT / "COMPATIBILITY.md", ROOT / "SYNC-MIGRATION.md",
 require((ROOT / "src/main/java/com/TownyDiscordChat/TownyDiscordChat/ConfigUpgrade.java").is_file(),
         "ConfigUpgrade.java is required for README documented first-start backup import")
 
-for name in ("README.md", "COMPATIBILITY.md", "SYNC-MIGRATION.md",
-             "TEST-PLAN.md", "config.example.yml", "BUILD-INFO.txt"):
-    require(name in workflow, f"CI artifact bundle is missing {name}")
+require("cp src/main/resources/config.yml dist/config.example.yml" in workflow,
+        "CI must release config.example.yml next to the plugin JAR")
 
 # Dormant 2023 scheduler/listener/task graph must not silently reappear
 # and bypass our desired-state queue.
@@ -164,13 +177,11 @@ for file in javaRoot.rglob("*.java"):
                 f"{file.relative_to(ROOT)} issues Discord REST mutations outside the queue")
 
 # Release assets, documentation and version must remain coupled.
-require((ROOT / ".github/release-notes/v1.1.2.md").is_file(),
-        "Missing release notes for version 1.1.2")
-require("tag_name: v1.1.2" in workflow,
-        "Release workflow must publish permanent v1.1.2 tag")
-require("packages/TownyDiscordChat-MC-*.jar" in workflow
-        and "packages/TownyDiscordChat-MC-*.zip" in workflow,
-        "Release workflow must publish 14 JARs and 14 setup ZIPs")
+if pom_version:
+    require((ROOT / f".github/release-notes/v{pom_version.group(1)}.md").is_file(),
+            f"Missing release notes for version {pom_version.group(1)}")
+require("packages/TownyDiscordChat-${{ steps.release.outputs.version }}.jar" in workflow,
+        "Release workflow must publish the single plugin JAR")
 
 # GitHub turns a bare @name in release notes into a mention: it notifies that
 # account and lists it as a release contributor (for example Discord's

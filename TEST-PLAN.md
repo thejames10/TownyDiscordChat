@@ -88,8 +88,10 @@ of any prior TownyDiscordChat tables before migration.
   server and Towny 0.103.2.15 pre-release. Test linking, private
   channel creation, resource renames and full-guild audits.
 - Confirm unsupported 26.1.0 and 26.1.1 have no published artifacts.
-- Verify all 14 JARs report version 1.1.2 and have matching
-  Minecraft API declarations; test on an isolated Discord guild.
+- Verify the single release JAR reports the release version and
+  `api-version: '1.16'`, loads on every listed version and server type,
+  and passes the CI API link check for all 14 targets; test on an
+  isolated Discord guild.
 
 ## Startup / version checks
 
@@ -100,7 +102,7 @@ of any prior TownyDiscordChat tables before migration.
   lists no unexpected DEAD jobs.
 - Temporarily install an incompatible DiscordSRV in a *throwaway server*.
   Verify inert safe mode, clear console instructions, and admin messages.
-- Check no Towny, DiscordSRV or JDA class is shaded in the test JAR.
+- Check no Towny, DiscordSRV, JDA or protobuf class is shaded in the test JAR.
 
 ## Console and Discord activity logging
 

@@ -19,6 +19,7 @@ env:
   MAVEN_ARGS: -Daether.connector.http.retryHandler.count=5 -Dmaven.wagon.http.retryHandler.count=5
   # Oldest Spigot API, newest Spigot API and newest Paper API.
   PULL_REQUEST_VERSIONS: '["1.16.5", "1.21.11", "26.3"]'
+  MAVEN_DEPENDENCY_PLUGIN: org.apache.maven.plugins:maven-dependency-plugin:3.8.1
 
 jobs:
   repository-audit:
@@ -59,9 +60,64 @@ jobs:
                 startsWith(github.event.head_commit.message, 'release: TownyDiscordChat ') }}
         run: echo "full-matrix=$IS_FULL_MATRIX" >> "$GITHUB_OUTPUT"
 
+  # One JAR, built against the oldest supported APIs (the pom.xml defaults),
+  # is released for every Minecraft version in the matrix below.
+  package:
+    name: Plugin JAR for every Minecraft version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Match plugin version to tagged releases
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: mvn --batch-mode --no-transfer-progress versions:set -DnewVersion="${GITHUB_REF_NAME#v}" -DgenerateBackupPoms=false
+      - name: Build the plugin JAR against the oldest supported APIs
+        run: mvn --batch-mode --no-transfer-progress clean verify
+
+      - name: Verify packaged plugin version and server API
+        run: |
+          version=$(sed -n 's:^  <version>\(.*\)</version>$:\1:p' pom.xml)
+          api_version=$(sed -n 's:.*<bukkit.api.version>\(.*\)</bukkit.api.version>.*:\1:p' pom.xml)
+          jar="target/TownyDiscordChat-$version.jar"
+          unzip -p "$jar" plugin.yml | grep -Fxq "version: '$version'"
+          unzip -p "$jar" plugin.yml | grep -Fxq "api-version: '$api_version'"
+          echo "PLUGIN_JAR=$jar" >> "$GITHUB_ENV"
+
+      - name: Ensure server-provided dependencies are not bundled
+        run: |
+          if jar tf "$PLUGIN_JAR" | grep -E '^github/scarsz/discordsrv/|^com/palmergames/bukkit/towny/|^net/dv8tion/jda/|^com/google/protobuf/'; then
+            echo 'Towny, DiscordSRV, JDA or protobuf was bundled into TownyDiscordChat.'
+            exit 1
+          fi
+
+      - name: Verify SQLite and MySQL JDBC driver packaging
+        run: |
+          jar tf "$PLUGIN_JAR" | grep -Fq 'org/sqlite/JDBC.class'
+          jar tf "$PLUGIN_JAR" | grep -Fq 'com/mysql/cj/jdbc/Driver.class'
+          unzip -p "$PLUGIN_JAR" META-INF/services/java.sql.Driver | grep -Fq 'org.sqlite.JDBC'
+          unzip -p "$PLUGIN_JAR" META-INF/services/java.sql.Driver | grep -Fq 'com.mysql.cj.jdbc.Driver'
+
+      - name: Stage the release files
+        run: |
+          mkdir dist
+          cp "$PLUGIN_JAR" dist/
+          cp src/main/resources/config.yml dist/config.example.yml
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TownyDiscordChat-plugin
+          path: dist/
+          if-no-files-found: error
+
+  # Each target compiles and runs the unit tests against its own APIs, then
+  # checks that every call in the released JAR still exists in those APIs.
   build:
-    name: MC ${{ matrix.minecraft }} / TDC test package
-    needs: scope
+    name: MC ${{ matrix.minecraft }} / compile, tests and API link check
+    needs: [scope, package]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -89,6 +145,18 @@ jobs:
           - { minecraft: '26.2', towny: '0.103.2.0', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '26.2', apiGroup: 'io.papermc.paper', apiArtifact: 'paper-api', apiRelease: '26.2.build.129-stable', jdk: '25', adventure: '5.2.0' }
           - { minecraft: '26.3', towny: '0.103.2.15', townyGroup: 'com.palmergames.bukkit.towny', townyArtifact: 'towny', apiVersion: '26.3', apiGroup: 'io.papermc.paper', apiArtifact: 'paper-api', apiRelease: '26.3.build.218-stable', jdk: '25', adventure: '5.2.0' }
 
+    env:
+      TARGET_PROPERTIES: >-
+        -Dserver.api.groupId=${{ matrix.apiGroup }}
+        -Dserver.api.artifactId=${{ matrix.apiArtifact }}
+        -Dserver.api.version=${{ matrix.apiRelease }}
+        -Dbukkit.api.version=${{ matrix.apiVersion }}
+        -Dadventure.version=${{ matrix.adventure || '4.21.0' }}
+        -Ddiscordsrv.version=1.30.5
+        -Dtowny.version=${{ matrix.towny }}
+        -Dtowny.groupId=${{ matrix.townyGroup }}
+        -Dtowny.artifactId=${{ matrix.townyArtifact }}
+
     steps:
       - name: Check whether this target is in scope
         env:
@@ -104,79 +172,26 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.jdk }}
           cache: maven
-      - name: Match plugin version to tagged releases
-        if: env.BUILD_TARGET == 'true' && startsWith(github.ref, 'refs/tags/v')
-        run: mvn --batch-mode --no-transfer-progress versions:set -DnewVersion="${GITHUB_REF_NAME#v}" -DgenerateBackupPoms=false
-      - name: Compile, test, and package for the selected Minecraft API
+      - name: Compile and test against this Minecraft version's APIs
         if: env.BUILD_TARGET == 'true'
-        run: |
-          mvn --batch-mode --no-transfer-progress \
-            -Dserver.api.groupId=${{ matrix.apiGroup }} \
-            -Dserver.api.artifactId=${{ matrix.apiArtifact }} \
-            -Dserver.api.version=${{ matrix.apiRelease }} \
-            -Dbukkit.api.version=${{ matrix.apiVersion }} \
-            -Dadventure.version=${{ matrix.adventure || '4.21.0' }} \
-            -Ddiscordsrv.version=1.30.5 \
-            -Dtowny.version=${{ matrix.towny }} \
-            -Dtowny.groupId=${{ matrix.townyGroup }} \
-            -Dtowny.artifactId=${{ matrix.townyArtifact }} \
-            clean verify
+        run: mvn --batch-mode --no-transfer-progress $TARGET_PROPERTIES clean verify
 
-      - name: Verify packaged plugin version and server API
-        if: env.BUILD_TARGET == 'true'
-        run: |
-          unzip -p target/TownyDiscordChat-*.jar plugin.yml | grep -Fq "version: '1.1.2'"
-          unzip -p target/TownyDiscordChat-*.jar plugin.yml | grep -Fq "api-version: '${{ matrix.apiVersion }}'"
-
-      - name: Ensure server-provided dependencies are not bundled
-        if: env.BUILD_TARGET == 'true'
-        run: |
-          if jar tf target/TownyDiscordChat-*.jar | grep -E '^github/scarsz/discordsrv/|^com/palmergames/bukkit/towny/|^net/dv8tion/jda/|^com/google/protobuf/'; then
-            echo 'Towny, DiscordSRV, JDA or protobuf was bundled into TownyDiscordChat.'
-            exit 1
-          fi
-
-      - name: Verify SQLite and MySQL JDBC driver packaging
-        if: env.BUILD_TARGET == 'true'
-        run: |
-          jar tf target/TownyDiscordChat-*.jar | grep -Fq 'org/sqlite/JDBC.class'
-          jar tf target/TownyDiscordChat-*.jar | grep -Fq 'com/mysql/cj/jdbc/Driver.class'
-          unzip -p target/TownyDiscordChat-*.jar META-INF/services/java.sql.Driver | grep -Fq 'org.sqlite.JDBC'
-          unzip -p target/TownyDiscordChat-*.jar META-INF/services/java.sql.Driver | grep -Fq 'com.mysql.cj.jdbc.Driver'
-
-      - name: Package single, version-labeled test download
-        if: env.BUILD_TARGET == 'true'
-        run: |
-          mkdir -p staging
-          cp target/TownyDiscordChat-*.jar staging/TownyDiscordChat-MC-${{ matrix.minecraft }}.jar
-          cp README.md COMPATIBILITY.md SYNC-MIGRATION.md TEST-PLAN.md staging/
-          cp src/main/resources/config.yml staging/config.example.yml
-          cat > staging/BUILD-INFO.txt <<EOF
-          Minecraft: ${{ matrix.minecraft }}
-          Server API: ${{ matrix.apiGroup }}:${{ matrix.apiArtifact }}:${{ matrix.apiRelease }}
-          Server plugin.yml api-version: ${{ matrix.apiVersion }}
-          Build JDK: ${{ matrix.jdk }}
-          Adventure API: ${{ matrix.adventure || '4.21.0' }}
-          DiscordSRV compile API: 1.30.5
-          Towny compile API: ${{ matrix.towny }}
-          Towny Maven coordinates: ${{ matrix.townyGroup }}:${{ matrix.townyArtifact }}
-          Dependencies are NOT bundled; install compatible server plugins separately.
-          Compilation is not live-server compatibility certification.
-          EOF
-          (cd staging && zip -r ../TownyDiscordChat-MC-${{ matrix.minecraft }}.zip .)
-          cp "staging/TownyDiscordChat-MC-${{ matrix.minecraft }}.jar" .
-
-      - uses: actions/upload-artifact@v4
+      - uses: actions/download-artifact@v4
         if: env.BUILD_TARGET == 'true'
         with:
-          name: TownyDiscordChat-MC-${{ matrix.minecraft }}
-          path: |
-            TownyDiscordChat-MC-${{ matrix.minecraft }}.zip
-            TownyDiscordChat-MC-${{ matrix.minecraft }}.jar
-          if-no-files-found: error
+          name: TownyDiscordChat-plugin
+          path: release
 
-  # Keep the old API smoke-test for developers, but do NOT publish two
-  # confusing user-facing packages for the same Minecraft version.
+      - name: Check every call in the plugin JAR exists in these APIs
+        if: env.BUILD_TARGET == 'true'
+        run: |
+          mvn --batch-mode --no-transfer-progress --quiet $TARGET_PROPERTIES \
+            "$MAVEN_DEPENDENCY_PLUGIN:build-classpath" \
+            -Dmdep.includeScope=compile -Dmdep.outputFile=api-classpath.txt
+          java scripts/ApiLinkCheck.java release/TownyDiscordChat-*.jar api-classpath.txt
+
+  # Keeps the source compiling against the oldest Towny and DiscordSRV APIs
+  # the code still supports; nothing from this job is released.
   legacy-api-check:
     name: Historical API source-compatibility check
     needs: scope
@@ -230,22 +245,14 @@ jobs:
           java-version: '21'
           cache: maven
       - name: Verify SQLite SQL operations and full-fidelity MySQL export
-        run: |
-          mvn --batch-mode --no-transfer-progress \
-            -Dserver.api.version=1.20.1-R0.1-SNAPSHOT \
-            -Dbukkit.api.version=1.20 \
-            -Ddiscordsrv.version=1.30.5 \
-            -Dtowny.version=0.103.2.0 \
-            -Dtowny.groupId=com.palmergames.bukkit.towny \
-            -Dtowny.artifactId=towny \
-            clean verify
+        run: mvn --batch-mode --no-transfer-progress clean verify
 
   release:
-    name: Publish v1.1.2 pre-release (14 JARs and 14 ZIPs)
+    name: Publish the GitHub pre-release
     if: >-
       github.ref == 'refs/heads/main' &&
-      startsWith(github.event.head_commit.message, 'release: TownyDiscordChat 1.1.2')
-    needs: [build, legacy-api-check, storage-migration, repository-audit]
+      startsWith(github.event.head_commit.message, 'release: TownyDiscordChat ')
+    needs: [package, build, legacy-api-check, storage-migration, repository-audit]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -253,29 +260,38 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          pattern: TownyDiscordChat-MC-*
+          name: TownyDiscordChat-plugin
           path: packages
-          merge-multiple: true
-      - name: Verify all fourteen JARs and ZIPs
+      - name: Match the release commit, notes and files to pom.xml
+        id: release
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          grep -q '<version>1.1.2</version>' pom.xml
-          test "$(find packages -maxdepth 1 -name 'TownyDiscordChat-MC-*.jar' | wc -l)" -eq 14
-          test "$(find packages -maxdepth 1 -name 'TownyDiscordChat-MC-*.zip' | wc -l)" -eq 14
-          for mc in 1.16.5 1.17.1 1.18.2 1.19.4 1.20.1 1.20.6 1.21.1 1.21.4 1.21.8 1.21.10 1.21.11 26.1.2 26.2 26.3; do
-            test -s "packages/TownyDiscordChat-MC-$mc.jar"
-            test -s "packages/TownyDiscordChat-MC-$mc.zip"
-            jar tf "packages/TownyDiscordChat-MC-$mc.jar" | grep -Fq 'plugin.yml'
-            unzip -l "packages/TownyDiscordChat-MC-$mc.zip" | grep -Fq "TownyDiscordChat-MC-$mc.jar"
-          done
+          set -euo pipefail
+          version=$(sed -n 's:^  <version>\(.*\)</version>$:\1:p' pom.xml)
+          subject=${COMMIT_MESSAGE%%$'\n'*}
+          if [[ "$subject" != "release: TownyDiscordChat $version" ]]; then
+            echo "::error::The commit says '$subject' but pom.xml is version $version"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" > /dev/null; then
+            echo "::error::v$version is already released; bump the version in pom.xml"
+            exit 1
+          fi
+          test -s ".github/release-notes/v$version.md"
+          test -s "packages/TownyDiscordChat-$version.jar"
+          test -s packages/config.example.yml
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      # Every release so far is a pre-release; change both lines for a stable one.
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.2
+          tag_name: v${{ steps.release.outputs.version }}
           target_commitish: ${{ github.sha }}
-          name: Pre-Release Build 1.1.2
-          body_path: .github/release-notes/v1.1.2.md
+          name: Pre-Release Build ${{ steps.release.outputs.version }}
+          body_path: .github/release-notes/v${{ steps.release.outputs.version }}.md
           files: |
-            packages/TownyDiscordChat-MC-*.jar
-            packages/TownyDiscordChat-MC-*.zip
+            packages/TownyDiscordChat-${{ steps.release.outputs.version }}.jar
+            packages/config.example.yml
           generate_release_notes: false
           fail_on_unmatched_files: true
           prerelease: true

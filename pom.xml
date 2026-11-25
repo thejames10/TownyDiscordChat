@@ -10,15 +10,17 @@
     <!-- Java 8 bytecode supports older servers; CI uses JDK 25 for 26.x Paper APIs. -->
     <maven.compiler.release>8</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <!-- Server API is selected per build: historical Spigot or modern Paper. -->
+    <!-- The defaults build the release JAR against the oldest supported server
+         and Towny APIs, so one JAR loads on every newer listed version. CI also
+         compiles against each newer API and checks the JAR's calls against it. -->
     <server.api.groupId>org.spigotmc</server.api.groupId>
     <server.api.artifactId>spigot-api</server.api.artifactId>
-    <server.api.version>1.20.1-R0.1-SNAPSHOT</server.api.version>
-    <bukkit.api.version>1.20</bukkit.api.version>
+    <server.api.version>1.16.5-R0.1-SNAPSHOT</server.api.version>
+    <bukkit.api.version>1.16</bukkit.api.version>
     <adventure.version>4.21.0</adventure.version>
     <!-- The runtime uses the DiscordSRV-shaded JDA 4 API; CI also checks the historical interface. -->
     <discordsrv.version>1.30.5</discordsrv.version>
-    <towny.version>0.103.2.0</towny.version>
+    <towny.version>0.100.3.0</towny.version>
     <towny.groupId>com.palmergames.bukkit.towny</towny.groupId>
     <towny.artifactId>towny</towny.artifactId>
   </properties>

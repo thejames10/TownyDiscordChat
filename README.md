@@ -30,9 +30,9 @@
 
 ## Download TownyDiscordChat
 
-**Current version: 1.1.2 (pre-release).** Choose the JAR for your server's exact Minecraft version.
+**Current version: 1.1.2 (pre-release).** It has one JAR per Minecraft version; choose the one for your server. From the next release, a single JAR covers every [supported version](#compatibility).
 
-**[Download on Hangar](https://hangar.papermc.io/thejames10/TownyDiscordChat/versions)** · **[Download JARs and ZIPs from GitHub](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.2)** · [All releases](https://github.com/thejames10/TownyDiscordChat/releases) · [Compatibility](#compatibility)
+**[Download on Hangar](https://hangar.papermc.io/thejames10/TownyDiscordChat/versions)** · **[Download from GitHub](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.2)** · [All releases](https://github.com/thejames10/TownyDiscordChat/releases) · [Compatibility](#compatibility)
 
 Towny and DiscordSRV are separate required plugins. See [Installation](#installation) before deploying.
 
@@ -88,7 +88,7 @@ Suppose your Minecraft server has a town called **Oakvale**, which belongs to th
 
 **Why 1.16.5 has two Towny versions:** [Towny 0.100.1.0](https://github.com/TownyAdvanced/Towny/releases/tag/0.100.1.0) is the newest release that starts on Spigot, CraftBukkit and Purpur 1.16.5. Newer Towny releases need libraries those servers do not include (log4j 2.11+ for 0.100.3.0, commons-io for 0.100.2.0) and fail to enable there. Paper 1.16.5 includes both, so it can use 0.100.3.0.
 
-**Compatibility status:** Each download is compiled against the corresponding server API and checked by automated tests. Before release, every build is also started on real servers for each listed version and server type, on its own, alongside Towny and alongside DiscordSRV; Discord role and channel management is tested against a test Discord server on Paper 26.3. This is not a guarantee for every server configuration. Minecraft 26.3 requires a compatible Towny pre-release and a matching Paper/Purpur build.
+**Compatibility status:** One plugin JAR is built against the oldest listed server and Towny APIs. Automated tests compile the code against every listed version and check that each call the JAR makes still exists in that version's server, Towny and DiscordSRV APIs. Before release, that same JAR is also started on real servers for each listed version and server type, on its own, alongside Towny and alongside DiscordSRV; Discord role and channel management is tested against a test Discord server on Paper 26.3. This is not a guarantee for every server configuration. Minecraft 26.3 requires a compatible Towny pre-release and a matching Paper/Purpur build.
 
 **Unsupported:** Folia; Spigot/CraftBukkit with Towny 0.102+; Minecraft 26.1.0 (no Paper build) and 26.1.1 (obsolete Paper alpha builds). Use **26.1.2** for the 26.1 series. Minecraft 26.4 has not been released as stable.
 
@@ -96,13 +96,17 @@ Minecraft 26.x requires Java 25 and Paper's newer build-qualified API versions. 
 
 ### Download TownyDiscordChat 1.1.2
 
-Choose the **JAR matching your Minecraft version** from the
+Download from the
 [1.1.2 pre-release](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.2).
-Each listed version has a standalone `TownyDiscordChat-MC-<version>.jar`.
-The optional matching ZIP contains the same JAR, `config.example.yml`,
-README, migration guides and `BUILD-INFO.txt`.
+1.1.2 has one `TownyDiscordChat-MC-<version>.jar` per listed Minecraft
+version; choose the one matching your server. Its optional matching ZIP
+contains the same JAR and `config.example.yml`.
 
-Downloads and documentation are version-specific. Earlier versions,
+From the next release, each release has one `TownyDiscordChat-<version>.jar`
+for every listed Minecraft version and server type, plus
+`config.example.yml`.
+
+Documentation is version-specific. Earlier versions,
 including [1.1.0](https://github.com/thejames10/TownyDiscordChat/releases/tag/v1.1.0),
 remain available. Towny and DiscordSRV must be installed separately.
 
@@ -143,9 +147,9 @@ Enable Discord's privileged **Server Members Intent** in the bot's Developer Por
 
 ### 3. Install the TownyDiscordChat build
 
-Follow **Download TownyDiscordChat 1.1.2** above. Choose the JAR for your exact Minecraft version, or the matching ZIP for documentation and `config.example.yml`. Install **only the plugin JAR**, not the ZIP, into `plugins/`.
+Follow **Download TownyDiscordChat 1.1.2** above. Install **only the plugin JAR** into `plugins/`.
 
-**For a new installation:** before the first server start, copy the ZIP's
+**For a new installation:** before the first server start, copy the release's
 `config.example.yml` to `plugins/TownyDiscordChat/config.yml` (create
 the plugin directory if needed), then configure your Discord categories
 and storage. This avoids creating Discord resources with unintended
@@ -192,7 +196,7 @@ file exists, it generates the standard default config.
 `.bak` is never deleted or modified. Invalid YAML, unsupported
 types, or incompatible values cause startup **safe mode**, without
 publishing a partially migrated config. Correct the backup and restart,
-or manually create `config.yml` using the matching ZIP example.
+or manually create `config.yml` from the release's `config.example.yml`.
 The migration never copies unknown options or automatically starts
 `storage.migrateToMySQL`; that flag resets to `false`.
 
@@ -420,7 +424,7 @@ For reproducible issues, attach **redacted** startup logs, your Minecraft versio
 
 ## Versioned documentation
 
-Each release tag preserves the **exact README, configuration defaults, dependency matrix and migration instructions from that release**. To see instructions for an installed version, open its [GitHub release](https://github.com/thejames10/TownyDiscordChat/releases), select its tag, and view `README.md` from that tag (for example `blob/v1.1.2/README.md`). Installation ZIPs also include a snapshot of the README and relevant setup guides.
+Each release tag preserves the **exact README, configuration defaults, dependency matrix and migration instructions from that release**. To see instructions for an installed version, open its [GitHub release](https://github.com/thejames10/TownyDiscordChat/releases), select its tag, and view `README.md` from that tag (for example `blob/v1.1.2/README.md`).
 
 We intentionally do **not** maintain separate editable copies of every historical README: tags are immutable release snapshots, which prevents the documentation for older versions changing when the latest README is updated.
 

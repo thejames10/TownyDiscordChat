@@ -66,6 +66,14 @@ category:
   Admin:
     Name: "MINECRAFT-STAFF"
 
+# When a town or nation is deleted, move its text channel into this private
+# category instead of deleting it, so its history is kept. The category's own
+# permissions decide who can read it (deny @everyone View Channel); it is
+# created when missing. Roles and voice channels are still deleted.
+archive:
+  enabled: false
+  categoryName: "MINECRAFT-ARCHIVE"
+
 # Private Discord activity log. The SQL queue sends actual resource changes,
 # membership changes and failures to this existing channel, asynchronously.
 # The channel or its category must deny @everyone View Channel; the bot

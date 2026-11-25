@@ -98,6 +98,7 @@ public final class PluginMetrics {
         features.put("Nation voice channels", "nation.CreateVoiceChannelForRole");
         features.put("Discord activity log", "log.Enabled");
         features.put("Revoke unlinked accounts", "security.revokeUnlinkedAccounts");
+        features.put("Archive channels", "archive.enabled");
         return Collections.unmodifiableMap(features);
     }
 

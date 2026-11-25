@@ -1,5 +1,7 @@
 package com.TownyDiscordChat.TownyDiscordChat;
 
+import com.TownyDiscordChat.TownyDiscordChat.Naming.RoleNames;
+import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Queue.ChannelArchive;
 import github.scarsz.discordsrv.dependencies.jda.api.Permission;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Category;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Guild;
@@ -27,8 +29,7 @@ public final class GuildSetupValidator {
      * Multiple same-name categories are normal after filling 50 slots.
      */
     public static SetupValidator.Result validateGuild(FileConfiguration cfg,Guild guild) {
-        com.TownyDiscordChat.TownyDiscordChat.Naming.RoleNames roleNames =
-                com.TownyDiscordChat.TownyDiscordChat.Naming.RoleNames.fromConfig(cfg);
+        RoleNames roleNames = RoleNames.fromConfig(cfg);
         SetupValidator.Result out=new SetupValidator.Result();
         if (guild==null) { out.error("DiscordSRV has no connected main guild yet."); return out; }
         if (guild.getSelfMember()==null) {
@@ -93,6 +94,9 @@ public final class GuildSetupValidator {
                 out.warn("No existing "+expected+" category: SQL synchronization will create a private one.");
             else out.warn("Auto-discovered "+privateMatches+" private "+expected+" category/categories by name.");
         }
+        if (ChannelArchive.enabled(cfg) && ChannelArchive.hasPublicCategory(guild,cfg))
+            out.error("A category named "+ChannelArchive.categoryName(cfg)
+                    +" lets @everyone see it. Deny @everyone View Channel before archiving town channels there.");
         String logId=cfg.getString("messages.DiscordLogTextChannelId","0");
         if (!"0".equals(logId) && !"auto".equalsIgnoreCase(logId)) {
             TextChannel channel=guild.getTextChannelById(logId);

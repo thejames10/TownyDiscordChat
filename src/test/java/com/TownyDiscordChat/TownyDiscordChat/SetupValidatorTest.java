@@ -51,6 +51,14 @@ public class SetupValidatorTest {
         assertFalse(SetupValidator.validateLocal(yaml).valid());
     }
 
+    @Test public void archiveCategoryCannotShareALiveCategoryName() throws Exception {
+        YamlConfiguration yaml=configured();
+        yaml.set("archive.categoryName",yaml.getString("category.Town.Name"));
+        SetupValidator.Result result=SetupValidator.validateLocal(yaml);
+        assertFalse(result.valid());
+        assertTrue(result.errors().toString().contains("archive.categoryName"));
+    }
+
     @Test public void unsupportedCategoryToggleFailsInsteadOfSilentlyIgnored() throws Exception {
         YamlConfiguration yaml=configured();
         yaml.set("town.UseCategoryForText",false);

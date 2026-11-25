@@ -847,6 +847,10 @@ public final class Queue {
                     fail(job, "Text channel " + mappedId + " was repurposed; refusing deletion");
                     return;
                 }
+                if (ChannelArchive.enabled(plugin.getConfig())) {
+                    archive(job, guild, channel, mappedId);
+                    return;
+                }
                 channel.delete().queue(ok -> deleted(job,mappedId), error -> fail(job,
                         "Discord channel deletion error: " + error.getMessage()));
                 return;
@@ -874,6 +878,40 @@ public final class Queue {
         } catch (Throwable error) {
             fail(job,"Deletion dispatch error: " + error.getMessage());
         }
+    }
+
+    /**
+     * Moves the channel into the archive category and syncs its permissions to
+     * that category, so the town role loses access and the archive's own
+     * permissions decide who can read the history.
+     */
+    private void archive(Job job, Guild guild, TextChannel channel, String channelId) {
+        Category archive = ChannelArchive.availableCategory(guild, plugin.getConfig());
+        if (archive != null) {
+            channel.getManager().setParent(archive).sync(archive).queue(
+                    ok -> archived(job, channelId),
+                    error -> fail(job, "Discord channel archive error: " + error.getMessage()));
+            return;
+        }
+        String name = ChannelArchive.categoryName(plugin.getConfig());
+        if (ChannelArchive.hasPublicCategory(guild, plugin.getConfig())) {
+            plugin.reportAdminWarning("The archive category " + name + " is visible to @everyone. "
+                    + "Deny @everyone View Channel on it so archived town channels stay private.");
+            fail(job, "Archive category " + name + " is public; not moving town history into it");
+            return;
+        }
+        TDCManager.createChatCategory(name, id -> {
+            if (id == null) {
+                fail(job, "Could not create archive category " + name);
+            } else {
+                defer(job, "Created private archive category " + name);
+            }
+        });
+    }
+
+    private void archived(Job job, String channelId) {
+        finalizeAsync(job, () -> store.succeedDeletion(job, channelId),
+                QueueMessages.resource("ARCHIVED", job, job.name, channelId), true);
     }
 
     private void deleted(Job job, String remoteId) { deleted(job,remoteId,true); }

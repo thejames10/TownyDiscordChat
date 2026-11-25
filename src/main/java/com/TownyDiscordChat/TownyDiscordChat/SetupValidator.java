@@ -91,6 +91,10 @@ public final class SetupValidator {
             out.error("log.Enabled must be true or false.");
         if (townName != null && townName.equalsIgnoreCase(nationName))
             out.error("category.Town.Name and category.Nation.Name must be different to prevent cross-town access.");
+        String archiveName = groupName(config,"archive.categoryName",out);
+        if (archiveName != null && (archiveName.equalsIgnoreCase(townName)
+                || archiveName.equalsIgnoreCase(nationName)))
+            out.error("archive.categoryName must differ from the town and nation categories, or archived channels would look like live ones.");
 
         for (String prefix : new String[]{"town","nation"}) {
             for (String key : new String[]{"CreateTextChannelForRole",
@@ -148,7 +152,7 @@ public final class SetupValidator {
         integerRange(config,out,"onboarding.joinDelayTicks",1,1200);
         for (String key : new String[]{"security.revokeUnlinkedAccounts","queue.fullAudit.enabled",
                 "onboarding.enabled","onboarding.remindOnJoin","onboarding.remindOnTownJoin",
-                "updates.check","updates.includePreReleases"}) {
+                "updates.check","updates.includePreReleases","archive.enabled"}) {
             if (!config.isBoolean(key)) out.error(key+" must be true or false.");
         }
         try { ZoneId.of(config.getString("messages.TimeZone","UTC")); }

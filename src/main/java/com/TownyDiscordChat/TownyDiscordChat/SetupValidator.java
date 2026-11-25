@@ -147,9 +147,6 @@ public final class SetupValidator {
                 "onboarding.enabled","onboarding.remindOnJoin","onboarding.remindOnTownJoin"}) {
             if (!config.isBoolean(key)) out.error(key+" must be true or false.");
         }
-        String template=config.getString("onboarding.message");
-        if (template == null || template.trim().isEmpty() || template.length()>512)
-            out.error("onboarding.message must contain 1–512 characters.");
         try { ZoneId.of(config.getString("messages.TimeZone","UTC")); }
         catch (Exception e) { out.error("messages.TimeZone must be a valid Java zone ID, e.g. UTC or America/Toronto."); }
         try { DateTimeFormatter.ofPattern(config.getString("messages.DateFormat","dd/MM/yyyy - hh:mm a")); }

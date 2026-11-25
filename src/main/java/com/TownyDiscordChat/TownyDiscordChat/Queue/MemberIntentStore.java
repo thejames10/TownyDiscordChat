@@ -351,6 +351,24 @@ public final class MemberIntentStore {
               + " WHERE status='DEAD'")) { return ps.executeUpdate(); }
     }
 
+    /** Most recent failed grants and revocations, newest first, for support reports. */
+    public List<String> failedIntentSummaries(int limit) throws SQLException {
+        List<String> summaries = new ArrayList<String>();
+        try (Connection c = connect(); PreparedStatement ps = c.prepareStatement(
+                "SELECT member_id,role_id,desired,attempts,last_error FROM " + TABLE
+                + " WHERE status='DEAD' ORDER BY id DESC LIMIT ?")) {
+            ps.setInt(1, limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    summaries.add((rs.getBoolean(3) ? "grant" : "revoke") + " role " + rs.getString(2)
+                            + " for member " + rs.getString(1) + " after " + rs.getInt(4)
+                            + " attempts: " + rs.getString(5));
+                }
+            }
+        }
+        return summaries;
+    }
+
     public java.util.Map<String,Integer> statusCounts() throws SQLException {
         java.util.Map<String,Integer> results = new java.util.HashMap<String,Integer>();
         try (Connection c = connect(); PreparedStatement ps = c.prepareStatement(

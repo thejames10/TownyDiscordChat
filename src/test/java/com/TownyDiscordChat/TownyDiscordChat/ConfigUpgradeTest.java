@@ -32,11 +32,11 @@ class ConfigUpgradeTest {
     }
 
     @Test void windowsCrlfTemplateMigratesWithoutLosingCommentsOrLineEndings() throws Exception {
-        backup("messages:\n  Prefix: '&2Windows'\ntown:\n  RoleCreateColorCode: '0xffaabb'\n");
+        backup("category:\n  Admin:\n    Name: 'WINDOWS-STAFF'\ntown:\n  RoleCreateColorCode: '0xffaabb'\n");
         String crlfDefaults=defaults().replace("\r\n","\n").replace("\n","\r\n");
         ConfigUpgrade.Result result=ConfigUpgrade.migrateIfNeeded(data.toFile(),crlfDefaults);
         assertTrue(result.migrated);
-        assertTrue(result.copied.contains("messages.Prefix"));
+        assertTrue(result.copied.contains("category.Admin.Name"));
         assertTrue(result.copied.contains("town.RoleCreateColorCode"));
         String current=new String(Files.readAllBytes(data.resolve("config.yml")),
                 StandardCharsets.UTF_8);
@@ -46,7 +46,7 @@ class ConfigUpgradeTest {
                 "Migration must not leave mixed line endings");
         YamlConfiguration merged=new YamlConfiguration();
         merged.load(data.resolve("config.yml").toFile());
-        assertEquals("&2Windows",merged.getString("messages.Prefix"));
+        assertEquals("WINDOWS-STAFF",merged.getString("category.Admin.Name"));
         assertEquals("0xffaabb",merged.getString("town.RoleCreateColorCode"));
     }
     @Test void freshBackupMigratesRecognizedValuesWithNewDefaultsAndComments() throws Exception {
@@ -79,7 +79,8 @@ class ConfigUpgradeTest {
         ConfigUpgrade.Result result=ConfigUpgrade.migrateIfNeeded(data.toFile(),defaults());
         assertTrue(result.migrated);
         assertTrue(result.copied.contains("SQL.database"));
-        assertTrue(result.copied.contains("messages.Prefix"));
+        assertTrue(result.ignored.contains("messages.Prefix"),
+                "Message text moved to messages.yml");
         assertTrue(result.ignored.contains("storage.migrateToMySQL"));
         assertTrue(result.ignored.contains("messages.LegacyMessageThatNoLongerExists"));
         assertTrue(result.ignored.contains("Discord.Api.RateLimit"));
@@ -96,7 +97,7 @@ class ConfigUpgradeTest {
         assertEquals("c0l:on#safe",merged.getString("SQL.password"));
         assertEquals("123456789012345678",merged.getString("town.TextCategoryId"));
         assertEquals("OLD-TOWN",merged.getString("category.Town.Name"));
-        assertEquals("&2OldTowny",merged.getString("messages.Prefix"));
+        assertNull(merged.getString("messages.Prefix"));
         assertEquals(180,merged.getInt("queue.reconcileSeconds"),
                 "New defaults should remain for missing backup paths");
         assertFalse(merged.getBoolean("storage.migrateToMySQL"),
@@ -160,12 +161,12 @@ class ConfigUpgradeTest {
     @Test void quotedSpecialCharactersRoundTripWithoutYamlInjection() throws Exception {
         String message="Town's \"private\" chat: C:\\temp\\new\n  queue: fake";
         YamlConfiguration old=new YamlConfiguration();
-        old.set("messages.Prefix",message);
+        old.set("category.Admin.Name",message);
         old.save(data.resolve("config.yml.bak").toFile());
         ConfigUpgrade.migrateIfNeeded(data.toFile(),defaults());
         YamlConfiguration merged=new YamlConfiguration();
         merged.load(data.resolve("config.yml").toFile());
-        assertEquals(message,merged.getString("messages.Prefix"));
+        assertEquals(message,merged.getString("category.Admin.Name"));
         assertEquals(1,merged.getInt("queue.pollSeconds"),
                 "Embedded YAML-looking text must remain a single string");
     }

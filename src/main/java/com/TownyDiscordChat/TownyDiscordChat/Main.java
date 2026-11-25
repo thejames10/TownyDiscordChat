@@ -1,10 +1,12 @@
 package com.TownyDiscordChat.TownyDiscordChat;
 
-import com.TownyDiscordChat.TownyDiscordChat.Commands.TDCCommand;
-import com.TownyDiscordChat.TownyDiscordChat.Commands.TDCSQL;
+import com.TownyDiscordChat.TownyDiscordChat.Commands.QueueCommand;
+import com.TownyDiscordChat.TownyDiscordChat.Commands.TownyDiscordChatCommand;
+import com.TownyDiscordChat.TownyDiscordChat.Diagnostics.DebugReport;
 import com.TownyDiscordChat.TownyDiscordChat.Listeners.AccountChangeListener;
 import com.TownyDiscordChat.TownyDiscordChat.Listeners.MembershipChangeListener;
 import com.TownyDiscordChat.TownyDiscordChat.Listeners.OnboardingListener;
+import com.TownyDiscordChat.TownyDiscordChat.Messages.MessageCatalog;
 import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.LogCategory;
 import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.LogTextChannel;
 import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.NationCategories;
@@ -30,10 +32,13 @@ import com.TownyDiscordChat.TownyDiscordChat.Storage.StorageMigration;
 import github.scarsz.discordsrv.DiscordSRV;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.command.TabExecutor;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
@@ -45,6 +50,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Objects;
 import java.util.logging.Level;
 
@@ -55,7 +61,6 @@ public class Main extends JavaPlugin {
     private static final String MYSQL_LABEL = "MySQL";
     private static final String MAIN_COMMAND = "TownyDiscordChat";
     private static final String QUEUE_COMMAND = "tdcqueue";
-    private static final String ADMIN_PERMISSION = "TownyDiscordChat.Admin";
     private static final String CONFIG_FILE_NAME = "config.yml";
     private static final String CONFIG_BACKUP_FILE_NAME = "config.yml.bak";
     private static final int TEMPLATE_BUFFER_BYTES = 8192;
@@ -69,6 +74,8 @@ public class Main extends JavaPlugin {
     private static final String MYSQL_PASSWORD_KEY = "SQL.password";
 
     private static final String SAFE_MODE_REPLY_PREFIX = "[TownyDiscordChat] SAFE MODE: ";
+    private static final String RELOAD_SUBCOMMAND = "reload";
+    private static final String DEBUG_SUBCOMMAND = "debug";
     private static final String MIGRATION_REPLY_PREFIX = "[TDC] ";
     private static final String NOT_INITIALIZED_REASON = "Not initialized";
     private static final String CONFIG_MIGRATION_FAILED = "Automatic config migration failed. "
@@ -109,6 +116,7 @@ public class Main extends JavaPlugin {
     public OnboardingListener onboarding;
     private MembershipChangeListener membershipListener;
     private TaskScheduler scheduler;
+    private MessageCatalog messages;
 
     private boolean operational;
     private volatile boolean guildValidated;
@@ -128,6 +136,22 @@ public class Main extends JavaPlugin {
 
     public TaskScheduler scheduler() {
         return scheduler;
+    }
+
+    /** messages.yml, or the built-in English text before it has been read. */
+    public MessageCatalog messages() {
+        if (messages == null) {
+            try {
+                messages = MessageCatalog.builtIn(this);
+            } catch (IOException missing) {
+                throw new IllegalStateException("The plugin JAR is incomplete", missing);
+            }
+        }
+        return messages;
+    }
+
+    public String statusLabel() {
+        return status.name();
     }
 
     public boolean isGuildValidated() {
@@ -174,8 +198,8 @@ public class Main extends JavaPlugin {
 
     private void notifyOnlineAdministrators(String warning) {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.isOp() || player.hasPermission(ADMIN_PERMISSION)) {
-                player.sendMessage(ChatColor.RED + "[TownyDiscordChat] " + warning);
+            if (player.hasPermission(Permissions.NOTIFY)) {
+                messages().send(player, "admin-warning", "warning", warning);
             }
         }
     }
@@ -205,6 +229,7 @@ public class Main extends JavaPlugin {
             return;
         }
         loadConfiguration();
+        loadMessages();
         validateConfiguration();
 
         // Never start Discord reconciliation on the first boot after importing
@@ -237,8 +262,8 @@ public class Main extends JavaPlugin {
     }
 
     private void startOperationalComponents() {
-        requireCommand(MAIN_COMMAND).setExecutor(new TDCCommand());
-        requireCommand(QUEUE_COMMAND).setExecutor(new TDCSQL());
+        registerCommand(MAIN_COMMAND, new TownyDiscordChatCommand(this));
+        registerCommand(QUEUE_COMMAND, new QueueCommand(this));
         createStorageAccessors();
         if (!connectStorage() || !initializeConnectedStorage()) {
             return;
@@ -302,6 +327,93 @@ public class Main extends JavaPlugin {
         saveDefaultConfig();
         reloadConfig();
         config = getConfig();
+    }
+
+    private void loadMessages() {
+        try {
+            messages = MessageCatalog.load(this, legacyMessageSource());
+        } catch (IOException | InvalidConfigurationException e) {
+            getLogger().warning("[MESSAGES] messages.yml could not be read, so the built-in "
+                    + "English messages are used: " + e.getMessage());
+            messages = null;
+        }
+    }
+
+    // A config.yml.bak import drops 1.1.x message keys, so read them from the backup.
+    private org.bukkit.configuration.ConfigurationSection legacyMessageSource() {
+        File backup = new File(getDataFolder(), CONFIG_BACKUP_FILE_NAME);
+        return backup.isFile() ? YamlConfiguration.loadConfiguration(backup) : config;
+    }
+
+    /**
+     * /tdc reload. Applies a valid config.yml and messages.yml while running, or
+     * starts synchronization when the only startup problem was the configuration.
+     */
+    public void reloadConfiguration(CommandSender sender) {
+        if (status == PluginStatus.INVALID_CONFIG || status == PluginStatus.CONFIG_REVIEW) {
+            startAfterReview(sender);
+            return;
+        }
+        if (!operational) {
+            messages().send(sender, "reload.not-possible", "reason", getSafeModeReason());
+            return;
+        }
+        String problem = firstConfigProblem();
+        if (problem != null) {
+            messages().send(sender, "reload.invalid", "error", problem);
+            return;
+        }
+        FileConfiguration previous = config;
+        loadConfiguration();
+        loadMessages();
+        messages().send(sender, "reload.success");
+        List<String> restartOnly = RestartOnlySettings.changed(previous, config);
+        if (!restartOnly.isEmpty()) {
+            messages().send(sender, "reload.restart-needed", "settings", String.join(", ", restartOnly));
+        }
+        if (reconciler != null) {
+            reconciler.requestSoon();
+        }
+    }
+
+    private void startAfterReview(CommandSender sender) {
+        String problem = firstConfigProblem();
+        if (problem != null) {
+            messages().send(sender, "reload.invalid", "error", problem);
+            return;
+        }
+        loadConfiguration();
+        loadMessages();
+        startupProblem = null;
+        status = PluginStatus.STARTING;
+        startOperationalComponents();
+        if (operational) {
+            messages().send(sender, "reload.started");
+        } else {
+            messages().send(sender, "reload.not-possible", "reason", getSafeModeReason());
+        }
+    }
+
+    /** Validates config.yml on disk without applying it; null means it is valid. */
+    private String firstConfigProblem() {
+        File file = new File(getDataFolder(), CONFIG_FILE_NAME);
+        SetupValidator.Result fileCheck = SetupValidator.validateFile(file);
+        if (!fileCheck.valid()) {
+            logConfigErrors(fileCheck);
+            return fileCheck.errors().get(0);
+        }
+        YamlConfiguration candidate = YamlConfiguration.loadConfiguration(file);
+        candidate.setDefaults(getConfig().getDefaults());
+        SetupValidator.Result configCheck = SetupValidator.validateLocal(candidate);
+        if (configCheck.valid()) {
+            return null;
+        }
+        logConfigErrors(configCheck);
+        return configCheck.errors().get(0);
+    }
+
+    public void writeDebugReport(CommandSender sender) {
+        new DebugReport(this).write(sender);
     }
 
     private void validateConfiguration() {
@@ -503,13 +615,28 @@ public class Main extends JavaPlugin {
         replyWithStatusOnly(SAFE_MODE_REPLY_PREFIX);
     }
 
+    // Admins can still reload a fixed configuration or write a support report.
     private void replyWithStatusOnly(String prefix) {
         CommandExecutor statusReply = (sender, command, label, args) -> {
-            sender.sendMessage(prefix + getSafeModeReason());
+            String requested = args.length == 0 ? "" : args[0];
+            if (RELOAD_SUBCOMMAND.equalsIgnoreCase(requested) && sender.hasPermission(Permissions.RELOAD)) {
+                reloadConfiguration(sender);
+            } else if (DEBUG_SUBCOMMAND.equalsIgnoreCase(requested) && sender.hasPermission(Permissions.DEBUG)) {
+                writeDebugReport(sender);
+            } else {
+                sender.sendMessage(prefix + getSafeModeReason());
+            }
             return true;
         };
-        requireCommand(MAIN_COMMAND).setExecutor(statusReply);
-        requireCommand(QUEUE_COMMAND).setExecutor(statusReply);
+        for (String name : new String[]{MAIN_COMMAND, QUEUE_COMMAND}) {
+            requireCommand(name).setExecutor(statusReply);
+            requireCommand(name).setTabCompleter(null);
+        }
+    }
+
+    private void registerCommand(String name, TabExecutor executor) {
+        requireCommand(name).setExecutor(executor);
+        requireCommand(name).setTabCompleter(executor);
     }
 
     private PluginCommand requireCommand(String name) {

@@ -1,0 +1,88 @@
+# TownyDiscordChat messages shown in game.
+#
+# Edit or translate any line, then run /tdc reload. Use & colour codes.
+# Words in {braces} are filled in by the plugin; {prefix} is the prefix below.
+# A message missing from this file uses the built-in English text, so new
+# messages added by plugin updates appear without editing this file.
+
+prefix: "&8[&2TDC&8]"
+
+no-permission: "{prefix} &cYou don't have permission to do that."
+players-only: "{prefix} &cOnly players can use this command."
+unknown-subcommand: "{prefix} &7Unknown command. Use &a/tdc help&7."
+
+info:
+  - "&2------------------------------"
+  - "&2TownyDiscordChat &7{version}"
+  - "&2Authors: &7thejames10, Hugo5000"
+  - "&2Commands: &7/tdc help"
+  - "&2------------------------------"
+
+help:
+  header: "&2TownyDiscordChat commands:"
+  line: "&a/tdc {command} &7- {description}"
+  descriptions:
+    status: "Your town, nation and Discord link status"
+    link: "Link your Minecraft and Discord accounts"
+    help: "Show this list"
+    reload: "Reload config.yml and messages.yml"
+    debug: "Write a support report to plugins/TownyDiscordChat/debug"
+    check: "Check every town and nation against Discord now"
+
+status:
+  not-in-town: "{prefix} &eYou are not in a town. Towny channels need a town first."
+  towny-updating: "{prefix} &eTowny is updating your membership. Try again shortly."
+  town: "{prefix} &aTown: &f{town}"
+  town-and-nation: "{prefix} &aTown: &f{town} &a| Nation: &f{nation}"
+  linked: "{prefix} &aYour Minecraft and Discord accounts are linked. &7Access updates automatically; use /discord linked for details."
+  not-linked: "{prefix} &eYour account is not linked. Use &b/tdc link &eto link it."
+
+link:
+  already-linked: "{prefix} &aAlready linked through DiscordSRV. &7Use /discord linked to see the link."
+  no-town: "{prefix} &eYou aren't in a town yet. You can still link now; town channels unlock when you join a town."
+  disabled: "{prefix} &cThis server has turned off DiscordSRV linking (permission discordsrv.link). Ask an administrator."
+  unavailable: "{prefix} &cDiscordSRV's /discord command is unavailable. Ask an administrator to check DiscordSRV."
+  success: "{prefix} &aDiscord linked. Your town's Discord access will update automatically."
+
+onboarding:
+  reminder: "{prefix} &eYour town has private Discord channels. Link using &a/tdc link&e (DiscordSRV: /discord link)."
+
+check:
+  requested: "{prefix} &7Checking every town and nation against Discord."
+  not-running: "{prefix} &cSynchronization is not running, so nothing was checked."
+
+reload:
+  success: "{prefix} &aReloaded config.yml and messages.yml."
+  invalid: "{prefix} &cconfig.yml was not reloaded: {error} &7(see the console for every problem)"
+  restart-needed: "{prefix} &eThese settings only change after a restart: &f{settings}"
+  started: "{prefix} &aThe configuration is valid now; synchronization has started."
+  not-possible: "{prefix} &cA reload can't fix this: {reason} &7Fix it, then restart the server."
+
+debug:
+  writing: "{prefix} &7Writing a support report..."
+  written: "{prefix} &aWrote &f{file}&a. It has no passwords or tokens, but check it before sharing it."
+  failed: "{prefix} &cCould not write the support report: {error}"
+
+queue:
+  usage: "{prefix} &7Use /tdcqueue [status|retry-dead|audit]"
+  guild-not-ready: "{prefix} &cDiscord isn't connected yet, so the audit can't run."
+  audit-queued: "{prefix} &aQueued a full Discord member audit (needs the Server Members Intent)."
+  requeued: "{prefix} &aRequeued {resources} resource jobs and {members} membership changes."
+  failed: "{prefix} &cCould not read the queue; see the server log."
+  status:
+    - "{prefix} &2Synchronization: &f{state}"
+    - "&2Resources: &7pending {resourcesPending}, running {resourcesRunning}, failed {resourcesDead}"
+    - "&2Membership: &7pending {membersPending}, running {membersRunning}, failed {membersDead}"
+    - "&2Discord activity log: &7{activityLog}"
+    - "&7These counts are outstanding work, not history. Confirmed changes are in the console and Discord log."
+  state-active: "active"
+  state-waiting: "waiting for the Discord setup check"
+
+admin-warning: "{prefix} &c{warning}"
+
+update:
+  available: "{prefix} &eTownyDiscordChat {latest} is available (this server has {current}): &b{url}"
+
+chat-bridge:
+  # Discord messages shown to town or nation members in game.
+  from-discord: "&8[&9Discord&8] &3[{channel}] &f{name}&7: &f{message}"

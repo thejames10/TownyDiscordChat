@@ -11,41 +11,62 @@ folia-supported: true
 
 commands:
   TownyDiscordChat:
-    description: Towny Discord status, DiscordSRV linking, and administrator reconciliation
+    description: Town Discord status and linking; reload, debug and checks for admins
     aliases: [tdc]
-    usage: /tdc [status|link|check]
+    usage: /tdc [status|link|help|reload|debug|check]
   tdcqueue:
     description: View or retry the durable Discord task queue
     aliases: [tdcsql]
     usage: /tdcqueue [status|retry-dead|audit]
-    permission: TownyDiscordChat.Admin
+    permission: townydiscordchat.queue
 
 permissions:
-    TownyDiscordChat.Admin:
-      default: op
-      description: Gives access to all TownyDiscordChat commands
-      children:
-        TownyDiscordChat.Check.Role.AllLinked: true
-        TownyDiscordChat.Check.Role: true
-        TownyDiscordChat.Check.Role.CreateAllTownsAndNations: true
-        TownyDiscordChat.Check.TextChannel.AllTownsAndNations: true
-        TownyDiscordChat.Check.VoiceChannel.AllTownsAndNations: true
-    TownyDiscordChat.Player:
-      description: Gives regular player general commands
-      children:
-        TownyDiscordChat.Check.Role: true
-    TownyDiscordChat.Check.Role.AllLinked:
-      description: Allows you to force run a check for discord roles of all players in a town or nation then adds or removes
-      default: false
-    TownyDiscordChat.Check.Role:
-      description: Allows you to force run a check for discord roles of a single player in a town or nation then adds or removes
-      default: false
-    TownyDiscordChat.Check.Role.CreateAllTownsAndNations:
-      description: Allows you to force run a check for discord roles of all players in a town or nation and creates them if needed
-      default: false
-    TownyDiscordChat.Check.TextChannel.AllTownsAndNations:
-      description: Allows you to force run a check for discord text channels of all players in a town or nation and creates them if needed
-      default: false
-    TownyDiscordChat.Check.VoiceChannel.AllTownsAndNations:
-      description: Allows you to force run a check for discord voice channels of all players in a town or nation and creates them if needed
-      default: false
+  townydiscordchat.admin:
+    description: Every TownyDiscordChat command and admin notice
+    default: op
+    children:
+      townydiscordchat.player: true
+      townydiscordchat.reload: true
+      townydiscordchat.debug: true
+      townydiscordchat.queue: true
+      townydiscordchat.reconcile: true
+      townydiscordchat.notify: true
+  townydiscordchat.player:
+    description: /tdc, /tdc status, /tdc link and /tdc help
+    default: true
+  townydiscordchat.reload:
+    description: /tdc reload
+    default: op
+  townydiscordchat.debug:
+    description: /tdc debug
+    default: op
+  townydiscordchat.queue:
+    description: /tdcqueue
+    default: op
+  townydiscordchat.reconcile:
+    description: /tdc check
+    default: op
+  townydiscordchat.notify:
+    description: In-game safe-mode, admin warning and update notices
+    default: op
+  # Names used by 1.1.x and earlier; they still grant /tdc check.
+  townydiscordchat.check.role:
+    default: false
+    children:
+      townydiscordchat.reconcile: true
+  townydiscordchat.check.role.alllinked:
+    default: false
+    children:
+      townydiscordchat.reconcile: true
+  townydiscordchat.check.role.createalltownsandnations:
+    default: false
+    children:
+      townydiscordchat.reconcile: true
+  townydiscordchat.check.textchannel.alltownsandnations:
+    default: false
+    children:
+      townydiscordchat.reconcile: true
+  townydiscordchat.check.voicechannel.alltownsandnations:
+    default: false
+    children:
+      townydiscordchat.reconcile: true

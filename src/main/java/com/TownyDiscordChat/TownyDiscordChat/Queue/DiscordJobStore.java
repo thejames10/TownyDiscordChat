@@ -593,6 +593,23 @@ public final class DiscordJobStore {
         return counts;
     }
 
+    /** Most recent failed jobs, newest first, for support reports. */
+    public java.util.List<String> failedJobSummaries(int limit) throws SQLException {
+        java.util.List<String> summaries = new java.util.ArrayList<String>();
+        try (Connection c = connect(); PreparedStatement ps = c.prepareStatement(
+                "SELECT kind,resource_name,attempts,last_error FROM " + TABLE
+                + " WHERE status='DEAD' ORDER BY id DESC LIMIT ?")) {
+            ps.setInt(1, limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    summaries.add(rs.getString(1) + ":" + rs.getString(2) + " after "
+                            + rs.getInt(3) + " attempts: " + rs.getString(4));
+                }
+            }
+        }
+        return summaries;
+    }
+
     /** Durable audit cadence; a successful full-guild scan is not repeated on every poll. */
     public void enqueueFullAuditIfDue(String guildId, long intervalSeconds) throws SQLException {
         long cutoff = System.currentTimeMillis() - Math.max(900L,intervalSeconds)*1000L;

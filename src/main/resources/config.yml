@@ -71,100 +71,14 @@ log:
   Channel:
     Name: "townydiscordchat-logs"
 
+# Date and time format of the Discord activity log.
 # TimeZone accepts any Java zone ID, for example UTC or America/Toronto.
 # DateFormat uses java.time DateTimeFormatter patterns, for example dd/MM/yyyy - hh:mm a.
+# In-game messages are in messages.yml.
 messages:
   TimeZone: "UTC"
   DateFormat: "dd/MM/yyyy - hh:mm a"
-  # Legacy ID from pre-SQL releases (ignored). The active Discord log channel
-  # is located by log.Category.Name and log.Channel.Name.
-  DiscordLogTextChannelId: 0
 
-  Prefix: "&8[&2TDC Bot&8]"
-
-  Commands:
-    PleaseWait: "&7Please wait..."
-    NoPermission: "&7You don't have permission to use this command!"
-
-  Role:
-    DoNothing:
-      Success: "&7Role change not required!"
-      Failure: "&7Failed to do nothing!"
-    Remove:
-      Success: "&7Removed role!"
-      Failure: "&7Failed to remove role!"
-    Add:
-      Success: "&7Added role!"
-      Failure: "&7Failed to add role!"
-    Create:
-      Success: "&7Created role!"
-      Failure: "&7Failed to create role!"
-    Delete:
-      Success: "&7Deleted role!"
-      Failure: "&7Failed to delete role!"
-    Rename:
-      Success: "&7Renamed role!"
-      Failure: "&7Failed to rename role!"
-
-  Category:
-    DoNothing:
-      Success: "&7Category change not required!"
-      Failure: "&7Failed to do nothing!"
-    Remove:
-      Success: "&7Removed category!"
-      Failure: "&7Failed to remove category!"
-    Add:
-      Success: "&7Added category!"
-      Failure: "&7Failed to add category!"
-    Create:
-      Success: "&7Created category!"
-      Failure: "&7Failed to create category!"
-    Delete:
-      Success: "&7Deleted category!"
-      Failure: "&7Failed to delete category!"
-    Rename:
-      Success: "&7Renamed category!"
-      Failure: "&7Failed to rename category!"
-
-  TextChannel:
-    DoNothing:
-      Success: "&7TextChannel change not required!"
-      Failure: "&7Failed to do nothing!"
-    Remove:
-      Success: "&7Removed TextChannel!"
-      Failure: "&7Failed to remove TextChannel!"
-    Add:
-      Success: "&7Added TextChannel!"
-      Failure: "&7Failed to add TextChannel!"
-    Create:
-      Success: "&7Created TextChannel!"
-      Failure: "&7Failed to create TextChannel!"
-    Delete:
-      Success: "&7Deleted TextChannel!"
-      Failure: "&7Failed to delete TextChannel!"
-    Rename:
-      Success: "&7Renamed TextChannel!"
-      Failure: "&7Failed to rename TextChannel!"
-
-  VoiceChannel:
-    DoNothing:
-      Success: "&7VoiceChannel change not required!"
-      Failure: "&7Failed to do nothing!"
-    Remove:
-      Success: "&7Removed VoiceChannel!"
-      Failure: "&7Failed to remove VoiceChannel!"
-    Add:
-      Success: "&7Added VoiceChannel!"
-      Failure: "&7Failed to add VoiceChannel!"
-    Create:
-      Success: "&7Created VoiceChannel!"
-      Failure: "&7Failed to create VoiceChannel!"
-    Delete:
-      Success: "&7Deleted VoiceChannel!"
-      Failure: "&7Failed to delete VoiceChannel!"
-    Rename:
-      Success: "&7Renamed VoiceChannel!"
-      Failure: "&7Failed to rename VoiceChannel!"
 # Durable SQLite/MySQL Discord reconciliation queue. All delays are in seconds.
 queue:
   startDelaySeconds: 10
@@ -192,4 +106,4 @@ onboarding:
   remindOnTownJoin: true
   cooldownMinutes: 60
   joinDelayTicks: 60
-  message: "&eYour town has private Discord channels. Link using &a/tdc link&e (DiscordSRV: /discord link)."
+  # The reminder text is onboarding.reminder in messages.yml.

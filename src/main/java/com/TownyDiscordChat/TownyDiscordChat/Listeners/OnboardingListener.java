@@ -7,7 +7,6 @@ import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import github.scarsz.discordsrv.DiscordSRV;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -70,15 +69,13 @@ public final class OnboardingListener implements Listener {
         Long last=lastPrompt.get(player.getUniqueId());
         if (last!=null && now-last<timeout) return;
         lastPrompt.put(player.getUniqueId(),now);
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&',
-                plugin.getConfig().getString("onboarding.message",
-                        "&eYour town has private Discord channels. Use &a/tdc link&e to link.")));
+        plugin.messages().send(player, "onboarding.reminder");
     }
 
     public void showStatus(Player player) {
         Resident resident=TownyUniverse.getInstance().getResident(player.getUniqueId());
         if (resident==null || !resident.hasTown()) {
-            player.sendMessage(ChatColor.YELLOW+"[TDC] You are not in a town. No Discord linking is required for Towny channels yet.");
+            plugin.messages().send(player, "status.not-in-town");
             return;
         }
         String townName="unknown";
@@ -88,18 +85,15 @@ public final class OnboardingListener implements Listener {
             townName=town.getName();
             if (town.hasNation()) nationName=town.getNation().getName();
         } catch (NotRegisteredException e) {
-            player.sendMessage(ChatColor.YELLOW+"[TDC] Towny is updating your membership. Try again shortly.");
+            plugin.messages().send(player, "status.towny-updating");
             return;
         }
-        player.sendMessage(ChatColor.GREEN+"[TDC] Town: "+ChatColor.WHITE+townName
-                +(nationName!=null ? ChatColor.GREEN+" | Nation: "+ChatColor.WHITE+nationName : ""));
-        if (isLinked(player.getUniqueId())) {
-            player.sendMessage(ChatColor.GREEN+"[TDC] Your Minecraft and Discord accounts are linked through DiscordSRV."
-                    +ChatColor.GRAY+" Access is synchronized by the queue; use /discord linked for details.");
+        if (nationName == null) {
+            plugin.messages().send(player, "status.town", "town", townName);
         } else {
-            player.sendMessage(ChatColor.YELLOW+"[TDC] Your account is not linked. Use "
-                    +ChatColor.AQUA+"/tdc link"+ChatColor.YELLOW+" to start DiscordSRV linking.");
+            plugin.messages().send(player, "status.town-and-nation", "town", townName, "nation", nationName);
         }
+        plugin.messages().send(player, isLinked(player.getUniqueId()) ? "status.linked" : "status.not-linked");
     }
 
     /**
@@ -108,22 +102,18 @@ public final class OnboardingListener implements Listener {
      */
     public void link(Player player) {
         if (isLinked(player.getUniqueId())) {
-            player.sendMessage(ChatColor.GREEN+"[TDC] Already linked via DiscordSRV. "
-                    +ChatColor.GRAY+"Use /discord linked to view the connection.");
+            plugin.messages().send(player, "link.already-linked");
             return;
         }
         if (!hasTown(player)) {
-            player.sendMessage(ChatColor.YELLOW+"[TDC] You aren't in a Towny town yet. "
-                    +"You can still link your account, but there's no town channel to unlock until you join a town.");
+            plugin.messages().send(player, "link.no-town");
         }
         if (!player.hasPermission("discordsrv.link")) {
-            player.sendMessage(ChatColor.RED+"[TDC] Your server has disabled DiscordSRV linking "
-                    +"(permission discordsrv.link). Contact a server administrator.");
+            plugin.messages().send(player, "link.disabled");
             return;
         }
         if (Bukkit.getPluginCommand("discord")==null) {
-            player.sendMessage(ChatColor.RED+"[TDC] DiscordSRV's /discord command is unavailable. "
-                    +"Ask an administrator to check DiscordSRV.");
+            plugin.messages().send(player, "link.unavailable");
             return;
         }
         Bukkit.dispatchCommand(player,"discord link");
@@ -133,7 +123,6 @@ public final class OnboardingListener implements Listener {
         if (!plugin.isOperational() || uuid==null) return;
         Player player=Bukkit.getPlayer(uuid);
         if (player==null || !player.isOnline() || !hasTown(player)) return;
-        player.sendMessage(ChatColor.GREEN+"[TDC] Discord linked successfully through DiscordSRV. "
-                +"Your Towny channel access will synchronize automatically.");
+        plugin.messages().send(player, "link.success");
     }
 }

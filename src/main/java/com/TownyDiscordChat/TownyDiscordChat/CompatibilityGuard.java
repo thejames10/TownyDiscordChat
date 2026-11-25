@@ -160,7 +160,7 @@ public final class CompatibilityGuard implements Listener {
     @EventHandler
     public void adminJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        if (player.isOp() || player.hasPermission("TownyDiscordChat.Admin")) {
+        if (player.hasPermission(Permissions.NOTIFY)) {
             if (plugin.getSafeModeReason() != null)
                 player.sendMessage(ChatColor.RED + "[TownyDiscordChat] SAFE MODE: " + plugin.getSafeModeReason());
             if (plugin.getAdminWarning() != null)

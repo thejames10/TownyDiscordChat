@@ -50,6 +50,20 @@ public class DependencyIsolationTest {
         assertTrue(body.contains("getServer().getScheduler().cancelTasks(this)"));
     }
 
+    @Test
+    public void earlierSafeModeOrMigrationCauseIsKept() throws IOException {
+        String source = read(MAIN_CLASS);
+        int start = source.indexOf("void handleDependencyDisabled(String dependency)");
+        int end = source.indexOf("private void stopSynchronizationServices()", start);
+
+        assertTrue(start >= 0 && end > start, "handleDependencyDisabled is missing");
+        String body = source.substring(start, end);
+        int guard = body.indexOf("if (startupProblem != null)");
+        assertTrue(guard >= 0, "An existing safe-mode cause must not be replaced");
+        assertTrue(guard < body.indexOf("stopSynchronizationServices()"));
+        assertTrue(guard < body.indexOf("enterSafeMode("));
+    }
+
     private static boolean importsBundledLibrary(Path path) {
         try {
             return BUNDLED_LIBRARY_IMPORT.matcher(read(path)).find();

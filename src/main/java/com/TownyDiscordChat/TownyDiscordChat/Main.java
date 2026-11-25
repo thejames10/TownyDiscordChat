@@ -455,9 +455,14 @@ public class Main extends JavaPlugin {
 
     /** Called by CompatibilityGuard when Towny or DiscordSRV stops while the server runs. */
     void handleDependencyDisabled(String dependency) {
-        stopSynchronizationServices();
         String reason = CompatibilityGuard.disabledAfterStartupProblem(dependency);
         getLogger().severe("[DEPENDENCY] " + reason);
+        // Safe mode or storage migration already has an earlier, more specific
+        // cause and nothing to stop; replacing it would hide that cause.
+        if (startupProblem != null) {
+            return;
+        }
+        stopSynchronizationServices();
         enterSafeMode(PluginStatus.MISSING_DEPENDENCY, reason);
     }
 

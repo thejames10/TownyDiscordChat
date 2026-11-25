@@ -9,14 +9,16 @@ Each listed Minecraft version has a separately compiled JAR and a matching optio
 
 | Minecraft | Server | Towny | DiscordSRV | Java | Validation |
 | --- | --- | --- | --- | --- | --- |
-| 1.16.5, 1.17.1, 1.18.2 | Spigot / Paper / Purpur | 0.100.3.0 | 1.30.5 | Server-dependent | CI |
-| 1.19.4 | Paper / Purpur | 0.103.2.0 | 1.30.5 | Server-dependent | CI |
-| 1.20.1, 1.20.6 | Paper / Purpur | 0.103.2.0 | 1.30.5 | Server-dependent | CI |
-| 1.21.1, 1.21.4, 1.21.8, 1.21.10, 1.21.11 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 21+ | CI |
-| 26.1.2, 26.2 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 25+ | CI |
-| 26.3 | Paper / Purpur | 0.103.2.15 (pre-release) | 1.30.5 | 25+ | CI |
+| 1.16.5 | Paper | 0.100.3.0 | 1.30.5 | Server-dependent | CI, real servers |
+| 1.16.5 | Spigot / CraftBukkit / Purpur | 0.100.1.0 | 1.30.5 | Server-dependent | CI, real servers |
+| 1.17.1, 1.18.2 | Spigot / CraftBukkit / Paper / Purpur | 0.100.3.0 | 1.30.5 | Server-dependent | CI, real servers |
+| 1.19.4 | Paper / Purpur | 0.103.2.0 | 1.30.5 | Server-dependent | CI, real servers |
+| 1.20.1, 1.20.6 | Paper / Purpur | 0.103.2.0 | 1.30.5 | Server-dependent | CI, real servers |
+| 1.21.1, 1.21.4, 1.21.8, 1.21.10, 1.21.11 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 21+ | CI, real servers |
+| 26.1.2, 26.2 | Paper / Purpur | 0.103.2.0 | 1.30.5 | 25+ | CI, real servers |
+| 26.3 | Paper / Purpur | 0.103.2.15 (pre-release) | 1.30.5 | 25+ | CI, real servers, Discord (Paper) |
 
-**CI** confirms compilation, automated tests and packaging; it is not live-server certification. Java runtime requirements for older versions follow the selected Minecraft server and Towny/DiscordSRV installation.
+**CI** confirms compilation, automated tests and packaging. **Real servers:** before release, every build is started on each listed server type for that version, on its own and alongside Towny or DiscordSRV. **Discord:** role and channel management, membership grants and revocations, and cleanup are tested against a test Discord server on Paper 26.3. None of this is a guarantee for every server configuration. Java runtime requirements for older versions follow the selected Minecraft server and Towny/DiscordSRV installation.
 
 Minecraft 26.x uses Java 25 and Paper's build-qualified API versions. Minecraft 26.1.0 has no Paper build, and 26.1.1 is obsolete (alpha-only); use 26.1.2 instead. Folia and modern Towny on Spigot/CraftBukkit are not supported.
 

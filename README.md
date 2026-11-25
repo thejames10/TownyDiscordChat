@@ -78,16 +78,17 @@ Suppose your Minecraft server has a town called **Oakvale**, which belongs to th
 
 | Minecraft version | Server software | Towny version | DiscordSRV version | Java |
 | --- | --- | --- | --- | --- |
-| `1.16.5`, `1.17.1`, `1.18.2` | Spigot / Paper / Purpur | `0.100.3.0` | `1.30.5` | Server-dependent |
+| `1.16.5` | Spigot / CraftBukkit / Paper / Purpur | `0.100.3.0` on Paper; `0.100.1.0` on Spigot, CraftBukkit and Purpur | `1.30.5` | Server-dependent |
+| `1.17.1`, `1.18.2` | Spigot / CraftBukkit / Paper / Purpur | `0.100.3.0` | `1.30.5` | Server-dependent |
 | `1.19.4` | Paper / Purpur | `0.103.2.0` | `1.30.5` | Server-dependent |
 | `1.20.1`, `1.20.6` | Paper / Purpur | `0.103.2.0` | `1.30.5` | Server-dependent |
 | `1.21.1`, `1.21.4`, `1.21.8`, `1.21.10`, `1.21.11` | Paper / Purpur | `0.103.2.0` | `1.30.5` | 21+ |
 | `26.1.2`, `26.2` | Paper / Purpur | `0.103.2.0` | `1.30.5` | 25+ |
 | `26.3` | Paper / Purpur | `0.103.2.15` (pre-release) | `1.30.5` | 25+ |
 
-**Minecraft 1.16.5 on Spigot, CraftBukkit or Purpur:** install [Towny 0.100.1.0](https://github.com/TownyAdvanced/Towny/releases/tag/0.100.1.0) instead. Newer Towny releases need libraries those 1.16.5 servers do not include (log4j 2.11+ for 0.100.3.0, commons-io for 0.100.2.0) and fail to enable there. Paper 1.16.5 can use 0.100.3.0.
+**Why 1.16.5 has two Towny versions:** [Towny 0.100.1.0](https://github.com/TownyAdvanced/Towny/releases/tag/0.100.1.0) is the newest release that starts on Spigot, CraftBukkit and Purpur 1.16.5. Newer Towny releases need libraries those servers do not include (log4j 2.11+ for 0.100.3.0, commons-io for 0.100.2.0) and fail to enable there. Paper 1.16.5 includes both, so it can use 0.100.3.0.
 
-**Compatibility status:** These are build-verified combinations, **not certified live-server deployments**. Each download is compiled against the corresponding server API and checked by automated tests. Minecraft 26.3 requires a compatible Towny pre-release and a matching Paper/Purpur build.
+**Compatibility status:** Each download is compiled against the corresponding server API and checked by automated tests. Before release, every build is also started on real servers for each listed version and server type, on its own, alongside Towny and alongside DiscordSRV; Discord role and channel management is tested against a test Discord server on Paper 26.3. This is not a guarantee for every server configuration. Minecraft 26.3 requires a compatible Towny pre-release and a matching Paper/Purpur build.
 
 **Unsupported:** Folia; Spigot/CraftBukkit with Towny 0.102+; Minecraft 26.1.0 (no Paper build) and 26.1.1 (obsolete Paper alpha builds). Use **26.1.2** for the 26.1 series. Minecraft 26.4 has not been released as stable.
 
@@ -114,7 +115,7 @@ Before upgrading, read the
 
 Before installing the 1.1.2 pre-release, use an isolated Discord guild and a test Minecraft server. The plugin can **create, rename and delete** Towny-managed roles/channels and change access permissions. Back up both your database and your Discord guild's important settings before testing.
 
-You need a compatible **Spigot/Paper/Purpur server** for the selected version (Towny 0.102+: Paper/Purpur), **Towny**, **DiscordSRV**, and **local SQLite storage** (created automatically). MySQL is optional. Towny and DiscordSRV must be installed as separate plugins. They are **not packaged inside** TownyDiscordChat.
+You need a compatible **Spigot/CraftBukkit/Paper/Purpur server** for the selected version (Towny 0.102+: Paper/Purpur), **Towny**, **DiscordSRV**, and **local SQLite storage** (created automatically). MySQL is optional. Towny and DiscordSRV must be installed as separate plugins. They are **not packaged inside** TownyDiscordChat.
 
 **Startup preflight:** TownyDiscordChat checks that both Towny and DiscordSRV are
 installed, enabled, and compatible *before* reading or migrating its configuration
@@ -123,6 +124,8 @@ the plugin enters an inert safe mode and does not create or modify
 `config.yml`, connect to a database, or start Discord synchronization.
 Existing configuration and database files are preserved. Install or correct
 the dependencies and restart to continue normal configuration initialization.
+[Anonymous statistics](#anonymous-statistics) still start in safe mode, so the
+safe-mode status is counted unless you have opted out.
 
 Official resources:
 - [Towny installation and compatibility](https://github.com/TownyAdvanced/Towny)

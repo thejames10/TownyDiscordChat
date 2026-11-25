@@ -152,9 +152,11 @@ public final class SetupValidator {
         integerRange(config,out,"onboarding.joinDelayTicks",1,1200);
         for (String key : new String[]{"security.revokeUnlinkedAccounts","queue.fullAudit.enabled",
                 "onboarding.enabled","onboarding.remindOnJoin","onboarding.remindOnTownJoin",
-                "updates.check","updates.includePreReleases","archive.enabled"}) {
+                "updates.check","updates.includePreReleases","archive.enabled","ranks.enabled"}) {
             if (!config.isBoolean(key)) out.error(key+" must be true or false.");
         }
+        rankList(config,out,"ranks.town");
+        rankList(config,out,"ranks.nation");
         try { ZoneId.of(config.getString("messages.TimeZone","UTC")); }
         catch (Exception e) { out.error("messages.TimeZone must be a valid Java zone ID, e.g. UTC or America/Toronto."); }
         try { DateTimeFormatter.ofPattern(config.getString("messages.DateFormat","dd/MM/yyyy - hh:mm a")); }
@@ -180,6 +182,11 @@ public final class SetupValidator {
             return null;
         }
         return value.trim();
+    }
+
+    private static void rankList(FileConfiguration config,Result out,String key) {
+        if (config.isSet(key) && !config.isList(key))
+            out.error(key+" must be a list of Towny rank names, for example [assistant].");
     }
 
     private static void integerRange(FileConfiguration config,Result out,String key,int min,int max) {

@@ -59,6 +59,14 @@ public class SetupValidatorTest {
         assertTrue(result.errors().toString().contains("archive.categoryName"));
     }
 
+    @Test public void rankNamesMustBeAList() throws Exception {
+        YamlConfiguration yaml=configured();
+        yaml.set("ranks.town","assistant");
+        SetupValidator.Result result=SetupValidator.validateLocal(yaml);
+        assertFalse(result.valid());
+        assertTrue(result.errors().toString().contains("ranks.town"));
+    }
+
     @Test public void unsupportedCategoryToggleFailsInsteadOfSilentlyIgnored() throws Exception {
         YamlConfiguration yaml=configured();
         yaml.set("town.UseCategoryForText",false);

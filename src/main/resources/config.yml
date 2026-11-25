@@ -66,6 +66,18 @@ category:
   Admin:
     Name: "MINECRAFT-STAFF"
 
+# Let town and nation leaders moderate their own Discord channels. Mayors and
+# kings always qualify; list extra Towny ranks (from townyperms.yml) below.
+# Text channels get Manage Messages. Voice channels get Mute, Deafen and Move
+# Members. The bot needs those permissions itself. Only permissions this
+# plugin granted are ever removed; turning this off removes them again.
+ranks:
+  enabled: false
+  town:
+    - assistant
+  nation:
+    - assistant
+
 # When a town or nation is deleted, move its text channel into this private
 # category instead of deleting it, so its history is kept. The category's own
 # permissions decide who can read it (deny @everyone View Channel); it is

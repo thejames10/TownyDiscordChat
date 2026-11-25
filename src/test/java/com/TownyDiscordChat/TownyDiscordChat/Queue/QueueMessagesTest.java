@@ -26,6 +26,15 @@ class QueueMessagesTest {
                 "OldTown","456",9,1).contains("DELETED town role"));
     }
 
+    @Test void rankChangesNameTheMemberAndChannel() {
+        String granted=QueueMessages.rank("GRANTED","NATION_VOICE","Haven",
+                "\"Alex\" [Discord ID 42]",12,1);
+        assertTrue(granted.contains("GRANTED nation moderation for \"Alex\" [Discord ID 42]"));
+        assertTrue(granted.contains("voice channel \"Haven\""));
+        assertTrue(QueueMessages.resource("SKIPPED","RANK_TOWN_TEXT","1:2",null,5,1)
+                .contains("SKIPPED town text channel moderation"));
+    }
+
     @Test void membershipChangesNameDiscordRoleAndAction() {
         assertTrue(QueueMessages.member(true,"member-id",
                 "town-Bradfordshire",11,1).contains("GRANTED town-Bradfordshire"));

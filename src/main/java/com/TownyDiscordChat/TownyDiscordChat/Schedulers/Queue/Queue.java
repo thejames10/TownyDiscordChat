@@ -7,6 +7,8 @@ import com.TownyDiscordChat.TownyDiscordChat.Naming.RoleNames;
 import com.TownyDiscordChat.TownyDiscordChat.RoleSafety;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.QueueMessages;
+import com.TownyDiscordChat.TownyDiscordChat.Queue.RankGrantStore;
+import com.TownyDiscordChat.TownyDiscordChat.Ranks.RankSlot;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.StableEntityStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore.Job;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
@@ -48,6 +50,7 @@ public final class Queue {
     private final DiscordJobStore store;
     private final StableEntityStore stable;
     private final MemberIntentStore memberStore;
+    private final RankDispatcher ranks;
     private final RepeatingTask scheduler;
     private final AtomicBoolean resourceBusy = new AtomicBoolean(false);
     private final AtomicBoolean memberBusy = new AtomicBoolean(false);
@@ -84,6 +87,7 @@ public final class Queue {
         this.store = new DiscordJobStore(plugin);
         this.stable = new StableEntityStore(plugin);
         this.memberStore = new MemberIntentStore(plugin);
+        this.ranks = new RankDispatcher(plugin, new RankGrantStore(plugin), stable);
         long delay = Math.max(1, startDelaySeconds);
         long period = Math.max(1, intervalDelaySeconds);
         this.scheduler = plugin.scheduler().runAsyncTimer(this::tick, delay * 20L, period * 20L);
@@ -173,6 +177,8 @@ public final class Queue {
             final StableEntityStore.Entity identity = job.kind.startsWith("RENAME_") && guild != null
                     ? stable.find(guild.getId(),job.kind.contains("_TOWN_") ? "TOWN" : "NATION",job.name)
                     : null;
+            final RankDispatcher.Target rankTarget = job.kind.startsWith(RankSlot.JOB_PREFIX)
+                    && guild != null ? ranks.load(guild.getId(), job) : null;
             final Set<String> auditIds = "AUDIT_GUILD".equals(job.kind)
                     ? mappedRolesForAudit() : Collections.<String>emptySet();
             // Check immutable ownership before processing a named resource.
@@ -185,7 +191,7 @@ public final class Queue {
                             job.kind.startsWith("TOWN_") ? "TOWN" : "NATION",job.name)
                     : Collections.<String>emptySet();
             plugin.scheduler().runGlobal(() -> dispatch(job, categoryIds, mappedId,
-                    stableOwners,identity,auditIds,nameOwners));
+                    stableOwners,identity,auditIds,nameOwners,rankTarget));
         } catch (Exception e) {
             plugin.getLogger().warning("Could not claim resource job: " + e.getMessage());
             // SQL lease safely recovers a claim if the callback never started.
@@ -292,7 +298,7 @@ public final class Queue {
         }
     }
 
-    private static boolean isUnknownMember(Throwable failure) {
+    static boolean isUnknownMember(Throwable failure) {
         return failure instanceof ErrorResponseException
                 && ((ErrorResponseException) failure).getErrorCode() == 10007;
     }
@@ -399,11 +405,16 @@ public final class Queue {
 
     private void dispatch(final Job job, Set<String> categoryIds, String mappedId,
                           Set<String> stableOwners, StableEntityStore.Entity identity,
-                          Set<String> auditIds, Set<String> nameOwners) {
+                          Set<String> auditIds, Set<String> nameOwners,
+                          RankDispatcher.Target rankTarget) {
         try {
             Guild guild = DiscordSRV.getPlugin().getMainGuild();
             if (guild == null) {
                 defer(job, "DiscordSRV guild is not ready");
+                return;
+            }
+            if (job.kind.startsWith(RankSlot.JOB_PREFIX)) {
+                ranks.dispatch(guild, rankTarget, rankOutcome(job));
                 return;
             }
             if (job.kind.startsWith("DELETE_")) {
@@ -1166,6 +1177,17 @@ public final class Queue {
     private void renamed(Job job,String resourceName,String id) {
         finalizeAsync(job, () -> store.remove(job),
                 QueueMessages.resource("RENAMED",job,resourceName,id),true);
+    }
+
+    private RankDispatcher.Outcome rankOutcome(final Job job) {
+        return new RankDispatcher.Outcome() {
+            @Override public void done(String message) {
+                finalizeAsync(job, () -> store.remove(job), message, true);
+            }
+            @Override public void skip(String reason) { Queue.this.skip(job, reason); }
+            @Override public void defer(String reason) { Queue.this.defer(job, reason); }
+            @Override public void fail(String reason) { Queue.this.fail(job, reason); }
+        };
     }
 
     private void discard(Job job) {

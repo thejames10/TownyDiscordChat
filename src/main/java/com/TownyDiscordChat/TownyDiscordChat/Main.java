@@ -21,6 +21,7 @@ import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.TownTextChannels;
 import com.TownyDiscordChat.TownyDiscordChat.MySQL.Tables.TownVoiceChannels;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
+import com.TownyDiscordChat.TownyDiscordChat.Queue.RankGrantStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.StableEntityStore;
 import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Queue.Queue;
 import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Reconciler;
@@ -541,6 +542,7 @@ public class Main extends JavaPlugin {
         new DiscordJobStore(this).initialize();
         new MemberIntentStore(this).initialize();
         new StableEntityStore(this).initialize();
+        new RankGrantStore(this).initialize();
         SQL.ensureIndexes();
         SQL.verifyRequiredTables();
     }

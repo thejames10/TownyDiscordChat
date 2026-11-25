@@ -99,6 +99,7 @@ public final class PluginMetrics {
         features.put("Discord activity log", "log.Enabled");
         features.put("Revoke unlinked accounts", "security.revokeUnlinkedAccounts");
         features.put("Archive channels", "archive.enabled");
+        features.put("Rank moderation", "ranks.enabled");
         return Collections.unmodifiableMap(features);
     }
 

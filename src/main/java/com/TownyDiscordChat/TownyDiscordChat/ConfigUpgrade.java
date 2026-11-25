@@ -34,7 +34,7 @@ public final class ConfigUpgrade {
             Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
                     "SQL","storage","town","nation","category","log",
                     "messages","queue","onboarding","security","updates",
-                    "names","archive")));
+                    "names","archive","ranks")));
 
     public static final class Result {
         public final boolean migrated;

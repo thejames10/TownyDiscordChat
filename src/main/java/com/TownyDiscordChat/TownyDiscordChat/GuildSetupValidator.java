@@ -1,6 +1,8 @@
 package com.TownyDiscordChat.TownyDiscordChat;
 
 import com.TownyDiscordChat.TownyDiscordChat.Naming.RoleNames;
+import com.TownyDiscordChat.TownyDiscordChat.Ranks.RankPermissions;
+import com.TownyDiscordChat.TownyDiscordChat.Ranks.RankSettings;
 import com.TownyDiscordChat.TownyDiscordChat.Schedulers.Queue.ChannelArchive;
 import github.scarsz.discordsrv.dependencies.jda.api.Permission;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Category;
@@ -94,6 +96,10 @@ public final class GuildSetupValidator {
                 out.warn("No existing "+expected+" category: SQL synchronization will create a private one.");
             else out.warn("Auto-discovered "+privateMatches+" private "+expected+" category/categories by name.");
         }
+        if (RankSettings.fromConfig(cfg).enabled()
+                && !guild.getSelfMember().hasPermission(RankPermissions.all()))
+            out.error("ranks.enabled needs the Discord bot to have Manage Messages, Mute Members,"
+                    +" Deafen Members and Move Members, because Discord only lets it grant permissions it has.");
         if (ChannelArchive.enabled(cfg) && ChannelArchive.hasPublicCategory(guild,cfg))
             out.error("A category named "+ChannelArchive.categoryName(cfg)
                     +" lets @everyone see it. Deny @everyone View Channel before archiving town channels there.");

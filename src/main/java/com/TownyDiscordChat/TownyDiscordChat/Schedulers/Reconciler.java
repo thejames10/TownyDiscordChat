@@ -9,6 +9,11 @@ import com.TownyDiscordChat.TownyDiscordChat.Queue.DiscordJobStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.StableEntityStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore;
 import com.TownyDiscordChat.TownyDiscordChat.Queue.MemberIntentStore.Grant;
+import com.TownyDiscordChat.TownyDiscordChat.Queue.RankGrantStore;
+import com.TownyDiscordChat.TownyDiscordChat.Ranks.RankPlan;
+import com.TownyDiscordChat.TownyDiscordChat.Ranks.RankSettings;
+import com.TownyDiscordChat.TownyDiscordChat.Ranks.RankSlot;
+import com.TownyDiscordChat.TownyDiscordChat.Ranks.RankSnapshot;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Resident;
@@ -44,6 +49,7 @@ public final class Reconciler {
     private final DiscordJobStore resources;
     private final MemberIntentStore membership;
     private final StableEntityStore stable;
+    private final RankGrantStore rankGrants;
     private final RepeatingTask periodic;
     private final AtomicBoolean reconciling = new AtomicBoolean(false);
     private final AtomicBoolean scheduled = new AtomicBoolean(false);
@@ -78,7 +84,9 @@ public final class Reconciler {
         final Map<String,String> expectedNationByMember = new HashMap<String,String>();
         final Set<String> cachedMembers = new HashSet<String>();
         final Set<String> blockedRoleIds = new HashSet<String>();
+        final Map<UUID,String> discordByPlayer = new HashMap<UUID,String>();
         RoleNames roleNames;
+        RankSnapshot ranks;
         int neededTownChannels, neededNationChannels;
     }
 
@@ -87,6 +95,7 @@ public final class Reconciler {
         this.resources = new DiscordJobStore(plugin);
         this.membership = new MemberIntentStore(plugin);
         this.stable = new StableEntityStore(plugin);
+        this.rankGrants = new RankGrantStore(plugin);
         long seconds = Math.max(30, plugin.getConfig().getLong("queue.reconcileSeconds", 180));
         periodic = plugin.scheduler().runGlobalTimer(this::snapshot, 100L, seconds * 20L);
     }
@@ -211,6 +220,8 @@ public final class Reconciler {
         }
         snapshotChannels(guild, state);
         snapshotMembership(guild, state);
+        state.ranks = RankSnapshot.capture(guild, RankSettings.fromConfig(plugin.getConfig()),
+                state.channelIds, state.discordByPlayer, state.cachedMembers);
         return state;
     }
 
@@ -281,6 +292,7 @@ public final class Reconciler {
             String memberId = link.getKey();
             UUID uuid = link.getValue();
             if (uuid == null) continue;
+            state.discordByPlayer.put(uuid, memberId);
             Resident resident = TownyUniverse.getInstance().getResident(uuid);
             if (resident == null || !resident.hasTown()) continue;
             try {
@@ -390,6 +402,14 @@ public final class Reconciler {
                 membership.desire(s.guildId, update.memberId, update.roleId,
                         update.change == MembershipPlan.Change.GRANT);
             }
+        }
+        reconcileRanks(s);
+    }
+
+    private void reconcileRanks(Snapshot snapshot) throws SQLException {
+        for (RankSlot slot : RankPlan.slotsToSync(snapshot.ranks.desired(), snapshot.ranks.settled(),
+                rankGrants.recorded(snapshot.guildId))) {
+            resources.enqueue(slot.jobKind(), slot.jobName());
         }
     }
 

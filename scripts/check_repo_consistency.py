@@ -101,8 +101,8 @@ for item in ("storage:", "  type: auto", "  migrateToMySQL: false",
              "queue:", "  deletionGraceSeconds:", "onboarding:",
              "  enabled: true", "security:"):
     require(item in config, f"config.yml is missing expected default: {item}")
-require("sqlite-jdbc" in pom and "mysql-connector-java" in pom,
-        "pom.xml must bundle both SQLite and MySQL JDBC drivers")
+require("sqlite-jdbc" in pom and "<artifactId>mysql-connector-j</artifactId>" in pom,
+        "pom.xml must bundle both SQLite and the maintained MySQL Connector/J")
 for doc in GUIDES:
     content = docs[doc]
     require(r"\n" not in content,

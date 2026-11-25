@@ -131,8 +131,8 @@ jobs:
       - name: Ensure server-provided dependencies are not bundled
         if: env.BUILD_TARGET == 'true'
         run: |
-          if jar tf target/TownyDiscordChat-*.jar | grep -E '^github/scarsz/discordsrv/|^com/palmergames/bukkit/towny/|^net/dv8tion/jda/'; then
-            echo 'Towny, DiscordSRV, or JDA was bundled into TownyDiscordChat.'
+          if jar tf target/TownyDiscordChat-*.jar | grep -E '^github/scarsz/discordsrv/|^com/palmergames/bukkit/towny/|^net/dv8tion/jda/|^com/google/protobuf/'; then
+            echo 'Towny, DiscordSRV, JDA or protobuf was bundled into TownyDiscordChat.'
             exit 1
           fi
 

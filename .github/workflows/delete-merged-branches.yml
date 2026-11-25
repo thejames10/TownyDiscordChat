@@ -1,0 +1,110 @@
+name: Delete merged branches
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Only list the branches that would be deleted'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: delete-merged-branches
+  cancel-in-progress: false
+
+jobs:
+  delete-merged-branches:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Delete branches whose changes are already on main
+        env:
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+          KEPT_BRANCHES: 'main badges'
+          MAIN_REF: origin/main
+        run: |
+          set -euo pipefail
+
+          is_kept() {
+            local branch="$1"
+            local kept
+            for kept in $KEPT_BRANCHES; do
+              if [ "$branch" = "$kept" ]; then
+                return 0
+              fi
+            done
+            return 1
+          }
+
+          # git cherry compares patches, so rebased or cherry-picked commits
+          # count as merged even after main's history was rewritten.
+          # grep -c reads all input; grep -q would let pipefail see SIGPIPE.
+          every_commit_is_on_main() {
+            local missing
+            missing=$(git cherry "$MAIN_REF" "origin/$1" | grep -c '^+' || true)
+            [ "$missing" -eq 0 ]
+          }
+
+          was_squash_merged() {
+            local base squashed applied
+            base=$(git merge-base "$MAIN_REF" "origin/$1") || return 1
+            squashed=$(git -c user.name=branch-cleanup -c user.email=branch-cleanup@localhost \
+              commit-tree "origin/$1^{tree}" -p "$base" -m squashed)
+            applied=$(git cherry "$MAIN_REF" "$squashed" | grep -c '^-' || true)
+            [ "$applied" -gt 0 ]
+          }
+
+          is_merged() {
+            if git merge-base --is-ancestor "origin/$1" "$MAIN_REF"; then
+              return 0
+            fi
+            if every_commit_is_on_main "$1"; then
+              return 0
+            fi
+            was_squash_merged "$1"
+          }
+
+          list_branches() {
+            local title="$1"
+            shift
+            echo "### $title ($#)"
+            if [ "$#" -gt 0 ]; then
+              printf -- '- %s\n' "$@"
+            fi
+          }
+
+          merged=()
+          unmerged=()
+          for branch in $(git for-each-ref --format='%(refname:lstrip=3)' refs/remotes/origin); do
+            if [ "$branch" = HEAD ] || is_kept "$branch"; then
+              continue
+            fi
+            if is_merged "$branch"; then
+              merged+=("$branch")
+            else
+              unmerged+=("$branch")
+            fi
+          done
+
+          {
+            list_branches 'Merged into main' "${merged[@]}"
+            list_branches 'Kept: commits not on main' "${unmerged[@]}"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+          if [ "${#merged[@]}" -eq 0 ]; then
+            exit 0
+          fi
+          if [ "$DRY_RUN" = true ]; then
+            echo 'Dry run: nothing was deleted.' | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git push --quiet origin --delete "${merged[@]}"
+          echo "Deleted ${#merged[@]} merged branches." | tee -a "$GITHUB_STEP_SUMMARY"

@@ -19,6 +19,7 @@ import github.scarsz.discordsrv.dependencies.jda.api.entities.GuildChannel;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Member;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.PermissionOverride;
 import github.scarsz.discordsrv.dependencies.jda.api.requests.RestAction;
+import github.scarsz.discordsrv.objects.managers.AccountLinkManager;
 
 import java.sql.SQLException;
 import java.util.Collections;
@@ -82,8 +83,8 @@ final class RankDispatcher {
             return new Target(job, guildId, null, Collections.<String>emptySet(), null, false);
         }
         Set<String> owners = stable.ownersOfId(guildId, slot.channelKind(), slot.channelId());
-        UUID player = DiscordSRV.getPlugin().getAccountLinkManager().getUuid(slot.memberId());
-        return new Target(job, guildId, slot, owners, player, grants.isRecorded(guildId, slot));
+        return new Target(job, guildId, slot, owners, linkedPlayer(slot.memberId()),
+                grants.isRecorded(guildId, slot));
     }
 
     /** Runs on the global region thread. */
@@ -223,6 +224,12 @@ final class RankDispatcher {
         String channelName = channel == null ? target.slot.channelId() : channel.getName();
         return QueueMessages.rank(action, target.slot.channelKind(), channelName, memberName,
                 target.job.id, target.job.attempts);
+    }
+
+    /** Null when DiscordSRV has no link for the member, which means no leadership. */
+    private static UUID linkedPlayer(String memberId) {
+        AccountLinkManager links = DiscordSRV.getPlugin().getAccountLinkManager();
+        return links == null ? null : links.getUuid(memberId);
     }
 
     private static UUID parseUuid(String value) {

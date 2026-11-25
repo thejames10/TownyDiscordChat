@@ -12,6 +12,7 @@ import github.scarsz.discordsrv.api.events.DiscordGuildMessageReceivedEvent;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Guild;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Message;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
+import github.scarsz.discordsrv.objects.managers.AccountLinkManager;
 import github.scarsz.discordsrv.util.WebhookUtil;
 import org.bukkit.entity.Player;
 
@@ -92,7 +93,8 @@ public final class ChatBridge {
         if (group == null || !settings.bridges(group.type()) || text.isEmpty()) {
             return;
         }
-        UUID author = DiscordSRV.getPlugin().getAccountLinkManager().getUuid(event.getAuthor().getId());
+        AccountLinkManager links = DiscordSRV.getPlugin().getAccountLinkManager();
+        UUID author = links == null ? null : links.getUuid(event.getAuthor().getId());
         if (author != null) {
             plugin.scheduler().runGlobal(() -> deliverInGame(group, author, text));
         }
